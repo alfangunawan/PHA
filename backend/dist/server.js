@@ -41,6 +41,7 @@ const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const AuthController = __importStar(require("./auth.controller"));
 const ProfileController = __importStar(require("./profile.controller"));
+const ChatController = __importStar(require("./chat.controller"));
 const auth_middleware_1 = require("./auth.middleware");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -51,6 +52,8 @@ app.post('/auth/register', AuthController.register);
 app.post('/auth/login', AuthController.login);
 app.get('/profile', auth_middleware_1.authenticateToken, ProfileController.getProfile);
 app.put('/profile', auth_middleware_1.authenticateToken, ProfileController.updateProfile);
+app.post('/chat/send', auth_middleware_1.authenticateToken, ChatController.sendMessage);
+app.get('/chat/history', auth_middleware_1.authenticateToken, ChatController.getHistory);
 app.get('/protected', auth_middleware_1.authenticateToken, (req, res) => {
     res.json({ message: 'This is a protected route', user: req.user });
 });
