@@ -54,12 +54,7 @@ function RootNavigator() {
           <AppStack.Screen
             name="Chat"
             component={ChatScreen}
-            options={({ navigation }) => ({
-              title: 'PHA Chatbot',
-              headerRight: () => (
-                <HistoryButton onPress={() => navigation.navigate('History')} />
-              ),
-            })}
+            options={{ title: 'PHA Chatbot' }}
           />
           <AppStack.Screen
             name="History"
