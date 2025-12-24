@@ -121,3 +121,48 @@ export const getHistory = async (userId: string) => {
         orderBy: { timestamp: 'asc' },
     });
 };
+
+// Get all chat sessions for a user
+export const getSessions = async (userId: string) => {
+    const sessions = await prisma.chatSession.findMany({
+        where: { userId },
+        orderBy: { startedAt: 'desc' },
+        include: {
+            messages: {
+                take: 1,
+                orderBy: { timestamp: 'asc' },
+            },
+        },
+    });
+
+    return sessions.map(s => ({
+        id: s.id,
+        startedAt: s.startedAt,
+        preview: s.messages[0]?.message?.substring(0, 50) || 'Empty chat',
+        messageCount: s.messages.length,
+    }));
+};
+
+// Get messages for a specific session
+export const getSessionMessages = async (userId: string, sessionId: string) => {
+    // Verify session belongs to user
+    const session = await prisma.chatSession.findFirst({
+        where: { id: sessionId, userId },
+    });
+
+    if (!session) return [];
+
+    return await prisma.chatMessage.findMany({
+        where: { sessionId },
+        orderBy: { timestamp: 'asc' },
+    });
+};
+
+// Create a new chat session
+export const createNewSession = async (userId: string) => {
+    const session = await prisma.chatSession.create({
+        data: { userId },
+    });
+
+    return session;
+};
