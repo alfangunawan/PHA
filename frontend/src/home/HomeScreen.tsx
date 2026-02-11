@@ -94,7 +94,7 @@ export default function HomeScreen() {
 
                 {/* Continue Chat Card */}
                 <View style={styles.section}>
-                    <TouchableOpacity style={styles.chatCard} onPress={() => navigation.navigate('Chat')}>
+                    <TouchableOpacity style={styles.chatCard} onPress={() => navigation.navigate('Riwayat')}>
                         <View style={styles.chatCardIcon}>
                             <Ionicons name="chatbubbles" size={24} color="#48B096" />
                         </View>

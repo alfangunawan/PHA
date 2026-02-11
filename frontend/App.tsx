@@ -55,7 +55,7 @@ function MainTabs() {
 
           if (route.name === 'Beranda') {
             iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Chat') {
+          } else if (route.name === 'Riwayat') {
             iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
           } else if (route.name === 'Jurnal') {
             iconName = focused ? 'book' : 'book-outline';
@@ -84,7 +84,7 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Beranda" component={HomeScreen} />
-      <Tab.Screen name="Chat" component={HistoryScreen} options={{ title: 'Riwayat' }} />
+      <Tab.Screen name="Riwayat" component={HistoryScreen} options={{ title: 'Riwayat' }} />
       <Tab.Screen name="Jurnal" component={JournalScreen} />
       <Tab.Screen name="Profil" component={ProfileScreen} />
     </Tab.Navigator>
