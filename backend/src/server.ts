@@ -1,12 +1,20 @@
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load env from one level up (since we are in src/) if not in root
+const envPath = path.resolve(__dirname, '../.env');
+const result = dotenv.config({ path: envPath });
+
+console.log('Dotenv result:', result);
+console.log('GEMINI_API_KEY present:', !!process.env.GEMINI_API_KEY);
+console.log('DATABASE_URL present:', !!process.env.DATABASE_URL);
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import authRoutes from './modules/auth/auth.routes';
 import profileRoutes from './modules/profile/profile.routes';
 import chatRoutes from './modules/chat/chat.routes';
 import { authenticateToken, AuthRequest } from './middleware/auth.middleware';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;

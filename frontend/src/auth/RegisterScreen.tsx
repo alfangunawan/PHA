@@ -21,7 +21,10 @@ export default function RegisterScreen() {
             Alert.alert('Success', 'Account created! Please login.');
             navigation.goBack();
         } catch (error: any) {
-            Alert.alert('Registration Failed', error.response?.data?.error || error.message);
+            const errorMsg = error.response?.data?.details
+                ? error.response.data.details.map((d: any) => d.message).join('\n')
+                : error.response?.data?.error || error.message;
+            Alert.alert('Registration Failed', errorMsg);
         } finally {
             setLoading(false);
         }

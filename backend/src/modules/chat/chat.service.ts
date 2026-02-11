@@ -1,16 +1,16 @@
 import { GoogleGenAI } from '@google/genai';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../config/prisma';
 import { getProfile } from '../profile/profile.service';
 
 // Initialize Gemini API with new SDK
 const API_KEY = process.env.GEMINI_API_KEY;
+console.log('Chat Service API Key check:', API_KEY ? 'Set' : 'Not Set');
+
 if (!API_KEY) {
     console.warn('GEMINI_API_KEY is not set in environment variables');
 }
 
 const ai = new GoogleGenAI({ apiKey: API_KEY || '' });
-
-const prisma = new PrismaClient();
 
 // System instruction for AI personality
 const SYSTEM_INSTRUCTION = `Kamu adalah Personal Health Assistant (PHA), asisten AI yang suportif dan empatik untuk kesehatan mental ringan.
