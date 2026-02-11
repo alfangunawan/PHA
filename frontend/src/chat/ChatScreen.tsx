@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, SafeAreaView } from 'react-native';
-import { ChatMessage, sendMessage, getHistory, createNewSession } from './chatService';
+import Markdown from 'react-native-markdown-display';
+import { ChatMessage, sendMessage, streamMessage, getHistory, createNewSession } from './chatService';
 
 interface Props {
     navigation: any;
@@ -84,25 +85,49 @@ export default function ChatScreen({ navigation, route }: Props) {
             timestamp: new Date().toISOString(),
         };
 
-        setMessages(prev => [...prev, userMsg]);
+        // Create placeholder for AI message
+        const aiMsgId = (Date.now() + 1).toString();
+        const aiMsgPlaceholder: ChatMessage = {
+            id: aiMsgId,
+            sender: 'ai',
+            message: '',
+            timestamp: new Date().toISOString(),
+        };
+
+        setMessages(prev => [...prev, userMsg, aiMsgPlaceholder]);
         setInputText('');
         setSending(true);
 
         try {
-            const newMessages = await sendMessage(userMsg.message);
-            const aiMsg = newMessages.find(m => m.sender === 'ai');
-            if (aiMsg) {
-                setMessages(prev => [...prev, aiMsg]);
-            }
+            await streamMessage(
+                userMsg.message,
+                (chunk) => {
+                    setMessages(prev => prev.map(m =>
+                        m.id === aiMsgId
+                            ? { ...m, message: m.message + chunk }
+                            : m
+                    ));
+                },
+                () => {
+                    setSending(false);
+                },
+                (error) => {
+                    console.error('Stream error:', error);
+                    setMessages(prev => prev.map(m =>
+                        m.id === aiMsgId
+                            ? { ...m, message: m.message + '\n\n[Maaf, koneksi terputus]' }
+                            : m
+                    ));
+                    setSending(false);
+                }
+            );
         } catch (error) {
-            const errorMsg: ChatMessage = {
-                id: Date.now().toString(),
-                sender: 'ai',
-                message: 'Maaf, pesan gagal terkirim.',
-                timestamp: new Date().toISOString(),
-            };
-            setMessages(prev => [...prev, errorMsg]);
-        } finally {
+            console.error('Send error:', error);
+            setMessages(prev => prev.map(m =>
+                m.id === aiMsgId
+                    ? { ...m, message: '[Gagal mengirim pesan]' }
+                    : m
+            ));
             setSending(false);
         }
     };
@@ -111,7 +136,13 @@ export default function ChatScreen({ navigation, route }: Props) {
         const isUser = item.sender === 'user';
         return (
             <View style={[styles.bubble, isUser ? styles.userBubble : styles.aiBubble]}>
-                <Text style={[styles.text, isUser ? styles.userText : styles.aiText]}>{item.message}</Text>
+                {isUser ? (
+                    <Text style={styles.userText}>{item.message}</Text>
+                ) : (
+                    <Markdown style={markdownStyles}>
+                        {item.message}
+                    </Markdown>
+                )}
             </View>
         );
     };
@@ -162,7 +193,7 @@ export default function ChatScreen({ navigation, route }: Props) {
                         maxLength={500}
                     />
                     <TouchableOpacity style={styles.sendButton} onPress={handleSend} disabled={sending}>
-                        {sending ? <ActivityIndicator color="#fff" /> : <Text style={styles.sendText}>Send</Text>}
+                        {sending && messages[messages.length - 1]?.sender !== 'ai' ? <ActivityIndicator color="#fff" /> : <Text style={styles.sendText}>Send</Text>}
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
@@ -175,7 +206,7 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#f0f2f5',
         // Web strict resizing
-        height: Platform.OS === 'web' ? 'calc(100vh - 64px)' : '100%',
+        height: Platform.OS === 'web' ? 'calc(100vh - 64px)' as any : '100%',
     },
     chatArea: {
         flex: 1,
@@ -189,9 +220,8 @@ const styles = StyleSheet.create({
     bubble: { maxWidth: '80%', padding: 12, borderRadius: 15, marginBottom: 10 },
     userBubble: { alignSelf: 'flex-end', backgroundColor: '#007AFF', borderBottomRightRadius: 2 },
     aiBubble: { alignSelf: 'flex-start', backgroundColor: '#fff', borderBottomLeftRadius: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 },
-    text: { fontSize: 16, lineHeight: 22 },
-    userText: { color: '#fff' },
-    aiText: { color: '#333' },
+    userText: { color: '#fff', fontSize: 16, lineHeight: 22 },
+    aiText: { color: '#333', fontSize: 16, lineHeight: 22 },
     inputContainer: {
         flexDirection: 'row',
         padding: 10,
@@ -210,4 +240,17 @@ const styles = StyleSheet.create({
     welcomeEmoji: { fontSize: 60, marginBottom: 20 },
     welcomeTitle: { fontSize: 24, fontWeight: 'bold', color: '#333', marginBottom: 10 },
     welcomeText: { fontSize: 16, color: '#666', textAlign: 'center', lineHeight: 24 },
+});
+
+const markdownStyles = StyleSheet.create({
+    body: { fontSize: 16, lineHeight: 22, color: '#333' },
+    heading1: { fontSize: 24, fontWeight: 'bold', marginVertical: 10 },
+    heading2: { fontSize: 20, fontWeight: 'bold', marginVertical: 8 },
+    strong: { fontWeight: 'bold' },
+    em: { fontStyle: 'italic' },
+    list_item: { marginVertical: 4 },
+    bullet_list: { marginBottom: 10 },
+    ordered_list: { marginBottom: 10 },
+    code_inline: { backgroundColor: '#f0f0f0', fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', borderRadius: 4, padding: 2 },
+    code_block: { backgroundColor: '#f0f0f0', padding: 10, borderRadius: 8, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', marginVertical: 8 },
 });

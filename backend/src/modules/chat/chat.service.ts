@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { PrismaClient } from '@prisma/client';
-import { getProfile } from './profile.service';
+import { getProfile } from '../profile/profile.service';
 
 // Initialize Gemini API with new SDK
 const API_KEY = process.env.GEMINI_API_KEY;
@@ -156,6 +156,96 @@ export const getSessionMessages = async (userId: string, sessionId: string) => {
         where: { sessionId },
         orderBy: { timestamp: 'asc' },
     });
+};
+
+// Stream message from AI
+export const streamMessage = async (userId: string, message: string, onChunk: (text: string) => void) => {
+    // 1. Get or Create Session
+    let session = await prisma.chatSession.findFirst({
+        where: { userId },
+        orderBy: { startedAt: 'desc' },
+    });
+
+    if (!session) {
+        session = await prisma.chatSession.create({
+            data: { userId },
+        });
+    }
+
+    // 2. Save User Message
+    const userMsg = await prisma.chatMessage.create({
+        data: {
+            sessionId: session.id,
+            sender: 'user',
+            message: message,
+        },
+    });
+
+    // 3. Get Profile for context
+    const profile = await getProfile(userId);
+    const profileContext = profile
+        ? `[Konteks Pengguna: Nama=${profile.displayName}, Usia=${profile.age || 'tidak diketahui'}]`
+        : '';
+
+    // 4. Get History
+    const history = await prisma.chatMessage.findMany({
+        where: { sessionId: session.id },
+        orderBy: { timestamp: 'asc' },
+        take: 20,
+    });
+
+    const chatHistory = history
+        .filter(m => m.id !== userMsg.id)
+        .map((m: any) => ({
+            role: m.sender === 'user' ? 'user' : 'model',
+            parts: [{ text: m.message }],
+        }));
+
+    if (chatHistory.length === 0) {
+        chatHistory.push({
+            role: 'user',
+            parts: [{ text: `${SYSTEM_INSTRUCTION}\n\n${profileContext}` }],
+        });
+        chatHistory.push({
+            role: 'model',
+            parts: [{ text: 'Halo! Saya PHA, asisten kesehatan pribadimu. Ada yang bisa saya bantu hari ini?' }],
+        });
+    }
+
+    // 5. Create chat
+    const chat = ai.chats.create({
+        model: 'gemini-2.5-flash',
+        history: chatHistory,
+    });
+
+    // 6. Stream Response
+    let aiResponseText = '';
+    try {
+        const result = await chat.sendMessageStream({ message });
+
+        for await (const chunk of result) {
+            const chunkText = chunk.text;
+            if (chunkText) {
+                aiResponseText += chunkText;
+                onChunk(chunkText);
+            }
+        }
+    } catch (error: any) {
+        console.error('Gemini Stream Error:', error.message || error);
+        aiResponseText += '\n[Terputus]';
+        onChunk('\n[Maaf, koneksi terputus]');
+    }
+
+    // 7. Save AI Message
+    const aiMsg = await prisma.chatMessage.create({
+        data: {
+            sessionId: session.id,
+            sender: 'ai',
+            message: aiResponseText,
+        },
+    });
+
+    return { userMsg, aiMsg };
 };
 
 // Create a new chat session

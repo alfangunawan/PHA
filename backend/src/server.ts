@@ -1,10 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import * as AuthController from './auth.controller';
-import * as ProfileController from './profile.controller';
-import * as ChatController from './chat.controller';
-import { authenticateToken, AuthRequest } from './auth.middleware';
+import authRoutes from './modules/auth/auth.routes';
+import profileRoutes from './modules/profile/profile.routes';
+import chatRoutes from './modules/chat/chat.routes';
+import { authenticateToken, AuthRequest } from './middleware/auth.middleware';
 
 dotenv.config();
 
@@ -14,16 +14,10 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-
-app.post('/auth/register', AuthController.register);
-app.post('/auth/login', AuthController.login);
-app.get('/profile', authenticateToken, ProfileController.getProfile);
-app.put('/profile', authenticateToken, ProfileController.updateProfile);
-app.post('/chat/send', authenticateToken, ChatController.sendMessage);
-app.get('/chat/history', authenticateToken, ChatController.getHistory);
-app.get('/chat/sessions', authenticateToken, ChatController.getSessions);
-app.get('/chat/sessions/:sessionId', authenticateToken, ChatController.getSessionMessages);
-app.post('/chat/sessions/new', authenticateToken, ChatController.createNewSession);
+// Routes
+app.use('/auth', authRoutes);
+app.use('/profile', authenticateToken, profileRoutes);
+app.use('/chat', authenticateToken, chatRoutes);
 
 app.get('/protected', authenticateToken, (req: AuthRequest, res) => {
     res.json({ message: 'This is a protected route', user: req.user });
