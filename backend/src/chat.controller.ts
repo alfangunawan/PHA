@@ -65,3 +65,18 @@ export const createNewSession = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+export const submitGad7 = async (req: AuthRequest, res: Response) => {
+    try {
+        const userId = req.user?.userId;
+        const { sessionId, answers } = req.body;
+
+        if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+        if (!sessionId || !answers) return res.status(400).json({ error: 'sessionId and answers are required' });
+
+        const aiMsg = await ChatService.submitGad7(userId, sessionId, answers);
+        res.json(aiMsg);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};

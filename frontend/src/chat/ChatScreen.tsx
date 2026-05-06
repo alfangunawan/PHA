@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, SafeAreaView } from 'react-native';
 import { ChatMessage, sendMessage, getHistory, createNewSession } from './chatService';
+import Gad7Form from './Gad7Form';
 
 interface Props {
     navigation: any;
@@ -109,6 +110,30 @@ export default function ChatScreen({ navigation, route }: Props) {
 
     const renderItem = ({ item }: { item: ChatMessage }) => {
         const isUser = item.sender === 'user';
+        
+        let parsedMessage = null;
+        if (!isUser) {
+            try {
+                parsedMessage = JSON.parse(item.message);
+            } catch (e) {
+                // Not a JSON message, fallback to raw text
+            }
+        }
+
+        if (parsedMessage && parsedMessage.action === 'show_gad7') {
+            return (
+                <View style={[styles.bubble, styles.aiBubble, { padding: 0, backgroundColor: 'transparent', shadowOpacity: 0 }]}>
+                    <Gad7Form 
+                        data={parsedMessage.data} 
+                        sessionId={item.sessionId}
+                        onSubmitted={(aiMsg) => {
+                            setMessages(prev => [...prev, aiMsg]);
+                        }} 
+                    />
+                </View>
+            );
+        }
+
         return (
             <View style={[styles.bubble, isUser ? styles.userBubble : styles.aiBubble]}>
                 <Text style={[styles.text, isUser ? styles.userText : styles.aiText]}>{item.message}</Text>

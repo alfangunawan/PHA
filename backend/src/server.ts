@@ -24,6 +24,7 @@ app.get('/chat/history', authenticateToken, ChatController.getHistory);
 app.get('/chat/sessions', authenticateToken, ChatController.getSessions);
 app.get('/chat/sessions/:sessionId', authenticateToken, ChatController.getSessionMessages);
 app.post('/chat/sessions/new', authenticateToken, ChatController.createNewSession);
+app.post('/chat/gad7-submit', authenticateToken, ChatController.submitGad7);
 
 app.get('/protected', authenticateToken, (req: AuthRequest, res) => {
     res.json({ message: 'This is a protected route', user: req.user });

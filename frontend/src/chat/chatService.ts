@@ -2,6 +2,7 @@ import { api } from '../auth/useAuth';
 
 export interface ChatMessage {
     id: string;
+    sessionId: string;
     sender: 'user' | 'ai';
     message: string;
     timestamp: string;
@@ -36,5 +37,10 @@ export const getSessionMessages = async (sessionId: string): Promise<ChatMessage
 
 export const createNewSession = async (): Promise<{ id: string }> => {
     const response = await api.post('/chat/sessions/new');
+    return response.data;
+};
+
+export const submitGad7 = async (sessionId: string, answers: number[]): Promise<ChatMessage> => {
+    const response = await api.post('/chat/gad7-submit', { sessionId, answers });
     return response.data;
 };

@@ -78,22 +78,49 @@ export const sendMessage = async (userId: string, message: string) => {
         });
     }
 
-    // 5. Create chat with history using new SDK
-    const chat = ai.chats.create({
-        model: 'gemini-2.5-flash',
-        history: chatHistory,
-    });
-
-    // 6. Generate AI Response
+    // 5 & 6. Send request to n8n webhook instead of direct Gemini API
     let aiResponseText = '';
     try {
-        console.log('Calling Gemini API with new SDK...');
-        const result = await chat.sendMessage({ message });
-        aiResponseText = result.text || 'Maaf, tidak ada respons.';
-        console.log('Gemini response received:', aiResponseText.substring(0, 100) + '...');
+        console.log('Calling n8n Webhook...');
+        const webhookUrl = 'https://n8n.alstore.space/webhook-test/pha-chat';
+        const response = await fetch(webhookUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                userId,
+                sessionId: session.id,
+                message,
+                history: chatHistory,
+                profileContext
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Webhook responded with status: ${response.status}`);
+        }
+
+        const rawText = await response.text();
+        try {
+            const data = JSON.parse(rawText);
+            
+            if (data.action === 'show_gad7') {
+                aiResponseText = JSON.stringify(data);
+            } else {
+                aiResponseText = data.text || data.output || data.response || data.message || rawText;
+                if (typeof aiResponseText !== 'string') {
+                    aiResponseText = JSON.stringify(aiResponseText);
+                }
+            }
+        } catch (e) {
+            aiResponseText = rawText || 'Maaf, tidak ada respons.';
+        }
+        
+        console.log('Webhook response received:', aiResponseText.substring(0, 100) + '...');
     } catch (error: any) {
-        console.error('Gemini API Error:', error.message || error);
-        aiResponseText = 'Maaf, saya sedang mengalami gangguan. Bisa ulangi lagi?';
+        console.error('Webhook Error:', error.message || error);
+        aiResponseText = 'Maaf, saya sedang mengalami gangguan komunikasi dengan server n8n. Bisa ulangi lagi?';
     }
 
     // 7. Save AI Message
@@ -165,4 +192,43 @@ export const createNewSession = async (userId: string) => {
     });
 
     return session;
+};
+
+export const submitGad7 = async (userId: string, sessionId: string, answers: number[]) => {
+    const webhookUrl = 'https://n8n.alstore.space/webhook-test/pha-gad7-submit';
+    
+    // Save user action "Terkirim" in DB for record if needed? 
+    // Wait, the message containing the form is already in DB. 
+    // The user sending answers is an action, but we can skip saving it as chat,
+    // and just save the n8n response.
+    
+    const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, answers }),
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to submit GAD-7 to webhook');
+    }
+
+    const data = await response.json();
+    
+    let aiResponseText = 'Terima kasih sudah menjawab.';
+    if (data.data && data.data.message) {
+        aiResponseText = data.data.message;
+    } else if (data.message) {
+        aiResponseText = data.message;
+    }
+
+    // Save AI response
+    const aiMsg = await prisma.chatMessage.create({
+        data: {
+            sessionId,
+            sender: 'ai',
+            message: aiResponseText,
+        },
+    });
+
+    return aiMsg;
 };
