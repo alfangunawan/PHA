@@ -1,36 +1,93 @@
 import 'react-native-gesture-handler';
 import React from 'react';
-import { View, Text, Button, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
+
 import { AuthProvider, useAuthContext } from './src/auth/AuthContext';
 import LoginScreen from './src/auth/LoginScreen';
 import RegisterScreen from './src/auth/RegisterScreen';
+import HomeScreen from './src/home/HomeScreen';
 import ProfileScreen from './src/profile/ProfileScreen';
 import ChatScreen from './src/chat/ChatScreen';
 import HistoryScreen from './src/chat/HistoryScreen';
 import ChatHistoryScreen from './src/chat/ChatHistoryScreen';
 
-const AuthStack = createStackNavigator();
-const AppStack = createStackNavigator();
+// Type definitions for navigation (optional but good practice)
+export type RootStackParamList = {
+  MainTabs: undefined;
+  Chat: { sessionId?: string };
+  ChatHistory: { sessionId: string };
+  Auth: undefined;
+};
 
-function HomeScreen({ navigation }: any) {
+export type AuthStackParamList = {
+  Login: undefined;
+  Register: undefined;
+};
+
+const Stack = createStackNavigator();
+const AuthStack = createStackNavigator();
+const Tab = createBottomTabNavigator();
+
+// Placeholder for Journal Screen
+function JournalScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Welcome to PHA!</Text>
-      <Button title="Chat with AI" onPress={() => navigation.navigate('Chat')} />
-      <View style={{ height: 20 }} />
-      <Button title="Go to Profile" onPress={() => navigation.navigate('Profile')} />
+    <View style={styles.center}>
+      <Ionicons name="journal-outline" size={50} color="#ccc" />
+      <View style={{ height: 10 }} />
+      <View><Text style={{ color: '#999' }}>Fitur Jurnal Segera Hadir</Text></View>
     </View>
   );
 }
 
-// History icon component
-function HistoryButton({ onPress }: { onPress: () => void }) {
+import { Text } from 'react-native'; // Import Text for Journal placeholder
+
+function MainTabs() {
   return (
-    <TouchableOpacity onPress={onPress} style={styles.historyButton}>
-      <Text style={styles.historyIcon}>📋</Text>
-    </TouchableOpacity>
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName: any;
+
+          if (route.name === 'Beranda') {
+            iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'Riwayat') {
+            iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
+          } else if (route.name === 'Jurnal') {
+            iconName = focused ? 'book' : 'book-outline';
+          } else if (route.name === 'Profil') {
+            iconName = focused ? 'person' : 'person-outline';
+          }
+
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: '#48B096',
+        tabBarInactiveTintColor: 'gray',
+        tabBarStyle: {
+          paddingBottom: 5,
+          height: 60,
+          borderTopWidth: 0,
+          elevation: 10,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          marginBottom: 5,
+        }
+      })}
+    >
+      <Tab.Screen name="Beranda" component={HomeScreen} />
+      <Tab.Screen name="Riwayat" component={HistoryScreen} options={{ title: 'Riwayat' }} />
+      <Tab.Screen name="Jurnal" component={JournalScreen} />
+      <Tab.Screen name="Profil" component={ProfileScreen} />
+    </Tab.Navigator>
   );
 }
 
@@ -39,8 +96,8 @@ function RootNavigator() {
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#48B096" />
       </View>
     );
   }
@@ -48,25 +105,28 @@ function RootNavigator() {
   return (
     <NavigationContainer>
       {isAuthenticated ? (
-        <AppStack.Navigator>
-          <AppStack.Screen name="Home" component={HomeScreen} />
-          <AppStack.Screen name="Profile" component={ProfileScreen} />
-          <AppStack.Screen
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="MainTabs" component={MainTabs} />
+          <Stack.Screen
             name="Chat"
             component={ChatScreen}
-            options={{ title: 'PHA Chatbot' }}
+            options={{
+              headerShown: true,
+              title: 'PHA Chatbot',
+              headerTintColor: '#48B096',
+              headerTitleStyle: { color: '#333' }
+            }}
           />
-          <AppStack.Screen
-            name="History"
-            component={HistoryScreen}
-            options={{ title: 'Riwayat Chat' }}
-          />
-          <AppStack.Screen
+          <Stack.Screen
             name="ChatHistory"
             component={ChatHistoryScreen}
-            options={{ title: 'Detail Riwayat' }}
+            options={{
+              headerShown: true,
+              title: 'Detail Riwayat',
+              headerTintColor: '#48B096'
+            }}
           />
-        </AppStack.Navigator>
+        </Stack.Navigator>
       ) : (
         <AuthStack.Navigator screenOptions={{ headerShown: false }}>
           <AuthStack.Screen name="Login" component={LoginScreen} />
@@ -86,8 +146,5 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
-  text: { fontSize: 20, marginBottom: 20, fontWeight: 'bold' },
-  historyButton: { marginRight: 15, padding: 5 },
-  historyIcon: { fontSize: 20 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
 });

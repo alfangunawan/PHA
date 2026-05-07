@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { AuthRequest } from './auth.middleware';
+import { AuthRequest } from '../../middleware/auth.middleware';
 import * as ProfileService from './profile.service';
 
 export const getProfile = async (req: AuthRequest, res: Response) => {

@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { AuthRequest } from './auth.middleware';
+import { AuthRequest } from '../../middleware/auth.middleware';
 import * as ChatService from './chat.service';
 
 export const sendMessage = async (req: AuthRequest, res: Response) => {
@@ -8,12 +8,43 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
         const { message } = req.body;
 
         if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-        if (!message) return res.status(400).json({ error: 'Message is required' });
+        // Message validation handled by middleware
 
         const newMessages = await ChatService.sendMessage(userId, message);
         res.json(newMessages);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
+    }
+};
+
+export const streamMessage = async (req: AuthRequest, res: Response) => {
+    try {
+        const userId = req.user?.userId;
+        const { message } = req.body;
+
+        if (!userId) {
+            res.status(401).json({ error: 'Unauthorized' });
+            return;
+        }
+
+        // Setup SSE Headers
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        await ChatService.streamMessage(userId, message, (chunk) => {
+            res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
+        });
+
+        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        res.end();
+    } catch (error: any) {
+        console.error('Stream Error:', error);
+        if (!res.headersSent) {
+            res.status(500).json({ error: error.message });
+        } else {
+            res.end();
+        }
     }
 };
 
