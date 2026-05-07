@@ -12,7 +12,7 @@ export const validate = (schema: ZodSchema) => (req: Request, res: Response, nex
     } catch (error) {
         if (error instanceof ZodError) {
             console.log('Validation Error Caught:', error);
-            console.log('Error keys:', Object.keys(error));
+            console.log('Error keys:', Object.keys(error as object));
             const errors = (error as any).errors || (error as any).issues || [];
 
             return res.status(400).json({
