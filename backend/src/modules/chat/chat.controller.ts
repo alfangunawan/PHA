@@ -2,21 +2,38 @@ import { Response } from 'express';
 import { AuthRequest } from '../../middleware/auth.middleware';
 import * as ChatService from './chat.service';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Chat
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * POST /chat/send
+ * Sends a message to n8n and returns the full response including:
+ * - action: "chat_response" | "chat_with_gad7"
+ * - data.message: AI reply text
+ * - data.cbt_phase: current CBT phase
+ * - data.is_crisis: crisis flag
+ * - data.gad7: form data when GAD-7 should be shown (null otherwise)
+ */
 export const sendMessage = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user?.userId;
         const { message } = req.body;
 
         if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-        // Message validation handled by middleware
 
-        const newMessages = await ChatService.sendMessage(userId, message);
-        res.json(newMessages);
+        const result = await ChatService.sendMessage(userId, message);
+        res.json(result);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
 };
 
+/**
+ * POST /chat/stream
+ * SSE stream endpoint — calls n8n and streams the response word-by-word.
+ * Sends the full n8n payload (action, cbt_phase, is_crisis, gad7) as the final event.
+ */
 export const streamMessage = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user?.userId;
@@ -32,11 +49,12 @@ export const streamMessage = async (req: AuthRequest, res: Response) => {
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
 
-        await ChatService.streamMessage(userId, message, (chunk) => {
+        const result = await ChatService.streamMessage(userId, message, (chunk) => {
             res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
         });
 
-        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        // Final event carries the full structured payload (action, gad7, etc.)
+        res.write(`data: ${JSON.stringify({ done: true, ...result })}\n\n`);
         res.end();
     } catch (error: any) {
         console.error('Stream Error:', error);
@@ -47,6 +65,10 @@ export const streamMessage = async (req: AuthRequest, res: Response) => {
         }
     }
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// History (from n8n's conversations table)
+// ─────────────────────────────────────────────────────────────────────────────
 
 export const getHistory = async (req: AuthRequest, res: Response) => {
     try {
@@ -97,16 +119,24 @@ export const createNewSession = async (req: AuthRequest, res: Response) => {
     }
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GAD-7
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * POST /chat/gad7/submit
+ * Forwards GAD-7 answers to n8n for scoring and persistence.
+ * Returns: { action, data: { score, severity, message } }
+ */
 export const submitGad7 = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user?.userId;
         const { sessionId, answers } = req.body;
 
         if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-        if (!sessionId || !answers) return res.status(400).json({ error: 'sessionId and answers are required' });
 
-        const aiMsg = await ChatService.submitGad7(userId, sessionId, answers);
-        res.json(aiMsg);
+        const result = await ChatService.submitGad7(userId, sessionId, answers);
+        res.json(result);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }

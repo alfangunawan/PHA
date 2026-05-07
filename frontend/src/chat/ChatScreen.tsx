@@ -17,10 +17,22 @@ export default function ChatScreen({ navigation, route }: Props) {
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
     const flatListRef = useRef<FlatList>(null);
+    const isScrollingRef = useRef(false);
 
     useEffect(() => {
         loadHistory();
     }, []);
+
+    // Auto-scroll to bottom whenever messages array changes (new message or streaming chunk)
+    useEffect(() => {
+        if (messages.length > 0) {
+            // Small timeout ensures the FlatList has finished laying out before scrolling
+            const timer = setTimeout(() => {
+                flatListRef.current?.scrollToEnd({ animated: true });
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [messages]);
 
     // Configure header options to be minimal as per design, mostly handled in-screen or via custom header
     useEffect(() => {
@@ -192,50 +204,50 @@ export default function ChatScreen({ navigation, route }: Props) {
     }
 
     return (
-        <View style={styles.container}>
-            <View style={styles.chatArea}>
-                <FlatList
-                    ref={flatListRef}
-                    data={messages}
-                    renderItem={renderItem}
-                    keyExtractor={item => item.id}
-                    contentContainerStyle={styles.listContent}
-                    ListHeaderComponent={messages.length === 0 ? GreetingHeader : null}
-                    onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-                    onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
-                />
-            </View>
+        <KeyboardAvoidingView
+            style={styles.container}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        >
+            <FlatList
+                ref={flatListRef}
+                data={messages}
+                renderItem={renderItem}
+                keyExtractor={item => item.id}
+                contentContainerStyle={styles.listContent}
+                ListHeaderComponent={messages.length === 0 ? GreetingHeader : null}
+                style={styles.chatArea}
+                // Keep a small bottom content inset so last message isn't hidden behind input
+                contentInset={{ bottom: 10 }}
+                onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+                onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
+            />
 
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-            >
-                <View style={styles.inputWrapper}>
-                    <TouchableOpacity style={styles.plusButton}>
-                        <Ionicons name="add" size={24} color="#999" />
+            <View style={styles.inputWrapper}>
+                <TouchableOpacity style={styles.plusButton}>
+                    <Ionicons name="add" size={24} color="#999" />
+                </TouchableOpacity>
+
+                <View style={styles.inputContainer}>
+                    <TextInput
+                        style={styles.input}
+                        value={inputText}
+                        onChangeText={setInputText}
+                        placeholder="Tulis apa yang ingin kamu ceritakan..."
+                        placeholderTextColor="#aaa"
+                        multiline
+                        maxLength={500}
+                    />
+                    <TouchableOpacity style={styles.sendButton} onPress={handleSend} disabled={sending}>
+                        {sending && messages[messages.length - 1]?.sender !== 'ai' ? (
+                            <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                            <Ionicons name="send" size={18} color="#fff" />
+                        )}
                     </TouchableOpacity>
-
-                    <View style={styles.inputContainer}>
-                        <TextInput
-                            style={styles.input}
-                            value={inputText}
-                            onChangeText={setInputText}
-                            placeholder="Tulis apa yang ingin kamu ceritakan..."
-                            placeholderTextColor="#aaa"
-                            multiline
-                            maxLength={500}
-                        />
-                        <TouchableOpacity style={styles.sendButton} onPress={handleSend} disabled={sending}>
-                            {sending && messages[messages.length - 1]?.sender !== 'ai' ? (
-                                <ActivityIndicator size="small" color="#fff" />
-                            ) : (
-                                <Ionicons name="send" size={18} color="#fff" />
-                            )}
-                        </TouchableOpacity>
-                    </View>
                 </View>
-            </KeyboardAvoidingView>
-        </View>
+            </View>
+        </KeyboardAvoidingView>
     );
 }
 
@@ -249,7 +261,7 @@ const styles = StyleSheet.create({
 
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     chatArea: { flex: 1 },
-    listContent: { padding: 20, paddingBottom: 20 },
+    listContent: { padding: 20, paddingBottom: 10, flexGrow: 1 },
 
     greetingContainer: { marginBottom: 30, marginTop: 10 },
     greetingText: { fontSize: 28, fontWeight: 'bold', color: '#2C3E50', lineHeight: 34 },

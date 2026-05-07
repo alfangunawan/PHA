@@ -1,324 +1,240 @@
-import { GoogleGenAI } from '@google/genai';
 import { prisma } from '../../config/prisma';
 import { getProfile } from '../profile/profile.service';
 
-// Initialize Gemini API with new SDK
-const API_KEY = process.env.GEMINI_API_KEY;
-console.log('Chat Service API Key check:', API_KEY ? 'Set' : 'Not Set');
+const N8N_BASE_URL = 'https://n8n.alstore.space';
 
-if (!API_KEY) {
-    console.warn('GEMINI_API_KEY is not set in environment variables');
+// ─────────────────────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface N8nChatResponse {
+    action: 'chat_response' | 'chat_with_gad7';
+    data: {
+        message: string;
+        cbt_phase: string | null;
+        is_crisis: boolean;
+        gad7: Gad7Form | null;
+        timestamp?: string;
+    };
 }
 
-const ai = new GoogleGenAI({ apiKey: API_KEY || '' });
+interface Gad7Form {
+    questions: { id: number; text: string }[];
+    options: { value: number; label: string }[];
+    submit_endpoint: string;
+}
 
-// System instruction for AI personality
-const SYSTEM_INSTRUCTION = `Kamu adalah Personal Health Assistant (PHA), asisten AI yang suportif dan empatik untuk kesehatan mental ringan.
+interface N8nGad7Response {
+    action: 'gad7_saved';
+    data: {
+        score: number;
+        severity: string;
+        message: string;
+    };
+}
 
-ATURAN PENTING:
-- Kamu BUKAN dokter dan TIDAK BOLEH memberikan diagnosis medis.
-- Selalu merespons dengan empati dan dukungan.
-- Gunakan Bahasa Indonesia yang natural dan ramah.
-- Jika pengguna dalam kondisi darurat, sarankan untuk menghubungi profesional.
-- Jangan mengklaim sebagai tenaga kesehatan profesional.
-- Berikan respons yang singkat dan mudah dipahami.`;
+// ─────────────────────────────────────────────────────────────────────────────
+// Chat (routed through n8n)
+// ─────────────────────────────────────────────────────────────────────────────
 
-export const sendMessage = async (userId: string, message: string) => {
-    // 1. Get or Create Session
-    let session = await prisma.chatSession.findFirst({
-        where: { userId },
-        orderBy: { startedAt: 'desc' },
-    });
+/**
+ * Sends a user message to n8n webhook.
+ * n8n handles: user upsert, history fetch, GAD-7 signal tracking,
+ * CBT phase routing, Gemini call, and conversation persistence.
+ * The backend does NOT duplicate messages into Prisma — n8n owns the conversations table.
+ */
+export const sendMessage = async (userId: string, message: string): Promise<N8nChatResponse> => {
+    const webhookUrl = `${N8N_BASE_URL}/webhook/pha-chat`;
 
-    if (!session) {
-        session = await prisma.chatSession.create({
-            data: { userId },
-        });
-    }
+    // Fetch display name so n8n uses the real name instead of the UUID
+    const profile = await getProfile(userId).catch(() => null);
+    const userName = profile?.displayName ?? userId;
 
-    // 2. Save User Message
-    const userMsg = await prisma.chatMessage.create({
-        data: {
-            sessionId: session.id,
-            sender: 'user',
-            message: message,
-        },
-    });
-
-    // 3. Get Profile for context
-    const profile = await getProfile(userId);
-    const profileContext = profile
-        ? `[Konteks Pengguna: Nama=${profile.displayName}, Usia=${profile.age || 'tidak diketahui'}]`
-        : '';
-
-    // 4. Get History in Gemini SDK format
-    const history = await prisma.chatMessage.findMany({
-        where: { sessionId: session.id },
-        orderBy: { timestamp: 'asc' },
-        take: 20,
-    });
-
-    // Format history for chat (exclude the just-saved user message)
-    const chatHistory = history
-        .filter(m => m.id !== userMsg.id)
-        .map((m: any) => ({
-            role: m.sender === 'user' ? 'user' : 'model',
-            parts: [{ text: m.message }],
-        }));
-
-    // Add system instruction as first message if no history
-    if (chatHistory.length === 0) {
-        chatHistory.push({
-            role: 'user',
-            parts: [{ text: `${SYSTEM_INSTRUCTION}\n\n${profileContext}` }],
-        });
-        chatHistory.push({
-            role: 'model',
-            parts: [{ text: 'Halo! Saya PHA, asisten kesehatan pribadimu. Ada yang bisa saya bantu hari ini?' }],
-        });
-    }
-
-    // 5 & 6. Send request to n8n webhook instead of direct Gemini API
-    let aiResponseText = '';
     try {
-        console.log('Calling n8n Webhook...');
-        const webhookUrl = 'https://n8n.alstore.space/webhook-test/pha-chat';
+        console.log(`[n8n] Sending message for user ${userId} (${userName})`);
         const response = await fetch(webhookUrl, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                userId,
-                sessionId: session.id,
-                message,
-                history: chatHistory,
-                profileContext
-            }),
+            headers: { 'Content-Type': 'application/json' },
+            // n8n Validasi Input node reads: body.user_id, body.message, body.name
+            body: JSON.stringify({ user_id: userId, message, name: userName }),
         });
 
         if (!response.ok) {
-            throw new Error(`Webhook responded with status: ${response.status}`);
+            const errText = await response.text();
+            throw new Error(`n8n responded with ${response.status}: ${errText}`);
         }
 
-        const rawText = await response.text();
-        try {
-            const data = JSON.parse(rawText);
-            
-            if (data.action === 'show_gad7') {
-                aiResponseText = JSON.stringify(data);
-            } else {
-                aiResponseText = data.text || data.output || data.response || data.message || rawText;
-                if (typeof aiResponseText !== 'string') {
-                    aiResponseText = JSON.stringify(aiResponseText);
-                }
-            }
-        } catch (e) {
-            aiResponseText = rawText || 'Maaf, tidak ada respons.';
-        }
-        
-        console.log('Webhook response received:', aiResponseText.substring(0, 100) + '...');
-    } catch (error: any) {
-        console.error('Webhook Error:', error.message || error);
-        aiResponseText = 'Maaf, saya sedang mengalami gangguan komunikasi dengan server n8n. Bisa ulangi lagi?';
-    }
+        const raw = await response.json();
+        console.log(`[n8n] Response action: ${raw?.action}`);
 
-    // 7. Save AI Message
-    const aiMsg = await prisma.chatMessage.create({
-        data: {
-            sessionId: session.id,
-            sender: 'ai',
-            message: aiResponseText,
-        },
-    });
-
-    return [userMsg, aiMsg];
-};
-
-export const getHistory = async (userId: string) => {
-    const session = await prisma.chatSession.findFirst({
-        where: { userId },
-        orderBy: { startedAt: 'desc' },
-    });
-
-    if (!session) return [];
-
-    return await prisma.chatMessage.findMany({
-        where: { sessionId: session.id },
-        orderBy: { timestamp: 'asc' },
-    });
-};
-
-// Get all chat sessions for a user
-export const getSessions = async (userId: string) => {
-    const sessions = await prisma.chatSession.findMany({
-        where: { userId },
-        orderBy: { startedAt: 'desc' },
-        include: {
-            messages: {
-                take: 1,
-                orderBy: { timestamp: 'asc' },
+        // n8n always returns: { status, action, data: { message, cbt_phase, is_crisis, gad7? } }
+        return {
+            action: raw?.action ?? 'chat_response',
+            data: {
+                message: raw?.data?.message ?? 'Maaf, tidak ada respons.',
+                cbt_phase: raw?.data?.cbt_phase ?? null,
+                is_crisis: raw?.data?.is_crisis ?? false,
+                gad7: raw?.data?.gad7 ?? null,
             },
-        },
-    });
-
-    return sessions.map(s => ({
-        id: s.id,
-        startedAt: s.startedAt,
-        preview: s.messages[0]?.message?.substring(0, 50) || 'Empty chat',
-        messageCount: s.messages.length,
-    }));
-};
-
-// Get messages for a specific session
-export const getSessionMessages = async (userId: string, sessionId: string) => {
-    // Verify session belongs to user
-    const session = await prisma.chatSession.findFirst({
-        where: { id: sessionId, userId },
-    });
-
-    if (!session) return [];
-
-    return await prisma.chatMessage.findMany({
-        where: { sessionId },
-        orderBy: { timestamp: 'asc' },
-    });
-};
-
-// Stream message from AI
-export const streamMessage = async (userId: string, message: string, onChunk: (text: string) => void) => {
-    // 1. Get or Create Session
-    let session = await prisma.chatSession.findFirst({
-        where: { userId },
-        orderBy: { startedAt: 'desc' },
-    });
-
-    if (!session) {
-        session = await prisma.chatSession.create({
-            data: { userId },
-        });
-    }
-
-    // 2. Save User Message
-    const userMsg = await prisma.chatMessage.create({
-        data: {
-            sessionId: session.id,
-            sender: 'user',
-            message: message,
-        },
-    });
-
-    // 3. Get Profile for context
-    const profile = await getProfile(userId);
-    const profileContext = profile
-        ? `[Konteks Pengguna: Nama=${profile.displayName}, Usia=${profile.age || 'tidak diketahui'}]`
-        : '';
-
-    // 4. Get History
-    const history = await prisma.chatMessage.findMany({
-        where: { sessionId: session.id },
-        orderBy: { timestamp: 'asc' },
-        take: 20,
-    });
-
-    const chatHistory = history
-        .filter(m => m.id !== userMsg.id)
-        .map((m: any) => ({
-            role: m.sender === 'user' ? 'user' : 'model',
-            parts: [{ text: m.message }],
-        }));
-
-    if (chatHistory.length === 0) {
-        chatHistory.push({
-            role: 'user',
-            parts: [{ text: `${SYSTEM_INSTRUCTION}\n\n${profileContext}` }],
-        });
-        chatHistory.push({
-            role: 'model',
-            parts: [{ text: 'Halo! Saya PHA, asisten kesehatan pribadimu. Ada yang bisa saya bantu hari ini?' }],
-        });
-    }
-
-    // 5. Create chat
-    const chat = ai.chats.create({
-        model: 'gemini-2.5-flash',
-        history: chatHistory,
-    });
-
-    // 6. Stream Response
-    let aiResponseText = '';
-    try {
-        const result = await chat.sendMessageStream({ message });
-
-        for await (const chunk of result) {
-            const chunkText = chunk.text;
-            if (chunkText) {
-                aiResponseText += chunkText;
-                onChunk(chunkText);
-            }
-        }
+        };
     } catch (error: any) {
-        console.error('Gemini Stream Error:', error.message || error);
-        aiResponseText += '\n[Terputus]';
-        onChunk('\n[Maaf, koneksi terputus]');
+        console.error('[n8n] Webhook Error:', error.message);
+        return {
+            action: 'chat_response',
+            data: {
+                message: 'Maaf, saya sedang mengalami gangguan komunikasi. Bisa ulangi lagi?',
+                cbt_phase: null,
+                is_crisis: false,
+                gad7: null,
+            },
+        };
+    }
+};
+
+/**
+ * Wraps sendMessage for SSE stream endpoints.
+ * Since n8n doesn't support streaming, we call the full webhook
+ * then emit the response word-by-word to simulate streaming.
+ */
+export const streamMessage = async (
+    userId: string,
+    message: string,
+    onChunk: (text: string) => void,
+): Promise<N8nChatResponse> => {
+    const result = await sendMessage(userId, message);
+    const fullText = result.data.message;
+
+    // Simulate streaming: emit word by word with small delay
+    const words = fullText.split(' ');
+    for (const word of words) {
+        onChunk(word + ' ');
+        await new Promise(r => setTimeout(r, 25));
     }
 
-    // 7. Save AI Message
-    const aiMsg = await prisma.chatMessage.create({
-        data: {
-            sessionId: session.id,
-            sender: 'ai',
-            message: aiResponseText,
-        },
-    });
-
-    return { userMsg, aiMsg };
+    return result;
 };
 
-// Create a new chat session
+// ─────────────────────────────────────────────────────────────────────────────
+// History — queries n8n's conversations table directly (raw SQL)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Returns the full conversation history for a user from n8n's conversations table.
+ */
+export const getHistory = async (userId: string) => {
+    try {
+        const rows = await prisma.$queryRaw<any[]>`
+            SELECT id, user_id, session_id, role, content, cbt_phase, created_at
+            FROM conversations
+            WHERE user_id = ${userId}
+            ORDER BY created_at ASC
+            LIMIT 100
+        `;
+        return rows;
+    } catch (e: any) {
+        console.error('[getHistory] Raw query failed:', e.message);
+        return [];
+    }
+};
+
+/**
+ * Returns distinct chat sessions for a user from the conversations table.
+ */
+export const getSessions = async (userId: string) => {
+    try {
+        const rows = await prisma.$queryRaw<any[]>`
+            SELECT
+                session_id,
+                MIN(created_at) AS started_at,
+                MAX(created_at) AS last_message_at,
+                COUNT(*) AS message_count,
+                (
+                    SELECT content FROM conversations c2
+                    WHERE c2.session_id = c1.session_id AND c2.user_id = ${userId}
+                    ORDER BY created_at ASC LIMIT 1
+                ) AS first_message
+            FROM conversations c1
+            WHERE user_id = ${userId}
+            GROUP BY session_id
+            ORDER BY last_message_at DESC
+        `;
+
+        return rows.map(r => ({
+            id: r.session_id,
+            startedAt: r.started_at,
+            lastMessageAt: r.last_message_at,
+            messageCount: Number(r.message_count),
+            preview: (r.first_message as string)?.substring(0, 80) || 'Empty chat',
+        }));
+    } catch (e: any) {
+        console.error('[getSessions] Raw query failed:', e.message);
+        return [];
+    }
+};
+
+/**
+ * Returns all messages for a specific session belonging to a user.
+ */
+export const getSessionMessages = async (userId: string, sessionId: string) => {
+    try {
+        const rows = await prisma.$queryRaw<any[]>`
+            SELECT id, user_id, session_id, role, content, cbt_phase, created_at
+            FROM conversations
+            WHERE user_id = ${userId} AND session_id = ${sessionId}
+            ORDER BY created_at ASC
+        `;
+        return rows;
+    } catch (e: any) {
+        console.error('[getSessionMessages] Raw query failed:', e.message);
+        return [];
+    }
+};
+
+/**
+ * Creates a new session token. Since n8n manages sessions implicitly
+ * (session_id = user_id by default, or provided by client), we just
+ * return a new UUID the frontend can use as session_id in future messages.
+ */
 export const createNewSession = async (userId: string) => {
-    const session = await prisma.chatSession.create({
-        data: { userId },
-    });
-
-    return session;
+    const sessionId = crypto.randomUUID();
+    return { id: sessionId, userId, startedAt: new Date().toISOString() };
 };
 
-export const submitGad7 = async (userId: string, sessionId: string, answers: number[]) => {
-    const webhookUrl = 'https://n8n.alstore.space/webhook-test/pha-gad7-submit';
-    
-    // Save user action "Terkirim" in DB for record if needed? 
-    // Wait, the message containing the form is already in DB. 
-    // The user sending answers is an action, but we can skip saving it as chat,
-    // and just save the n8n response.
-    
+// ─────────────────────────────────────────────────────────────────────────────
+// GAD-7 Submission
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Forwards GAD-7 answers to n8n for scoring and persistence.
+ * n8n saves the result to the gad7_results table.
+ */
+export const submitGad7 = async (
+    userId: string,
+    _sessionId: string,
+    answers: number[],
+): Promise<N8nGad7Response> => {
+    const webhookUrl = `${N8N_BASE_URL}/webhook/pha-gad7-submit`;
+
     const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // n8n Hitung Skor GAD-7 reads: body.user_id and body.answers
         body: JSON.stringify({ user_id: userId, answers }),
     });
 
     if (!response.ok) {
-        throw new Error('Failed to submit GAD-7 to webhook');
+        const errText = await response.text();
+        throw new Error(`n8n GAD-7 webhook failed (${response.status}): ${errText}`);
     }
 
     const data = await response.json();
-    
-    let aiResponseText = 'Terima kasih sudah menjawab.';
-    if (data.data && data.data.message) {
-        aiResponseText = data.data.message;
-    } else if (data.message) {
-        aiResponseText = data.message;
-    }
 
-    // Save AI response
-    const aiMsg = await prisma.chatMessage.create({
+    return {
+        action: data?.action ?? 'gad7_saved',
         data: {
-            sessionId,
-            sender: 'ai',
-            message: aiResponseText,
+            score: data?.data?.score ?? 0,
+            severity: data?.data?.severity ?? 'unknown',
+            message: data?.data?.message ?? 'Terima kasih sudah menjawab.',
         },
-    });
-
-    return aiMsg;
+    };
 };
