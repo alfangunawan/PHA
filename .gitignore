@@ -1,0 +1,25 @@
+# Large archive files
+*.zip
+*.tar
+*.tar.gz
+*.rar
+
+# Node modules
+node_modules/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
