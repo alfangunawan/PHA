@@ -29,6 +29,10 @@ export const streamMessage = async (
     onError: (err: any) => void
 ) => {
     const token = await getToken();
+    if (!token) {
+        onError('No auth token');
+        return () => {};
+    }
     const url = `${config.API_URL}/chat/stream`;
 
     const es = new EventSource(url, {
@@ -39,6 +43,8 @@ export const streamMessage = async (
         method: 'POST',
         body: JSON.stringify({ message }),
     });
+
+    let completed = false;
 
     const listener: EventSourceListener = (event) => {
         if (event.type === 'open') {
@@ -51,6 +57,7 @@ export const streamMessage = async (
                         onChunk(data.chunk);
                     }
                     if (data.done) {
+                        completed = true;
                         es.close();
                         onComplete();
                     }
@@ -59,6 +66,7 @@ export const streamMessage = async (
                 }
             }
         } else if (event.type === 'error' || event.type === 'exception') {
+            if (completed) return;
             console.error('Connection error:', event.message);
             es.close();
             onError(event.message);

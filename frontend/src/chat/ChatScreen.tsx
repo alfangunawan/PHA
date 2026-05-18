@@ -17,22 +17,34 @@ export default function ChatScreen({ navigation, route }: Props) {
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
     const flatListRef = useRef<FlatList>(null);
-    const isScrollingRef = useRef(false);
+    const isAtBottomRef = useRef(true);
 
     useEffect(() => {
         loadHistory();
     }, []);
 
-    // Auto-scroll to bottom whenever messages array changes (new message or streaming chunk)
+    const prevMessageCountRef = useRef(0);
     useEffect(() => {
-        if (messages.length > 0) {
-            // Small timeout ensures the FlatList has finished laying out before scrolling
-            const timer = setTimeout(() => {
-                flatListRef.current?.scrollToEnd({ animated: true });
-            }, 100);
-            return () => clearTimeout(timer);
+        const newCount = messages.length;
+        const isNewMessage = newCount > prevMessageCountRef.current;
+        prevMessageCountRef.current = newCount;
+
+        if (isNewMessage) {
+            isAtBottomRef.current = true;
         }
-    }, [messages]);
+    }, [messages.length]);
+
+    const handleScroll = (event: any) => {
+        const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+        const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
+        isAtBottomRef.current = distanceFromBottom < 80;
+    };
+
+    const handleContentSizeChange = () => {
+        if (isAtBottomRef.current) {
+            flatListRef.current?.scrollToEnd({ animated: false });
+        }
+    };
 
     // Configure header options to be minimal as per design, mostly handled in-screen or via custom header
     useEffect(() => {
@@ -217,10 +229,10 @@ export default function ChatScreen({ navigation, route }: Props) {
                 contentContainerStyle={styles.listContent}
                 ListHeaderComponent={messages.length === 0 ? GreetingHeader : null}
                 style={styles.chatArea}
-                // Keep a small bottom content inset so last message isn't hidden behind input
                 contentInset={{ bottom: 10 }}
-                onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-                onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
+                onScroll={handleScroll}
+                scrollEventThrottle={100}
+                onContentSizeChange={handleContentSizeChange}
             />
 
             <View style={styles.inputWrapper}>
@@ -255,12 +267,15 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F8F9FA',
+        ...(Platform.OS === 'web'
+            ? ({ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, overflow: 'hidden' } as any)
+            : {}),
     },
     headerButtons: { flexDirection: 'row', marginRight: 15 },
     headerButton: { padding: 8, marginLeft: 5 },
 
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    chatArea: { flex: 1 },
+    chatArea: { flex: 1, minHeight: 0 },
     listContent: { padding: 20, paddingBottom: 10, flexGrow: 1 },
 
     greetingContainer: { marginBottom: 30, marginTop: 10 },
