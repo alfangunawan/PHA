@@ -17,13 +17,14 @@ export interface ChatSession {
     messageCount: number;
 }
 
-export const sendMessage = async (message: string): Promise<ChatMessage[]> => {
-    const response = await api.post('/chat/send', { message });
+export const sendMessage = async (message: string, sessionId?: string): Promise<ChatMessage[]> => {
+    const response = await api.post('/chat/send', { message, sessionId });
     return response.data;
 };
 
 export const streamMessage = async (
     message: string,
+    sessionId: string | undefined,
     onChunk: (chunk: string) => void,
     onComplete: () => void,
     onError: (err: any) => void
@@ -41,7 +42,7 @@ export const streamMessage = async (
             'Content-Type': 'application/json',
         },
         method: 'POST',
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message, sessionId }),
     });
 
     let completed = false;

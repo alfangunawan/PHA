@@ -28,6 +28,18 @@
     },
     "plugins": [
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "81486714-0f58-40f9-b36c-505e34b184e7"
+      }
+    },
+    "owner": "alfan_gunawan",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/81486714-0f58-40f9-b36c-505e34b184e7"
+    }
   }
 }

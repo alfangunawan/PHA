@@ -16,6 +16,7 @@ export default function ChatScreen({ navigation, route }: Props) {
     const [inputText, setInputText] = useState('');
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
+    const [currentSessionId, setCurrentSessionId] = useState<string | undefined>(undefined);
     const flatListRef = useRef<FlatList>(null);
     const isAtBottomRef = useRef(true);
 
@@ -73,6 +74,14 @@ export default function ChatScreen({ navigation, route }: Props) {
         try {
             const history = await getHistory();
             setMessages(history);
+
+            // Ambil session_id dari pesan terakhir, atau buat session baru jika belum ada riwayat
+            if (history.length > 0 && history[history.length - 1].sessionId) {
+                setCurrentSessionId(history[history.length - 1].sessionId);
+            } else {
+                const newSession = await createNewSession();
+                setCurrentSessionId(newSession.id);
+            }
         } catch (error) {
             console.error(error);
         } finally {
@@ -98,7 +107,8 @@ export default function ChatScreen({ navigation, route }: Props) {
 
     const startNewChat = async () => {
         try {
-            await createNewSession();
+            const newSession = await createNewSession();
+            setCurrentSessionId(newSession.id);
             setMessages([]);
         } catch (error) {
             console.error(error);
@@ -130,6 +140,7 @@ export default function ChatScreen({ navigation, route }: Props) {
         try {
             await streamMessage(
                 userMsg.message,
+                currentSessionId,
                 (chunk) => {
                     setMessages(prev => prev.map(m =>
                         m.id === aiMsgId ? { ...m, message: m.message + chunk } : m
