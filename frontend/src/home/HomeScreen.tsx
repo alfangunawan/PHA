@@ -13,9 +13,9 @@ export default function HomeScreen() {
     const { colors, shadows } = useTheme();
 
     const quickCards = [
-        { title: 'Latihan Napas', subtitle: 'Teknik pernapasan', icon: '🌬️', color: colors.softBlue, screen: 'BreathingList' },
-        { title: 'Meditasi', subtitle: 'Tenangkan pikiran', icon: '🧘', color: colors.lavender, screen: 'MeditationList' },
-        { title: 'Edukasi', subtitle: 'Artikel & video', icon: '📚', color: colors.sageGreen, screen: 'EducationFeed' },
+        { title: 'Latihan Napas', subtitle: 'Teknik pernapasan', icon: '🌬️', color: colors.softBlue, screen: 'Napas' },
+        { title: 'Meditasi', subtitle: 'Tenangkan pikiran', icon: '🧘', color: colors.lavender, screen: 'Meditasi' },
+        { title: 'Edukasi', subtitle: 'Artikel & video', icon: '📚', color: colors.sageGreen, screen: 'Edukasi' },
     ];
 
     const moodOptions = [

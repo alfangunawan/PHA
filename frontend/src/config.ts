@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 
-const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
+const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://192.168.18.7:3000';
 
 export default {
     API_URL,
