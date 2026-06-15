@@ -4,7 +4,7 @@ import config from '../config';
 
 export interface ChatMessage {
     id: string;
-    sessionId: string;
+    sessionId?: string;
     sender: 'user' | 'ai';
     message: string;
     timestamp: string;

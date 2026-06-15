@@ -181,7 +181,7 @@ export default function ChatScreen({ navigation, route }: Props) {
                 <View style={[styles.bubble, styles.aiBubble, { padding: 0, backgroundColor: 'transparent', shadowOpacity: 0 }]}>
                     <Gad7Form 
                         data={parsedMessage.data} 
-                        sessionId={item.sessionId}
+                        sessionId={item.sessionId ?? ''}
                         onSubmitted={(aiMsg) => {
                             setMessages(prev => [...prev, aiMsg]);
                         }} 

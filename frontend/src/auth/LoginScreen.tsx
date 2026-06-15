@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
     },
     title: { fontSize: 32, fontWeight: 'bold', color: '#2C3E50', marginBottom: 5 },
     subtitle: { fontSize: 14, color: '#7F8C8D', textAlign: 'center' },
-    form: { w: '100%' },
+    form: { width: '100%' },
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',

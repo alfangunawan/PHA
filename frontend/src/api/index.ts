@@ -1,0 +1,34 @@
+import client from './client';
+
+export const breathingAPI = {
+    getTechniques: () => client.get('/api/breathing/techniques').then(r => r.data),
+    getTechniqueById: (id: string) => client.get(`/api/breathing/techniques/${id}`).then(r => r.data),
+    saveLog: (data: { techniqueId: string; duration: number; cyclesCompleted?: number }) =>
+        client.post('/api/breathing/logs', data).then(r => r.data),
+    getLogs: () => client.get('/api/breathing/logs').then(r => r.data),
+};
+
+export const meditationAPI = {
+    getSessions: (category?: string) =>
+        client.get('/api/meditation/sessions', { params: category ? { category } : undefined }).then(r => r.data),
+    getSessionById: (id: string) => client.get(`/api/meditation/sessions/${id}`).then(r => r.data),
+    saveLog: (data: { sessionId: string; duration: number; completed?: boolean }) =>
+        client.post('/api/meditation/logs', data).then(r => r.data),
+    getLogs: () => client.get('/api/meditation/logs').then(r => r.data),
+};
+
+export const educationAPI = {
+    getContents: (params?: { page?: number; limit?: number; category?: string; source?: string }) =>
+        client.get('/api/education-contents', { params }).then(r => r.data),
+    getContentById: (id: string) => client.get(`/api/education-contents/${id}`).then(r => r.data),
+    createContent: (data: object) => client.post('/api/education-contents', data).then(r => r.data),
+    updateContent: (id: string, data: object) => client.put(`/api/education-contents/${id}`, data).then(r => r.data),
+    deleteContent: (id: string) => client.delete(`/api/education-contents/${id}`).then(r => r.data),
+};
+
+export const audioAPI = {
+    getAudios: () => client.get('/api/audio-contents').then(r => r.data),
+    uploadAudio: (formData: FormData) =>
+        client.post('/api/audio-contents', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data),
+    deleteAudio: (id: string) => client.delete(`/api/audio-contents/${id}`).then(r => r.data),
+};

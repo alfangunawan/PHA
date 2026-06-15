@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken';
 const SALT_ROUNDS = 10;
 const JWT_SECRET = process.env.JWT_SECRET || 'changeme_in_production';
 
-export const registerUser = async (email: string, password: string): Promise<User> => {
+export const registerUser = async (email: string, password: string, name?: string): Promise<User> => {
     const existingUser = await prisma.user.findUnique({
         where: { email },
     });
@@ -23,7 +23,7 @@ export const registerUser = async (email: string, password: string): Promise<Use
             passwordHash,
             profile: {
                 create: {
-                    displayName: email.split('@')[0],
+                    displayName: name || email.split('@')[0],
                 },
             },
         },
@@ -47,7 +47,7 @@ export const loginUser = async (email: string, password: string): Promise<{ toke
         throw new Error('Invalid credentials');
     }
 
-    const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {
+    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, {
         expiresIn: '7d',
     });
 

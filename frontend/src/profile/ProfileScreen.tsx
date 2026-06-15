@@ -1,60 +1,58 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView, Switch, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView, Switch, SafeAreaView } from 'react-native';
 import { getProfile, updateProfile, UserProfile } from './profileService';
 import { useAuthContext } from '../auth/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { breathingAPI, meditationAPI } from '../api';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Typography, Spacing, BorderRadius } from '../theme';
 
-export default function ProfileScreen() {
-    const { logout } = useAuthContext();
+export default function ProfileScreen({ navigation }: any) {
+    const { logout, user, isAdmin } = useAuthContext();
+    const { colors, isDark, toggleTheme } = useTheme();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-
-    // Form state
     const [displayName, setDisplayName] = useState('');
     const [age, setAge] = useState('');
     const [gender, setGender] = useState('');
-    const [language, setLanguage] = useState('Bahasa Indonesia (ID)');
     const [bio, setBio] = useState('');
-
-    // Preferences (Mock state for UI demo)
-    const [conciseAnswers, setConciseAnswers] = useState(true);
-    const [reflectiveAnswers, setReflectiveAnswers] = useState(false);
+    const [breathLogs, setBreathLogs] = useState<any[]>([]);
+    const [meditationLogs, setMeditationLogs] = useState<any[]>([]);
 
     useEffect(() => {
-        fetchProfile();
+        fetchAll();
     }, []);
 
-    const fetchProfile = async () => {
+    const fetchAll = async () => {
         try {
             const data = await getProfile();
             setProfile(data);
             setDisplayName(data.displayName);
             setAge(data.age?.toString() || '');
             setGender(data.gender || '');
-            setLanguage(data.language === 'id' ? 'Bahasa Indonesia (ID)' : data.language);
             setBio(data.bio || '');
-        } catch (error) {
-            Alert.alert('Error', 'Failed to load profile');
+        } catch {
+            Alert.alert('Error', 'Gagal memuat profil');
         } finally {
             setLoading(false);
+        }
+        try {
+            const [bRes, mRes] = await Promise.all([breathingAPI.getLogs(), meditationAPI.getLogs()]);
+            setBreathLogs(bRes.logs || []);
+            setMeditationLogs(mRes.logs || []);
+        } catch {
+            // non-critical
         }
     };
 
     const handleSave = async () => {
         try {
             setSaving(true);
-            const updatedProfile = await updateProfile({
-                displayName,
-                age: age ? parseInt(age) : undefined,
-                gender,
-                language: language.includes('Indonesia') ? 'id' : language, // Simple mapping
-                bio
-            });
-            setProfile(updatedProfile);
-            Alert.alert('Success', 'Perubahan berhasil disimpan');
-        } catch (error) {
+            const updated = await updateProfile({ displayName, age: age ? parseInt(age) : undefined, gender, bio });
+            setProfile(updated);
+            Alert.alert('Sukses', 'Perubahan berhasil disimpan');
+        } catch {
             Alert.alert('Error', 'Gagal menyimpan profil');
         } finally {
             setSaving(false);
@@ -62,192 +60,174 @@ export default function ProfileScreen() {
     };
 
     if (loading) {
-        return <View style={styles.center}><ActivityIndicator size="large" color="#48B096" /></View>;
+        return <View style={[styles.center, { backgroundColor: colors.bgPrimary }]}><ActivityIndicator size="large" color={colors.softBlue} /></View>;
     }
 
     return (
-        <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-            {/* Header */}
-            <View style={styles.header}>
-                <View style={styles.headerContent}>
-                    <View style={styles.avatarContainer}>
-                        {/* Placeholder Avatar */}
-                        <Image
-                            source={{ uri: 'https://avataaars.io/?avatarStyle=Circle&topType=LongHairStraight&accessoriesType=Blank&hairColor=BrownDark&facialHairType=Blank&clotheType=BlazerShirt&eyeType=Default&eyebrowType=Default&mouthType=Default&skinColor=Light' }}
-                            style={styles.avatar}
-                        />
-                        <View style={styles.onlineIndicator} />
+        <SafeAreaView style={[styles.safe, { backgroundColor: colors.bgPrimary }]}>
+            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <View style={[styles.avatarCircle, { backgroundColor: colors.softBlueLight }]}>
+                        <Ionicons name="person" size={32} color={colors.softBlue} />
                     </View>
-                    <View style={styles.headerText}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Text style={styles.greetingTitle}>Halo, {displayName.split(' ')[0] || 'Teman'} 👋</Text>
+                    <Text style={[styles.name, { color: colors.charcoal, fontFamily: Typography.headingBold }]}>
+                        {displayName || user?.name || 'Teman'}
+                    </Text>
+                    <Text style={[styles.email, { color: colors.mediumGray, fontFamily: Typography.body }]}>
+                        {user?.email}
+                    </Text>
+                    {user?.role && (
+                        <View style={[styles.roleBadge, { backgroundColor: isAdmin ? colors.peachLight : colors.softBlueLight }]}>
+                            <Text style={[styles.roleText, { color: isAdmin ? colors.peachDark : colors.softBlueDark, fontFamily: Typography.bodySemiBold }]}>
+                                {user.role}
+                            </Text>
                         </View>
-                        <Text style={styles.greetingSubtitle}>Atur preferensi ruangmu</Text>
+                    )}
+                </View>
+
+                {/* Activity Stats */}
+                <View style={[styles.section, { backgroundColor: colors.bgCard }]}>
+                    <Text style={[styles.sectionTitle, { color: colors.charcoal, fontFamily: Typography.heading }]}>Aktivitas Saya</Text>
+                    <View style={styles.statsRow}>
+                        <View style={styles.statItem}>
+                            <Text style={[styles.statNum, { color: colors.softBlue, fontFamily: Typography.headingBold }]}>{breathLogs.length}</Text>
+                            <Text style={[styles.statLabel, { color: colors.mediumGray, fontFamily: Typography.body }]}>Sesi Napas</Text>
+                        </View>
+                        <View style={[styles.statDivider, { backgroundColor: colors.divider }]} />
+                        <View style={styles.statItem}>
+                            <Text style={[styles.statNum, { color: colors.lavender, fontFamily: Typography.headingBold }]}>{meditationLogs.length}</Text>
+                            <Text style={[styles.statLabel, { color: colors.mediumGray, fontFamily: Typography.body }]}>Sesi Meditasi</Text>
+                        </View>
                     </View>
-                    <TouchableOpacity style={styles.settingsIcon}>
-                        <Ionicons name="settings-sharp" size={24} color="#7F8C8D" />
+                    {breathLogs.slice(0, 3).map((log: any) => (
+                        <View key={log.id} style={[styles.logItem, { borderBottomColor: colors.divider }]}>
+                            <Text style={[styles.logText, { color: colors.charcoal, fontFamily: Typography.body }]}>
+                                🌬️ {log.technique?.name || 'Latihan napas'}
+                            </Text>
+                            <Text style={[styles.logMeta, { color: colors.mediumGray, fontFamily: Typography.body }]}>
+                                {log.cyclesCompleted} siklus · {Math.round(log.duration / 60)} mnt
+                            </Text>
+                        </View>
+                    ))}
+                    {meditationLogs.slice(0, 3).map((log: any) => (
+                        <View key={log.id} style={[styles.logItem, { borderBottomColor: colors.divider }]}>
+                            <Text style={[styles.logText, { color: colors.charcoal, fontFamily: Typography.body }]}>
+                                🧘 {log.session?.title || 'Sesi meditasi'}
+                            </Text>
+                            <Text style={[styles.logMeta, { color: colors.mediumGray, fontFamily: Typography.body }]}>
+                                {Math.round(log.duration / 60)} mnt {log.completed ? '✅' : ''}
+                            </Text>
+                        </View>
+                    ))}
+                </View>
+
+                {/* Profile Edit */}
+                <View style={[styles.section, { backgroundColor: colors.bgCard }]}>
+                    <Text style={[styles.sectionTitle, { color: colors.charcoal, fontFamily: Typography.heading }]}>Informasi Profil</Text>
+                    {[
+                        { label: 'Nama Tampilan', value: displayName, setter: setDisplayName, placeholder: 'Nama' },
+                        { label: 'Usia', value: age, setter: setAge, placeholder: '24', keyboard: 'numeric' as const },
+                        { label: 'Gender', value: gender, setter: setGender, placeholder: 'L/P' },
+                        { label: 'Bio', value: bio, setter: setBio, placeholder: 'Ceritakan tentang dirimu...', multiline: true },
+                    ].map(({ label, value, setter, placeholder, keyboard, multiline }) => (
+                        <View key={label} style={styles.field}>
+                            <Text style={[styles.fieldLabel, { color: colors.darkGray, fontFamily: Typography.bodyMedium }]}>{label}</Text>
+                            <TextInput
+                                value={value}
+                                onChangeText={setter}
+                                placeholder={placeholder}
+                                placeholderTextColor={colors.mediumGray}
+                                keyboardType={keyboard}
+                                multiline={multiline}
+                                style={[styles.input, { color: colors.charcoal, backgroundColor: colors.inputBg, borderColor: colors.inputBorder, fontFamily: Typography.body, height: multiline ? 80 : undefined }]}
+                            />
+                        </View>
+                    ))}
+                    <TouchableOpacity
+                        style={[styles.saveBtn, { backgroundColor: colors.softBlue }]}
+                        onPress={handleSave}
+                        disabled={saving}
+                    >
+                        {saving
+                            ? <ActivityIndicator color="#fff" size="small" />
+                            : <Text style={[styles.saveBtnText, { fontFamily: Typography.headingMedium }]}>Simpan Perubahan</Text>
+                        }
                     </TouchableOpacity>
                 </View>
-            </View>
 
-            {/* Basic Info Section */}
-            <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                    <Ionicons name="person-outline" size={20} color="#48B096" style={{ marginRight: 8 }} />
-                    <Text style={styles.sectionTitle}>Informasi Dasar</Text>
-                </View>
-
-                <View style={styles.formGroup}>
-                    <Text style={styles.label}>Nama Tampilan</Text>
-                    <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} placeholder="Nama Tampilan" />
-                </View>
-
-                <View style={styles.row}>
-                    <View style={[styles.formGroup, { flex: 1, marginRight: 15 }]}>
-                        <Text style={styles.label}>Usia</Text>
-                        <TextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="numeric" placeholder="24" />
-                    </View>
-                    <View style={[styles.formGroup, { flex: 1 }]}>
-                        <Text style={styles.label}>Gender</Text>
-                        {/* Ideally a picker/dropdown, simplified here */}
-                        <View style={styles.dropdownInput}>
-                            <TextInput
-                                style={{ flex: 1, color: '#333' }}
-                                value={gender}
-                                onChangeText={setGender}
-                                placeholder="L/P"
-                            />
-                            <Ionicons name="chevron-down" size={16} color="#999" />
+                {/* Settings */}
+                <View style={[styles.section, { backgroundColor: colors.bgCard }]}>
+                    <Text style={[styles.sectionTitle, { color: colors.charcoal, fontFamily: Typography.heading }]}>Pengaturan</Text>
+                    <View style={styles.toggleRow}>
+                        <View>
+                            <Text style={[styles.toggleLabel, { color: colors.charcoal, fontFamily: Typography.bodyMedium }]}>Mode Gelap</Text>
+                            <Text style={[styles.toggleSub, { color: colors.mediumGray, fontFamily: Typography.body }]}>Ganti tema tampilan</Text>
                         </View>
-                    </View>
-                </View>
-            </View>
-
-            {/* Preferences Section */}
-            <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                    <Ionicons name="options-outline" size={20} color="#48B096" style={{ marginRight: 8 }} />
-                    <Text style={styles.sectionTitle}>Preferensi</Text>
-                </View>
-
-                <View style={styles.formGroup}>
-                    <Text style={styles.label}>Bahasa</Text>
-                    <View style={styles.dropdownInput}>
-                        <TextInput
-                            style={{ flex: 1, color: '#333' }}
-                            value={language}
-                            onChangeText={setLanguage}
-                            editable={false} // Read-only look for now
+                        <Switch
+                            value={isDark}
+                            onValueChange={toggleTheme}
+                            trackColor={{ false: colors.lightGray, true: colors.softBlue }}
+                            thumbColor="#fff"
                         />
-                        <Ionicons name="chevron-down" size={16} color="#999" />
                     </View>
                 </View>
 
-                <View style={styles.toggleRow}>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.toggleLabel}>Jawaban lebih ringkas</Text>
-                        <Text style={styles.toggleSubLabel}>Respon chat yang to-the-point</Text>
-                    </View>
-                    <Switch
-                        trackColor={{ false: "#E0E0E0", true: "#48B096" }}
-                        thumbColor={"#fff"}
-                        ios_backgroundColor="#E0E0E0"
-                        onValueChange={setConciseAnswers}
-                        value={conciseAnswers}
-                    />
-                </View>
+                {/* Admin Nav */}
+                {isAdmin && (
+                    <TouchableOpacity
+                        style={[styles.section, styles.adminBtn, { backgroundColor: colors.peachLight }]}
+                        onPress={() => navigation.navigate('AdminDashboard')}
+                    >
+                        <Ionicons name="shield-checkmark" size={20} color={colors.peachDark} />
+                        <Text style={[styles.adminText, { color: colors.peachDark, fontFamily: Typography.headingMedium }]}>
+                            Admin Dashboard
+                        </Text>
+                        <Ionicons name="chevron-forward" size={20} color={colors.peachDark} />
+                    </TouchableOpacity>
+                )}
 
-                <View style={styles.toggleRowBorder}>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.toggleLabel}>Jawaban lebih reflektif</Text>
-                        <Text style={styles.toggleSubLabel}>Mendorong pemikiran mendalam</Text>
-                    </View>
-                    <Switch
-                        trackColor={{ false: "#E0E0E0", true: "#48B096" }}
-                        thumbColor={"#fff"}
-                        ios_backgroundColor="#E0E0E0"
-                        onValueChange={setReflectiveAnswers}
-                        value={reflectiveAnswers}
-                    />
-                </View>
-            </View>
+                {/* Logout */}
+                <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
+                    <Text style={[styles.logoutText, { color: colors.error, fontFamily: Typography.bodySemiBold }]}>Keluar</Text>
+                </TouchableOpacity>
 
-            {/* About Section */}
-            <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                    <Ionicons name="heart-outline" size={20} color="#48B096" style={{ marginRight: 8 }} />
-                    <Text style={styles.sectionTitle}>Tentang Kamu</Text>
-                </View>
-                <View style={styles.formGroup}>
-                    <Text style={styles.label}>Bio</Text>
-                    <TextInput
-                        style={[styles.input, styles.textArea]}
-                        value={bio}
-                        onChangeText={setBio}
-                        multiline
-                        numberOfLines={4}
-                        placeholder="Ceritakan sedikit tentang dirimu..."
-                        placeholderTextColor="#aaa"
-                    />
-                </View>
-                <Text style={styles.infoText}>Informasi ini membantu kami mempersonalisasi saran.</Text>
-            </View>
-
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
-                <LinearGradient
-                    colors={['#5CC2A8', '#48B096']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.gradientButton}
-                >
-                    {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Simpan Perubahan</Text>}
-                </LinearGradient>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-                <Text style={styles.logoutText}>Keluar</Text>
-            </TouchableOpacity>
-
-            <View style={{ height: 30 }} />
-        </ScrollView>
+                <View style={{ height: 40 }} />
+            </ScrollView>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { padding: 20, backgroundColor: '#F8F9FA', flexGrow: 1 },
+    safe: { flex: 1 },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    header: { marginBottom: 25, marginTop: 10 },
-    headerContent: { flexDirection: 'row', alignItems: 'center' },
-    avatarContainer: { position: 'relative', marginRight: 15 },
-    avatar: { width: 60, height: 60, borderRadius: 30, borderWidth: 2, borderColor: '#fff' },
-    onlineIndicator: { position: 'absolute', bottom: 2, right: 2, width: 14, height: 14, borderRadius: 7, backgroundColor: '#48B096', borderWidth: 2, borderColor: '#fff' },
-    headerText: { flex: 1 },
-    greetingTitle: { fontSize: 20, fontWeight: 'bold', color: '#2C3E50' },
-    greetingSubtitle: { fontSize: 13, color: '#7F8C8D', marginTop: 2 },
-    settingsIcon: { padding: 5 },
-
-    section: { backgroundColor: '#fff', borderRadius: 20, padding: 20, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5, elevation: 1 },
-    sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
-    sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#333' },
-
-    formGroup: { marginBottom: 15 },
-    label: { marginBottom: 8, color: '#7F8C8D', fontSize: 12, fontWeight: '600' },
-    input: { backgroundColor: '#F8F9FA', padding: 12, borderRadius: 12, fontSize: 14, color: '#333' },
-    dropdownInput: { backgroundColor: '#F8F9FA', padding: 12, borderRadius: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    textArea: { height: 100, textAlignVertical: 'top' },
-    row: { flexDirection: 'row' },
-
-    toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 },
-    toggleRowBorder: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#F0F0F0', marginTop: 5 },
-    toggleLabel: { fontSize: 14, fontWeight: '600', color: '#333' },
-    toggleSubLabel: { fontSize: 11, color: '#999', marginTop: 2 },
-
-    infoText: { fontSize: 11, color: '#aaa', textAlign: 'center', marginTop: 5 },
-
-    saveButton: { marginTop: 10, borderRadius: 15, overflow: 'hidden', shadowColor: '#48B096', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
-    gradientButton: { paddingVertical: 15, alignItems: 'center', justifyContent: 'center' },
-    buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-
-    logoutButton: { marginTop: 20, padding: 10, alignItems: 'center' },
-    logoutText: { color: '#FF6B6B', fontSize: 14, fontWeight: '600' },
+    scroll: { padding: Spacing.md },
+    header: { alignItems: 'center', padding: Spacing.lg, marginBottom: Spacing.md },
+    avatarCircle: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.md },
+    name: { fontSize: Typography.sizes.xl },
+    email: { fontSize: Typography.sizes.sm, marginTop: 4 },
+    roleBadge: { marginTop: Spacing.sm, paddingHorizontal: Spacing.md, paddingVertical: 4, borderRadius: BorderRadius.full },
+    roleText: { fontSize: Typography.sizes.xs },
+    section: { borderRadius: BorderRadius.lg, padding: Spacing.md, marginBottom: Spacing.md },
+    sectionTitle: { fontSize: Typography.sizes.md, marginBottom: Spacing.md },
+    statsRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
+    statItem: { flex: 1, alignItems: 'center' },
+    statNum: { fontSize: Typography.sizes['2xl'] },
+    statLabel: { fontSize: Typography.sizes.xs, marginTop: 4 },
+    statDivider: { width: 1, height: 40 },
+    logItem: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: Spacing.xs, borderBottomWidth: 1 },
+    logText: { fontSize: Typography.sizes.sm },
+    logMeta: { fontSize: Typography.sizes.xs },
+    field: { marginBottom: Spacing.md },
+    fieldLabel: { fontSize: Typography.sizes.sm, marginBottom: 6 },
+    input: { borderWidth: 1, borderRadius: BorderRadius.md, padding: Spacing.md, fontSize: Typography.sizes.base },
+    saveBtn: { paddingVertical: Spacing.md, borderRadius: BorderRadius.full, alignItems: 'center', marginTop: Spacing.sm },
+    saveBtnText: { color: '#fff', fontSize: Typography.sizes.base },
+    toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    toggleLabel: { fontSize: Typography.sizes.base },
+    toggleSub: { fontSize: Typography.sizes.xs, marginTop: 2 },
+    adminBtn: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+    adminText: { flex: 1, fontSize: Typography.sizes.base },
+    logoutBtn: { alignItems: 'center', padding: Spacing.md },
+    logoutText: { fontSize: Typography.sizes.base },
 });

@@ -6,16 +6,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function RegisterScreen() {
+    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState(''); // Added confirm password field for UX
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const { register } = useAuthContext();
     const navigation = useNavigation<any>();
 
     const handleRegister = async () => {
-        if (!email || !password || !confirmPassword) {
+        if (!name || !email || !password || !confirmPassword) {
             Alert.alert('Error', 'Harap isi semua kolom');
             return;
         }
@@ -27,7 +28,7 @@ export default function RegisterScreen() {
 
         try {
             setLoading(true);
-            await register(email, password);
+            await register(email, password, name);
             Alert.alert('Sukses', 'Akun berhasil dibuat! Silakan login.');
             navigation.goBack();
         } catch (error: any) {
@@ -51,7 +52,17 @@ export default function RegisterScreen() {
             </View>
 
             <View style={styles.form}>
-                {/* Name field could be added here later */}
+                <View style={styles.inputContainer}>
+                    <Ionicons name="person" size={20} color="#999" style={styles.inputIcon} />
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Nama"
+                        placeholderTextColor="#aaa"
+                        value={name}
+                        onChangeText={setName}
+                        autoCapitalize="words"
+                    />
+                </View>
 
                 <View style={styles.inputContainer}>
                     <Ionicons name="mail" size={20} color="#999" style={styles.inputIcon} />
@@ -143,7 +154,7 @@ const styles = StyleSheet.create({
     },
     title: { fontSize: 28, fontWeight: 'bold', color: '#2C3E50', marginBottom: 5 },
     subtitle: { fontSize: 13, color: '#7F8C8D', textAlign: 'center' },
-    form: { w: '100%' },
+    form: { width: '100%' },
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',

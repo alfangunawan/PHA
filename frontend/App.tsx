@@ -1,150 +1,169 @@
 import 'react-native-gesture-handler';
-import React from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import * as SplashScreen from 'expo-splash-screen';
+import {
+    useFonts,
+    Poppins_400Regular,
+    Poppins_500Medium,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
+} from '@expo-google-fonts/poppins';
+import {
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+} from '@expo-google-fonts/inter';
 
 import { AuthProvider, useAuthContext } from './src/auth/AuthContext';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+
 import LoginScreen from './src/auth/LoginScreen';
 import RegisterScreen from './src/auth/RegisterScreen';
 import HomeScreen from './src/home/HomeScreen';
 import ProfileScreen from './src/profile/ProfileScreen';
 import ChatScreen from './src/chat/ChatScreen';
-import HistoryScreen from './src/chat/HistoryScreen';
 import ChatHistoryScreen from './src/chat/ChatHistoryScreen';
+import HistoryScreen from './src/chat/HistoryScreen';
 
-// Type definitions for navigation (optional but good practice)
-export type RootStackParamList = {
-  MainTabs: undefined;
-  Chat: { sessionId?: string };
-  ChatHistory: { sessionId: string };
-  Auth: undefined;
-};
+import BreathingListScreen from './src/screens/breathing/BreathingListScreen';
+import BreathingExerciseScreen from './src/screens/breathing/BreathingExerciseScreen';
+import MeditationListScreen from './src/screens/meditation/MeditationListScreen';
+import MeditationPlayerScreen from './src/screens/meditation/MeditationPlayerScreen';
+import EducationFeedScreen from './src/screens/education/EducationFeedScreen';
+import AdminDashboardScreen from './src/screens/admin/AdminDashboardScreen';
+import ContentFormScreen from './src/screens/admin/ContentFormScreen';
+import AudioFormScreen from './src/screens/admin/AudioFormScreen';
 
-export type AuthStackParamList = {
-  Login: undefined;
-  Register: undefined;
-};
+SplashScreen.preventAutoHideAsync();
 
 const Stack = createStackNavigator();
 const AuthStack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// Placeholder for Journal Screen
-function JournalScreen() {
-  return (
-    <View style={styles.center}>
-      <Ionicons name="journal-outline" size={50} color="#ccc" />
-      <View style={{ height: 10 }} />
-      <View><Text style={{ color: '#999' }}>Fitur Jurnal Segera Hadir</Text></View>
-    </View>
-  );
-}
-
-import { Text } from 'react-native'; // Import Text for Journal placeholder
-
 function MainTabs() {
-  return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName: any;
+    const { colors } = useTheme();
 
-          if (route.name === 'Beranda') {
-            iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Riwayat') {
-            iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
-          } else if (route.name === 'Jurnal') {
-            iconName = focused ? 'book' : 'book-outline';
-          } else if (route.name === 'Profil') {
-            iconName = focused ? 'person' : 'person-outline';
-          }
-
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: '#48B096',
-        tabBarInactiveTintColor: 'gray',
-        tabBarStyle: {
-          paddingBottom: 5,
-          height: 60,
-          borderTopWidth: 0,
-          elevation: 10,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          marginBottom: 5,
-        }
-      })}
-    >
-      <Tab.Screen name="Beranda" component={HomeScreen} />
-      <Tab.Screen name="Riwayat" component={HistoryScreen} options={{ title: 'Riwayat' }} />
-      <Tab.Screen name="Jurnal" component={JournalScreen} />
-      <Tab.Screen name="Profil" component={ProfileScreen} />
-    </Tab.Navigator>
-  );
+    return (
+        <Tab.Navigator
+            screenOptions={({ route }) => ({
+                headerShown: false,
+                tabBarIcon: ({ focused, color, size }) => {
+                    const icons: Record<string, [string, string]> = {
+                        Beranda: ['home', 'home-outline'],
+                        Napas: ['leaf', 'leaf-outline'],
+                        Meditasi: ['planet', 'planet-outline'],
+                        Edukasi: ['book', 'book-outline'],
+                        Profil: ['person', 'person-outline'],
+                    };
+                    const [active, inactive] = icons[route.name] || ['ellipse', 'ellipse-outline'];
+                    return <Ionicons name={(focused ? active : inactive) as any} size={size} color={color} />;
+                },
+                tabBarActiveTintColor: colors.softBlue,
+                tabBarInactiveTintColor: colors.mediumGray,
+                tabBarStyle: {
+                    backgroundColor: colors.tabBar,
+                    borderTopColor: colors.tabBarBorder,
+                    height: 60,
+                    paddingBottom: 8,
+                },
+                tabBarLabelStyle: { fontSize: 11, marginTop: -2 },
+            })}
+        >
+            <Tab.Screen name="Beranda" component={HomeScreen} />
+            <Tab.Screen name="Napas" component={BreathingListScreen} />
+            <Tab.Screen name="Meditasi" component={MeditationListScreen} />
+            <Tab.Screen name="Edukasi" component={EducationFeedScreen} />
+            <Tab.Screen name="Profil" component={ProfileScreen} />
+        </Tab.Navigator>
+    );
 }
 
 function RootNavigator() {
-  const { isAuthenticated, isLoading } = useAuthContext();
+    const { isAuthenticated, isLoading } = useAuthContext();
+    const { colors } = useTheme();
 
-  if (isLoading) {
+    if (isLoading) {
+        return (
+            <View style={[styles.center, { backgroundColor: colors.bgPrimary }]}>
+                <ActivityIndicator size="large" color={colors.softBlue} />
+            </View>
+        );
+    }
+
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#48B096" />
-      </View>
+        <NavigationContainer>
+            {isAuthenticated ? (
+                <Stack.Navigator screenOptions={{ headerShown: false }}>
+                    <Stack.Screen name="MainTabs" component={MainTabs} />
+                    <Stack.Screen
+                        name="Chat"
+                        component={ChatScreen}
+                        options={{ headerShown: true, title: 'PHA Chatbot', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }}
+                    />
+                    <Stack.Screen
+                        name="ChatHistory"
+                        component={ChatHistoryScreen}
+                        options={{ headerShown: true, title: 'Detail Riwayat', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }}
+                    />
+                    <Stack.Screen
+                        name="BreathingExercise"
+                        component={BreathingExerciseScreen}
+                        options={{ gestureEnabled: false }}
+                    />
+                    <Stack.Screen
+                        name="MeditationPlayer"
+                        component={MeditationPlayerScreen}
+                        options={{ gestureEnabled: false }}
+                    />
+                    <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ headerShown: true, title: 'Admin', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
+                    <Stack.Screen name="ContentForm" component={ContentFormScreen} options={{ headerShown: true, title: 'Konten', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
+                    <Stack.Screen name="AudioForm" component={AudioFormScreen} options={{ headerShown: true, title: 'Audio', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
+                </Stack.Navigator>
+            ) : (
+                <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+                    <AuthStack.Screen name="Login" component={LoginScreen} />
+                    <AuthStack.Screen name="Register" component={RegisterScreen} />
+                </AuthStack.Navigator>
+            )}
+        </NavigationContainer>
     );
-  }
+}
 
-  return (
-    <NavigationContainer>
-      {isAuthenticated ? (
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="MainTabs" component={MainTabs} />
-          <Stack.Screen
-            name="Chat"
-            component={ChatScreen}
-            options={{
-              headerShown: true,
-              title: 'PHA Chatbot',
-              headerTintColor: '#48B096',
-              headerTitleStyle: { color: '#333' }
-            }}
-          />
-          <Stack.Screen
-            name="ChatHistory"
-            component={ChatHistoryScreen}
-            options={{
-              headerShown: true,
-              title: 'Detail Riwayat',
-              headerTintColor: '#48B096'
-            }}
-          />
-        </Stack.Navigator>
-      ) : (
-        <AuthStack.Navigator screenOptions={{ headerShown: false }}>
-          <AuthStack.Screen name="Login" component={LoginScreen} />
-          <AuthStack.Screen name="Register" component={RegisterScreen} />
-        </AuthStack.Navigator>
-      )}
-    </NavigationContainer>
-  );
+function AppContent() {
+    const [fontsLoaded] = useFonts({
+        Poppins_400Regular,
+        Poppins_500Medium,
+        Poppins_600SemiBold,
+        Poppins_700Bold,
+        Inter_400Regular,
+        Inter_500Medium,
+        Inter_600SemiBold,
+    });
+
+    useEffect(() => {
+        if (fontsLoaded) SplashScreen.hideAsync();
+    }, [fontsLoaded]);
+
+    if (!fontsLoaded) return null;
+
+    return <RootNavigator />;
 }
 
 export default function App() {
-  return (
-    <AuthProvider>
-      <RootNavigator />
-    </AuthProvider>
-  );
+    return (
+        <ThemeProvider>
+            <AuthProvider>
+                <AppContent />
+            </AuthProvider>
+        </ThemeProvider>
+    );
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 });
