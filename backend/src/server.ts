@@ -16,6 +16,14 @@ import profileRoutes from './modules/profile/profile.routes';
 import chatRoutes from './modules/chat/chat.routes';
 import { authenticateToken, AuthRequest } from './middleware/auth.middleware';
 
+// Mindfulness module routes (CommonJS JS — require MySQL via src/config/db.js)
+/* eslint-disable @typescript-eslint/no-var-requires */
+const breathingRoutes = require('./routes/breathingRoutes');
+const meditationRoutes = require('./routes/meditationRoutes');
+const educationRoutes = require('./routes/educationRoutes');
+const audioRoutes = require('./routes/audioRoutes');
+/* eslint-enable @typescript-eslint/no-var-requires */
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -26,6 +34,12 @@ app.use(express.json());
 app.use('/auth', authRoutes);
 app.use('/profile', authenticateToken, profileRoutes);
 app.use('/chat', authenticateToken, chatRoutes);
+
+// Mindfulness module routes (requires MySQL — see backend/src/config/db.js)
+app.use('/api/breathing', breathingRoutes);
+app.use('/api/meditation', meditationRoutes);
+app.use('/api/education', educationRoutes);
+app.use('/api/audio', audioRoutes);
 
 app.get('/protected', authenticateToken, (req: AuthRequest, res) => {
     res.json({ message: 'This is a protected route', user: req.user });
