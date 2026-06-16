@@ -18,6 +18,11 @@ import {
     Inter_500Medium,
     Inter_600SemiBold,
 } from '@expo-google-fonts/inter';
+import {
+    Lora_400Regular,
+    Lora_500Medium,
+    Lora_600SemiBold,
+} from '@expo-google-fonts/lora';
 
 import { AuthProvider, useAuthContext } from './src/auth/AuthContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
@@ -143,6 +148,9 @@ function AppContent() {
         Inter_400Regular,
         Inter_500Medium,
         Inter_600SemiBold,
+        Lora_400Regular,
+        Lora_500Medium,
+        Lora_600SemiBold,
     });
 
     useEffect(() => {
