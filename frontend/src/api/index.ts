@@ -3,6 +3,9 @@ import client from './client';
 export const breathingAPI = {
     getTechniques: () => client.get('/api/breathing/techniques').then(r => r.data),
     getTechniqueById: (id: string) => client.get(`/api/breathing/techniques/${id}`).then(r => r.data),
+    createTechnique: (data: object) => client.post('/api/breathing/techniques', data).then(r => r.data),
+    updateTechnique: (id: string, data: object) => client.put(`/api/breathing/techniques/${id}`, data).then(r => r.data),
+    deleteTechnique: (id: string) => client.delete(`/api/breathing/techniques/${id}`).then(r => r.data),
     saveLog: (data: { techniqueId: string; duration: number; cyclesCompleted?: number }) =>
         client.post('/api/breathing/logs', data).then(r => r.data),
     getLogs: () => client.get('/api/breathing/logs').then(r => r.data),
@@ -12,6 +15,9 @@ export const meditationAPI = {
     getSessions: (category?: string) =>
         client.get('/api/meditation/sessions', { params: category ? { category } : undefined }).then(r => r.data),
     getSessionById: (id: string) => client.get(`/api/meditation/sessions/${id}`).then(r => r.data),
+    createSession: (data: object) => client.post('/api/meditation/sessions', data).then(r => r.data),
+    updateSession: (id: string, data: object) => client.put(`/api/meditation/sessions/${id}`, data).then(r => r.data),
+    deleteSession: (id: string) => client.delete(`/api/meditation/sessions/${id}`).then(r => r.data),
     saveLog: (data: { sessionId: string; duration: number; completed?: boolean }) =>
         client.post('/api/meditation/logs', data).then(r => r.data),
     getLogs: () => client.get('/api/meditation/logs').then(r => r.data),

@@ -32,6 +32,24 @@ export const createSession = async (req: AuthRequest, res: Response) => {
     }
 };
 
+export const updateSession2 = async (req: AuthRequest, res: Response) => {
+    try {
+        const session = await MeditationService.updateSession(req.params.id, req.body);
+        res.json({ session });
+    } catch (error: any) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
+export const deleteSession = async (req: AuthRequest, res: Response) => {
+    try {
+        await MeditationService.deleteSession(req.params.id);
+        res.json({ message: 'Session deleted' });
+    } catch (error: any) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
 export const saveLog = async (req: AuthRequest, res: Response) => {
     try {
         const log = await MeditationService.saveLog(req.user!.userId, req.body);

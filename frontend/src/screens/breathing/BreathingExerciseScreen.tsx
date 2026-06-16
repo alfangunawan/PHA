@@ -286,7 +286,7 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
     const themeColor = technique.colorTheme || PHASE_COLORS[0];
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
+        <View style={[styles.container, { backgroundColor: '#fcfcfe' }]}>
             <SafeAreaView style={styles.safe}>
                 {/* Header */}
                 <View style={styles.header}>
@@ -294,13 +294,15 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
                         style={styles.headerBtn}
                         onPress={status === 'running' || status === 'paused' ? confirmStop : () => navigation.goBack()}
                     >
-                        <Text style={[styles.closeBtn, { color: colors.darkGray }]}>✕</Text>
+                        <Text style={[styles.closeBtn, { color: '#717a96' }]}>✕</Text>
                     </TouchableOpacity>
-                    <Text style={[styles.techniqueTitle, { color: colors.charcoal }]} numberOfLines={1}>
-                        {technique.name}
-                    </Text>
-                    <Text style={[styles.cycleText, { color: colors.mediumGray }]}>
-                        {cyclesDone}/{technique.cycles} siklus
+                    <View style={styles.headerCenter}>
+                        <Text style={[styles.techniqueTitle, { color: '#353b4a' }]} numberOfLines={1}>
+                            {technique.name}
+                        </Text>
+                    </View>
+                    <Text style={[styles.cycleText, { color: '#8a9ccc' }]}>
+                        {cyclesDone}/{technique.cycles} 🔄
                     </Text>
                 </View>
 
@@ -342,22 +344,22 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
                 </View>
 
                 {/* Stats */}
-                <View style={[styles.statsRow, { borderTopColor: colors.divider }]}>
+                <View style={[styles.statsRow, { borderTopColor: '#ecedf6', backgroundColor: '#ffffff' }]}>
                     <View style={styles.stat}>
-                        <Text style={[styles.statValue, { color: colors.charcoal }]}>
+                        <Text style={[styles.statValue, { color: '#353b4a' }]}>
                             {pad(Math.floor(elapsedSeconds / 60))}:{pad(elapsedSeconds % 60)}
                         </Text>
-                        <Text style={[styles.statLabel, { color: colors.mediumGray }]}>Durasi</Text>
+                        <Text style={[styles.statLabel, { color: '#949bae' }]}>⏱ Durasi</Text>
                     </View>
                     <View style={styles.stat}>
-                        <Text style={[styles.statValue, { color: colors.charcoal }]}>{cyclesDone}</Text>
-                        <Text style={[styles.statLabel, { color: colors.mediumGray }]}>Siklus</Text>
+                        <Text style={[styles.statValue, { color: '#8a9ccc' }]}>{cyclesDone}</Text>
+                        <Text style={[styles.statLabel, { color: '#949bae' }]}>🔄 Siklus</Text>
                     </View>
                     <View style={styles.stat}>
-                        <Text style={[styles.statValue, { color: colors.charcoal }]}>
+                        <Text style={[styles.statValue, { color: '#9387c8' }]}>
                             {technique.cycles - cyclesDone}
                         </Text>
-                        <Text style={[styles.statLabel, { color: colors.mediumGray }]}>Tersisa</Text>
+                        <Text style={[styles.statLabel, { color: '#949bae' }]}>🎯 Tersisa</Text>
                     </View>
                 </View>
 
@@ -368,22 +370,22 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
                             style={[styles.mainBtn, { backgroundColor: themeColor }]}
                             onPress={startSession}
                         >
-                            <Text style={styles.mainBtnText}>Mulai Sekarang</Text>
+                            <Text style={styles.mainBtnText}>🌬️ Mulai Sekarang</Text>
                         </TouchableOpacity>
                     )}
 
                     {(status === 'running' || status === 'paused') && (
                         <View style={styles.btnRow}>
                             <TouchableOpacity
-                                style={[styles.stopBtn, { backgroundColor: colors.lightGray }]}
+                                style={[styles.stopBtn, { backgroundColor: '#ecedf6' }]}
                                 onPress={confirmStop}
                             >
-                                <Text style={[styles.stopBtnText, { color: colors.darkGray }]}>⬛ Hentikan</Text>
+                                <Text style={[styles.stopBtnText, { color: '#717a96' }]}>✕ Hentikan</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[
                                     styles.mainBtn,
-                                    { backgroundColor: status === 'paused' ? themeColor : colors.peachDark, flex: 1 },
+                                    { backgroundColor: status === 'paused' ? themeColor : '#c09475', flex: 1 },
                                 ]}
                                 onPress={pauseSession}
                             >
@@ -397,10 +399,10 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
                     {status === 'done' && (
                         <View style={styles.btnRow}>
                             <TouchableOpacity
-                                style={[styles.stopBtn, { backgroundColor: colors.lightGray }]}
+                                style={[styles.stopBtn, { backgroundColor: '#ecedf6' }]}
                                 onPress={() => navigation.goBack()}
                             >
-                                <Text style={[styles.stopBtnText, { color: colors.darkGray }]}>← Kembali</Text>
+                                <Text style={[styles.stopBtnText, { color: '#717a96' }]}>← Kembali</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[styles.mainBtn, { backgroundColor: themeColor, flex: 1 }]}
@@ -428,16 +430,17 @@ const styles = StyleSheet.create({
         paddingBottom: Spacing.sm,
     },
     headerBtn: { padding: 4, minWidth: 32 },
+    headerCenter: { flex: 1, alignItems: 'center' },
     closeBtn: { fontSize: 20 },
     techniqueTitle: {
-        fontFamily: Typography.heading,
-        fontSize: Typography.sizes.base,
+        fontFamily: 'Lora_600SemiBold',
+        fontSize: 16,
         flex: 1,
         textAlign: 'center',
         marginHorizontal: Spacing.sm,
     },
     cycleText: {
-        fontFamily: Typography.bodyMedium,
+        fontFamily: 'Inter_500Medium',
         fontSize: Typography.sizes.sm,
         minWidth: 64,
         textAlign: 'right',
@@ -506,6 +509,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.xl,
         paddingVertical: Spacing.md,
         borderTopWidth: 1,
+        marginHorizontal: Spacing.lg,
+        borderRadius: 16,
     },
     stat: { alignItems: 'center' },
     statValue: {

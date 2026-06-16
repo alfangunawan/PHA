@@ -31,6 +31,12 @@ interface Content {
     isActive: boolean;
 }
 
+const SOURCE_COLORS: Record<string, string> = {
+    youtube: '#FF0000',
+    tiktok: '#FFFFFF',
+    other: '#60A5FA',
+};
+
 function getYouTubeVideoId(url: string): string | null {
     const patterns = [
         /[?&]v=([^&#]+)/,
@@ -44,12 +50,6 @@ function getYouTubeVideoId(url: string): string | null {
     }
     return null;
 }
-
-const SOURCE_COLORS: Record<string, string> = {
-    youtube: '#FF0000',
-    tiktok: '#FFFFFF',
-    other: '#60A5FA',
-};
 
 function InAppPlayer({ item, isActive, height }: {
     item: Content;
@@ -76,13 +76,20 @@ function InAppPlayer({ item, isActive, height }: {
                         <ActivityIndicator size="large" color="#FF4444" />
                     </View>
                 )}
-                <YoutubeIframe
-                    videoId={videoId}
-                    height={height}
-                    width={WINDOW_WIDTH}
-                    play={isActive}
-                    onReady={() => setReady(true)}
-                />
+                <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, zIndex: 0 }}>
+                    <YoutubeIframe
+                        videoId={videoId}
+                        height={height}
+                        width={WINDOW_WIDTH}
+                        play={isActive}
+                        onReady={() => setReady(true)}
+                        initialPlayerParams={{
+                            controls: false,
+                            loop: true,
+                            rel: false,
+                        }}
+                    />
+                </View>
             </View>
         );
     }
@@ -103,7 +110,7 @@ function InAppPlayer({ item, isActive, height }: {
         <View style={[styles.playerFallback, { height }]}>
             <Text style={styles.fallbackLabel}>{item.title}</Text>
             <TouchableOpacity style={styles.openBtn} onPress={() => Linking.openURL(item.url).catch(() => {})}>
-                <Text style={styles.openBtnText}>Buka di Browser</Text>
+                <Text style={styles.openBtnText}>Buka Link</Text>
             </TouchableOpacity>
         </View>
     );
@@ -121,24 +128,9 @@ function FeedCard({ item, index, total, isActive }: {
         <View style={[styles.card, { height: CARD_HEIGHT }]}>
             <InAppPlayer item={item} isActive={isActive} height={CARD_HEIGHT} />
 
-            <View style={styles.topRight} pointerEvents="none">
-                <View style={[styles.sourceBadge, { backgroundColor: sourceColor + '30', borderColor: sourceColor + '80' }]}>
-                    <View style={[styles.sourceDot, { backgroundColor: sourceColor }]} />
-                    <Text style={[styles.sourceBadgeText, { color: sourceColor }]}>
-                        {item.source.toUpperCase()}
-                    </Text>
-                </View>
-                <Text style={styles.counter}>{index + 1}/{total}</Text>
-            </View>
-
-            <View style={styles.scrollHint} pointerEvents="none">
-                <Text style={styles.scrollHintText}>↑</Text>
-                <Text style={styles.scrollHintSmall}>Geser</Text>
-                <Text style={styles.scrollHintText}>↓</Text>
-            </View>
-
+            {/* Dark overlay specifically at bottom for text readability */}
             <LinearGradient
-                colors={['transparent', 'rgba(0,0,0,0.55)', 'rgba(0,0,0,0.95)']}
+                colors={['transparent', 'rgba(0,0,0,0.6)', 'rgba(0,0,0,0.95)']}
                 style={styles.gradient}
                 pointerEvents="none"
             >
@@ -154,6 +146,16 @@ function FeedCard({ item, index, total, isActive }: {
                     ) : null}
                 </View>
             </LinearGradient>
+
+            {/* Top row: source badge + counter */}
+            <View style={styles.topRow} pointerEvents="none">
+                <View style={[styles.sourceBadge, { backgroundColor: sourceColor + '25', borderColor: sourceColor + '60' }]}>
+                    <Text style={[styles.sourceBadgeText, { color: sourceColor }]}>
+                        {item.source.toUpperCase()}
+                    </Text>
+                </View>
+                <Text style={styles.counter}>{index + 1}/{total}</Text>
+            </View>
         </View>
     );
 }
@@ -169,7 +171,7 @@ export default function EducationFeedScreen() {
 
     const fetchContents = useCallback(async (pageNum: number, reset = false) => {
         try {
-            const res = await educationAPI.getContents({ page: pageNum, limit: 10 });
+            const res = await educationAPI.getContents({ page: pageNum, limit: 20 });
             const newItems = (res.contents || []).filter((c: Content) => c.isActive !== false);
             setContents(prev => reset ? newItems : [...prev, ...newItems]);
             setTotalPages(res.totalPages || 1);
@@ -199,60 +201,61 @@ export default function EducationFeedScreen() {
     if (loading) return <LoadingState />;
     if (error) return <ErrorState message={error} />;
 
-    if (contents.length === 0) {
-        return (
-            <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>Belum ada konten edukasi.</Text>
-                <Text style={styles.emptySubtext}>Admin belum menambahkan konten.</Text>
-            </View>
-        );
-    }
-
     return (
         <View style={styles.screen}>
             <StatusBar barStyle="light-content" backgroundColor="#000" translucent />
-            <FlatList
-                data={contents}
-                keyExtractor={item => item.id}
-                pagingEnabled
-                snapToInterval={CARD_HEIGHT}
-                snapToAlignment="start"
-                decelerationRate="fast"
-                showsVerticalScrollIndicator={false}
-                getItemLayout={(_, index) => ({ length: CARD_HEIGHT, offset: CARD_HEIGHT * index, index })}
-                onEndReached={loadMore}
-                onEndReachedThreshold={0.3}
-                onViewableItemsChanged={onViewableItemsChanged}
-                viewabilityConfig={viewabilityConfig.current}
-                renderItem={({ item, index }) => (
-                    <FeedCard
-                        item={item}
-                        index={index}
-                        total={contents.length}
-                        isActive={index === activeIndex}
-                    />
-                )}
-            />
+
+            {contents.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>Tidak ada konten edukasi.</Text>
+                </View>
+            ) : (
+                <FlatList
+                    data={contents}
+                    keyExtractor={item => item.id}
+                    pagingEnabled
+                    snapToInterval={CARD_HEIGHT}
+                    snapToAlignment="start"
+                    decelerationRate="fast"
+                    showsVerticalScrollIndicator={false}
+                    getItemLayout={(_, index) => ({ length: CARD_HEIGHT, offset: CARD_HEIGHT * index, index })}
+                    onEndReached={loadMore}
+                    onEndReachedThreshold={0.3}
+                    onViewableItemsChanged={onViewableItemsChanged}
+                    viewabilityConfig={viewabilityConfig.current}
+                    ListFooterComponent={loadingMore ? (
+                        <View style={styles.loadingMore}>
+                            <ActivityIndicator color="#fff" />
+                        </View>
+                    ) : null}
+                    renderItem={({ item, index }) => (
+                        <FeedCard
+                            item={item}
+                            index={index}
+                            total={contents.length}
+                            isActive={index === activeIndex}
+                        />
+                    )}
+                />
+            )}
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    screen: {
-        flex: 1,
-        backgroundColor: '#000',
-    },
-    card: {
-        width: WINDOW_WIDTH,
-        backgroundColor: '#000',
-        overflow: 'hidden',
-    },
-    topRight: {
+    screen: { flex: 1, backgroundColor: '#000' },
+
+    card: { width: WINDOW_WIDTH, backgroundColor: '#000', overflow: 'hidden' },
+
+    topRow: {
         position: 'absolute',
         top: 56,
+        left: Spacing.md,
         right: Spacing.md,
-        alignItems: 'flex-end',
-        gap: Spacing.xs,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        zIndex: 5,
     },
     sourceBadge: {
         flexDirection: 'row',
@@ -261,51 +264,13 @@ const styles = StyleSheet.create({
         paddingVertical: 4,
         borderRadius: BorderRadius.full,
         borderWidth: 1,
-        gap: 5,
+        gap: 4,
     },
-    sourceDot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-    },
-    sourceBadgeText: {
-        fontSize: Typography.sizes.xs,
-        fontFamily: Typography.bodySemiBold,
-    },
-    counter: {
-        color: 'rgba(255,255,255,0.6)',
-        fontSize: Typography.sizes.xs,
-        fontFamily: Typography.body,
-    },
-    scrollHint: {
-        position: 'absolute',
-        right: Spacing.md,
-        top: '45%',
-        alignItems: 'center',
-        gap: 2,
-    },
-    scrollHintText: {
-        color: 'rgba(255,255,255,0.4)',
-        fontSize: 16,
-    },
-    scrollHintSmall: {
-        color: 'rgba(255,255,255,0.3)',
-        fontSize: 9,
-        fontFamily: Typography.body,
-    },
-    gradient: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: 260,
-        justifyContent: 'flex-end',
-    },
-    meta: {
-        padding: Spacing.lg,
-        paddingBottom: 80,
-        gap: Spacing.xs,
-    },
+    sourceBadgeText: { fontSize: Typography.sizes.xs, fontFamily: Typography.bodySemiBold },
+    counter: { color: 'rgba(255,255,255,0.6)', fontSize: Typography.sizes.xs, fontFamily: Typography.body },
+
+    gradient: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 320, justifyContent: 'flex-end', zIndex: 3 },
+    meta: { padding: Spacing.lg, paddingBottom: 32, gap: Spacing.xs },
     categoryChip: {
         alignSelf: 'flex-start',
         backgroundColor: 'rgba(255,255,255,0.15)',
@@ -314,24 +279,21 @@ const styles = StyleSheet.create({
         borderRadius: BorderRadius.sm,
         marginBottom: 4,
     },
-    categoryText: {
-        color: 'rgba(255,255,255,0.85)',
-        fontSize: Typography.sizes.xs,
-        fontFamily: Typography.bodyMedium,
+    categoryText: { color: 'rgba(255,255,255,0.85)', fontSize: Typography.sizes.xs, fontFamily: Typography.bodyMedium },
+    videoTitle: { color: '#FFFFFF', fontSize: Typography.sizes.lg, fontFamily: Typography.heading, lineHeight: 26 },
+    videoDesc: { color: 'rgba(255,255,255,0.65)', fontSize: Typography.sizes.sm, fontFamily: Typography.body, lineHeight: 20 },
+
+    emptyContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: Spacing.sm,
+        backgroundColor: '#000',
     },
-    videoTitle: {
-        color: '#FFFFFF',
-        fontSize: Typography.sizes.lg,
-        fontFamily: Typography.heading,
-        lineHeight: 24,
-    },
-    videoDesc: {
-        color: 'rgba(255,255,255,0.65)',
-        fontSize: Typography.sizes.sm,
-        fontFamily: Typography.body,
-        lineHeight: 20,
-        marginTop: 4,
-    },
+    emptyText: { color: 'rgba(255,255,255,0.7)', fontSize: Typography.sizes.lg, fontFamily: Typography.heading },
+
+    loadingMore: { height: CARD_HEIGHT, alignItems: 'center', justifyContent: 'center' },
+
     playerFallback: {
         width: WINDOW_WIDTH,
         backgroundColor: '#111',
@@ -368,22 +330,5 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         zIndex: 1,
         backgroundColor: '#000',
-    },
-    emptyContainer: {
-        flex: 1,
-        backgroundColor: '#000',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: Spacing.sm,
-    },
-    emptyText: {
-        color: '#FFFFFF',
-        fontSize: Typography.sizes.lg,
-        fontFamily: Typography.heading,
-    },
-    emptySubtext: {
-        color: 'rgba(255,255,255,0.5)',
-        fontSize: Typography.sizes.sm,
-        fontFamily: Typography.body,
     },
 });

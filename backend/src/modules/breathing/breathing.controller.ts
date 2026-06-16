@@ -30,6 +30,24 @@ export const create = async (req: AuthRequest, res: Response) => {
     }
 };
 
+export const update = async (req: AuthRequest, res: Response) => {
+    try {
+        const technique = await BreathingService.updateTechnique(req.params.id, req.body);
+        res.json({ technique });
+    } catch (error: any) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
+export const remove = async (req: AuthRequest, res: Response) => {
+    try {
+        await BreathingService.deleteTechnique(req.params.id);
+        res.json({ message: 'Technique deleted' });
+    } catch (error: any) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
 export const saveLog = async (req: AuthRequest, res: Response) => {
     try {
         const log = await BreathingService.saveLog(req.user!.userId, req.body);
