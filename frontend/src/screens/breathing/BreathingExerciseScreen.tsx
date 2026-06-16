@@ -7,10 +7,12 @@ import Animated, {
     useSharedValue, useAnimatedStyle, withTiming, withRepeat, withSequence,
     cancelAnimation, Easing, interpolateColor,
 } from 'react-native-reanimated';
+import { Audio } from 'expo-av';
 import AnimatedView from '../../components/AnimatedView';
 import { breathingAPI } from '../../api';
 import { useTheme } from '../../context/ThemeContext';
 import { Typography, Spacing } from '../../theme';
+import config from '../../config';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const CIRCLE_SIZE = SCREEN_W * 0.62;
@@ -65,6 +67,8 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
     const sessionTimer = useRef<ReturnType<typeof setInterval> | null>(null);
     const elapsedRef = useRef(0);
     const cyclesRef = useRef(0);
+    const inhaleSound = useRef<Audio.Sound | null>(null);
+    const exhaleSound = useRef<Audio.Sound | null>(null);
 
     const progress = useSharedValue(0);
     const colorProgress = useSharedValue(0);
@@ -109,13 +113,41 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
             ),
             -1,
         );
+
+        // Preload breathing cue sounds served by the backend. playsInSilentModeIOS
+        // is required or the iOS ringer switch silences playback.
+        (async () => {
+            try {
+                await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
+                const { sound: inS } = await Audio.Sound.createAsync(
+                    { uri: `${config.API_URL}/uploads/breathing/breath_in.mp3` },
+                );
+                const { sound: exS } = await Audio.Sound.createAsync(
+                    { uri: `${config.API_URL}/uploads/breathing/breath_out.mp3` },
+                );
+                inhaleSound.current = inS;
+                exhaleSound.current = exS;
+            } catch (e) {
+                console.warn('Breathing audio load failed', e);
+            }
+        })();
+
         return () => {
             cancelAnimation(glowScale);
             cancelAnimation(progress);
             cancelAnimation(colorProgress);
             if (phaseTimer.current) clearInterval(phaseTimer.current);
             if (sessionTimer.current) clearInterval(sessionTimer.current);
+            inhaleSound.current?.unloadAsync();
+            exhaleSound.current?.unloadAsync();
         };
+    }, []);
+
+    const playCue = useCallback((phaseKey: string) => {
+        const sound =
+            phaseKey === 'inhale' ? inhaleSound.current :
+            phaseKey === 'exhale' ? exhaleSound.current : null;
+        if (sound) sound.replayAsync().catch(() => {});
     }, []);
 
     const animatePhase = useCallback((phaseKey: string, colorIdx: number, duration: number) => {
@@ -156,6 +188,7 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
         setPhaseCountdown(phase.duration);
         setPhaseColorIdx(phase.colorIdx);
         animatePhase(phase.key, phase.colorIdx, phase.duration);
+        playCue(phase.key);
 
         let remaining = phase.duration;
         phaseTimer.current = setInterval(() => {

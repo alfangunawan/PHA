@@ -18,6 +18,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Audio } from 'expo-av';
 import { meditationAPI } from '../../api';
+import config from '../../config';
 import { Typography, Spacing, BorderRadius } from '../../theme';
 
 interface CategoryTheme {
@@ -245,10 +246,15 @@ export default function MeditationPlayerScreen({ route, navigation }: any) {
 
     const loadAndPlayAudio = async () => {
         if (!session.audioUrl) return;
+        // audioUrl from backend is a relative path (/uploads/...); resolve it
+        // against the API base so it stays reachable from device (LAN/ngrok).
+        const uri = session.audioUrl.startsWith('http')
+            ? session.audioUrl
+            : `${config.API_URL}${session.audioUrl}`;
         try {
             await Audio.setAudioModeAsync({ playsInSilentModeIOS: true, staysActiveInBackground: true });
             const { sound } = await Audio.Sound.createAsync(
-                { uri: session.audioUrl },
+                { uri },
                 { shouldPlay: true, isLooping: true }
             );
             soundRef.current = sound;
