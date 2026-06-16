@@ -1,10 +1,40 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withTiming,
+    withRepeat,
+    withSequence,
+    cancelAnimation,
+    Easing,
+    interpolateColor,
+} from 'react-native-reanimated';
 import { useTheme } from '../../context/ThemeContext';
 import { breathingAPI } from '../../api';
 import { Typography, Spacing, BorderRadius } from '../../theme';
 
 type Phase = 'idle' | 'inhale' | 'hold' | 'exhale' | 'holdAfter' | 'done';
+
+const PHASE_COLOR_IDX: Record<string, number> = {
+    idle: 0, inhale: 0, hold: 1, exhale: 2, holdAfter: 3, done: 2,
+};
+
+const CIRCLE_COLORS = [
+    'rgba(168, 197, 218, 0.38)',
+    'rgba(201, 184, 232, 0.38)',
+    'rgba(178, 201, 173, 0.38)',
+    'rgba(245, 203, 167, 0.38)',
+];
+
+const INNER_COLORS = [
+    'rgba(168, 197, 218, 0.22)',
+    'rgba(201, 184, 232, 0.22)',
+    'rgba(178, 201, 173, 0.22)',
+    'rgba(245, 203, 167, 0.22)',
+];
+
+const BORDER_COLORS = ['#A8C5DA', '#C9B8E8', '#B2C9AD', '#F5CBA7'];
 
 export default function BreathingExerciseScreen({ route, navigation }: any) {
     const { technique } = route.params;
@@ -16,8 +46,10 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
     const [totalSeconds, setTotalSeconds] = useState(0);
     const [running, setRunning] = useState(false);
 
-    const circleAnim = useRef(new Animated.Value(0.6)).current;
-    const circleScaleRef = useRef(0.6);
+    const circleScale = useSharedValue(0.55);
+    const colorProgress = useSharedValue(0);
+    const glowScale = useSharedValue(1.0);
+
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const cycleRef = useRef(0);
     const totalSecondsRef = useRef(0);
@@ -28,15 +60,45 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
             { key: 'hold' as Phase, duration: technique.holdDuration, label: 'Tahan' },
             { key: 'exhale' as Phase, duration: technique.exhaleDuration, label: 'Buang Napas' },
             { key: 'holdAfter' as Phase, duration: technique.holdAfterExhale, label: 'Tahan' },
-        ] as Array<{ key: Phase; duration: number; label: string }>
+        ]
     ).filter(p => p.duration > 0);
 
-    const animateCircle = (targetScale: number, duration: number) => {
-        Animated.timing(circleAnim, {
-            toValue: targetScale,
-            duration: duration * 1000,
-            useNativeDriver: true,
-        }).start();
+    const animatedCircleStyle = useAnimatedStyle(() => {
+        const bg = interpolateColor(colorProgress.value, [0, 1, 2, 3], CIRCLE_COLORS);
+        return { transform: [{ scale: circleScale.value }], backgroundColor: bg };
+    });
+
+    const animatedInnerStyle = useAnimatedStyle(() => {
+        const bg = interpolateColor(colorProgress.value, [0, 1, 2, 3], INNER_COLORS);
+        const border = interpolateColor(colorProgress.value, [0, 1, 2, 3], BORDER_COLORS);
+        return { backgroundColor: bg, borderColor: border };
+    });
+
+    const animatedGlowStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: glowScale.value }],
+        opacity: 0.28,
+    }));
+
+    useEffect(() => {
+        glowScale.value = withRepeat(
+            withSequence(
+                withTiming(1.18, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+                withTiming(1.0, { duration: 1200, easing: Easing.inOut(Easing.ease) })
+            ),
+            -1
+        );
+        return () => {
+            cancelAnimation(glowScale);
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, []);
+
+    const animateToPhase = (phaseKey: Phase, duration: number) => {
+        const targetScale = phaseKey === 'inhale' ? 1.0 : phaseKey === 'exhale' ? 0.55 : circleScale.value;
+        const easing = Easing.inOut(Easing.quad);
+        circleScale.value = withTiming(targetScale, { duration: duration * 1000, easing });
+        const colorIdx = PHASE_COLOR_IDX[phaseKey] ?? 0;
+        colorProgress.value = withTiming(colorIdx, { duration: Math.min(duration * 700, 1500), easing });
     };
 
     const runCycle = (phaseIndex: number) => {
@@ -46,20 +108,16 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
             saveLog();
             return;
         }
-
         if (phaseIndex >= phases.length) {
             cycleRef.current += 1;
             setCyclesDone(cycleRef.current);
             runCycle(0);
             return;
         }
-
         const current = phases[phaseIndex];
         setPhase(current.key);
         setCountdown(current.duration);
-        const targetScale = current.key === 'inhale' ? 1 : current.key === 'exhale' ? 0.6 : circleScaleRef.current;
-        circleScaleRef.current = targetScale;
-        animateCircle(targetScale, current.duration);
+        animateToPhase(current.key, current.duration);
 
         let remaining = current.duration;
         timerRef.current = setInterval(() => {
@@ -79,12 +137,18 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
         totalSecondsRef.current = 0;
         setCyclesDone(0);
         setTotalSeconds(0);
+        circleScale.value = withTiming(0.55, { duration: 200 });
+        colorProgress.value = withTiming(0, { duration: 200 });
         setRunning(true);
         runCycle(0);
     };
 
     const stop = () => {
         if (timerRef.current) clearInterval(timerRef.current);
+        cancelAnimation(circleScale);
+        cancelAnimation(colorProgress);
+        circleScale.value = withTiming(0.55, { duration: 500, easing: Easing.inOut(Easing.ease) });
+        colorProgress.value = withTiming(0, { duration: 500, easing: Easing.inOut(Easing.ease) });
         setRunning(false);
         setPhase('idle');
     };
@@ -101,12 +165,8 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
         }
     };
 
-    useEffect(() => {
-        return () => { if (timerRef.current) clearInterval(timerRef.current); };
-    }, []);
-
     const phaseLabel = phases.find(p => p.key === phase)?.label || '';
-    const color = technique.colorTheme || colors.softBlue;
+    const baseColor = technique.colorTheme || colors.softBlue;
 
     return (
         <SafeAreaView style={[styles.safe, { backgroundColor: colors.bgPrimary }]}>
@@ -120,22 +180,18 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
                 </Text>
 
                 <View style={styles.circleContainer}>
-                    <Animated.View
-                        style={[
-                            styles.circle,
-                            { backgroundColor: color + '33', transform: [{ scale: circleAnim }] },
-                        ]}
-                    />
-                    <View style={[styles.innerCircle, { backgroundColor: color + '66', borderColor: color }]}>
+                    <Animated.View style={[styles.glowRing, { borderColor: baseColor }, animatedGlowStyle]} />
+                    <Animated.View style={[styles.circle, animatedCircleStyle]} />
+                    <Animated.View style={[styles.innerCircle, animatedInnerStyle]}>
                         <Text style={[styles.phaseLabel, { color: colors.charcoal, fontFamily: Typography.heading }]}>
                             {phase === 'idle' ? technique.icon || '🌬️' : phase === 'done' ? '✅' : phaseLabel}
                         </Text>
                         {running && phase !== 'done' && (
-                            <Text style={[styles.countdown, { color: color, fontFamily: Typography.headingBold }]}>
+                            <Text style={[styles.countdown, { color: colors.charcoal, fontFamily: Typography.headingBold }]}>
                                 {countdown}
                             </Text>
                         )}
-                    </View>
+                    </Animated.View>
                 </View>
 
                 <View style={styles.stats}>
@@ -148,10 +204,7 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
                 </View>
 
                 {phase === 'done' ? (
-                    <TouchableOpacity
-                        style={[styles.btn, { backgroundColor: colors.sageGreen }]}
-                        onPress={() => navigation.goBack()}
-                    >
+                    <TouchableOpacity style={[styles.btn, { backgroundColor: colors.sageGreen }]} onPress={() => navigation.goBack()}>
                         <Text style={[styles.btnText, { color: colors.white, fontFamily: Typography.headingMedium }]}>Selesai</Text>
                     </TouchableOpacity>
                 ) : running ? (
@@ -159,7 +212,7 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
                         <Text style={[styles.btnText, { color: colors.white, fontFamily: Typography.headingMedium }]}>Stop</Text>
                     </TouchableOpacity>
                 ) : (
-                    <TouchableOpacity style={[styles.btn, { backgroundColor: color }]} onPress={start}>
+                    <TouchableOpacity style={[styles.btn, { backgroundColor: baseColor }]} onPress={start}>
                         <Text style={[styles.btnText, { color: colors.white, fontFamily: Typography.headingMedium }]}>Mulai</Text>
                     </TouchableOpacity>
                 )}
@@ -168,15 +221,42 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
     );
 }
 
+const CIRCLE_SIZE = 240;
+
 const styles = StyleSheet.create({
     safe: { flex: 1 },
     back: { padding: Spacing.md },
     backText: { fontSize: Typography.sizes.base },
     content: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.lg },
-    name: { fontSize: Typography.sizes.xl, marginBottom: Spacing.xl },
-    circleContainer: { width: 240, height: 240, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.xl },
-    circle: { position: 'absolute', width: 240, height: 240, borderRadius: 120 },
-    innerCircle: { width: 160, height: 160, borderRadius: 80, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+    name: { fontSize: Typography.sizes.xl, marginBottom: Spacing.xl, textAlign: 'center' },
+    circleContainer: {
+        width: CIRCLE_SIZE + 40,
+        height: CIRCLE_SIZE + 40,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: Spacing.xl,
+    },
+    glowRing: {
+        position: 'absolute',
+        width: CIRCLE_SIZE + 40,
+        height: CIRCLE_SIZE + 40,
+        borderRadius: (CIRCLE_SIZE + 40) / 2,
+        borderWidth: 1.5,
+    },
+    circle: {
+        position: 'absolute',
+        width: CIRCLE_SIZE,
+        height: CIRCLE_SIZE,
+        borderRadius: CIRCLE_SIZE / 2,
+    },
+    innerCircle: {
+        width: 160,
+        height: 160,
+        borderRadius: 80,
+        borderWidth: 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     phaseLabel: { fontSize: Typography.sizes.md, textAlign: 'center' },
     countdown: { fontSize: Typography.sizes['3xl'], marginTop: 4 },
     stats: { flexDirection: 'row', gap: Spacing.lg, marginBottom: Spacing.xl },

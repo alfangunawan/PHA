@@ -7,6 +7,7 @@ const client = axios.create({ baseURL: config.API_URL });
 client.interceptors.request.use(async (cfg) => {
     const token = await getToken();
     if (token) cfg.headers.Authorization = `Bearer ${token}`;
+    cfg.headers['ngrok-skip-browser-warning'] = 'true';
     return cfg;
 });
 

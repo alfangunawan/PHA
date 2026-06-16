@@ -23,7 +23,15 @@ import { authenticateToken, AuthRequest } from './middleware/auth.middleware';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+// Must be before cors() — cors() swallows OPTIONS and won't call next()
+app.use((req, res, next) => {
+  if (req.headers['access-control-request-private-network']) {
+    res.setHeader('Access-Control-Allow-Private-Network', 'true');
+  }
+  next();
+});
+
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
