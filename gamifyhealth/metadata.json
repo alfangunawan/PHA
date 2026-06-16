@@ -1,0 +1,6 @@
+{
+  "name": "GamifyHealth",
+  "description": "Gamification Module for Personal Health Assistant",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
