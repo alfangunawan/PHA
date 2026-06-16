@@ -1,10 +1,59 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, SafeAreaView, Image } from 'react-native';
+import {
+    View, Text, TextInput, TouchableOpacity, FlatList,
+    StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
+    Alert, SafeAreaView,
+} from 'react-native';
+import Svg, { Path, Circle } from 'react-native-svg';
 import Markdown from 'react-native-markdown-display';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { ChatMessage, sendMessage, streamMessage, getHistory, createNewSession } from './chatService';
+import { ChatMessage, streamMessage, getHistory, createNewSession } from './chatService';
 import Gad7Form from './Gad7Form';
+
+const PRIMARY = '#8a9ccc';
+
+const D = {
+    bg: '#fcfcfe',
+    appBarBorder: '#f0f1f6',
+    cardBorder: '#ecedf6',
+    inputBg: '#f3f4f9',
+    textDark: '#3b4150',
+    textSub: '#9197aa',
+    textMuted: '#aab0bf',
+    iconDim: '#5a6173',
+    timePillBg: '#f1f2f8',
+    suggBg: '#f3f4f9',
+    phaAvatarBg: '#eef1f9',
+};
+
+const SUGGESTIONS = [
+    'Aku lagi banyak pikiran',
+    'Merasa cemas akhir-akhir ini',
+    'Cuma butuh teman cerita',
+];
+
+function PHAChatIcon({ color = PRIMARY, size = 19 }: { color?: string; size?: number }) {
+    return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+            <Path
+                d="M5 6.5C5 5.7 5.7 5 6.5 5h11C18.3 5 19 5.7 19 6.5v8C19 15.3 18.3 16 17.5 16H9l-4 3.5z"
+                stroke={color}
+                strokeWidth={1.7}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+        </Svg>
+    );
+}
+
+function SendIcon() {
+    return (
+        <Svg width={21} height={21} viewBox="0 0 24 24" fill="none">
+            <Path d="M21 3 10.5 13.5" stroke="#fff" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+            <Path d="M21 3 14.5 21l-4-7.5-7.5-4z" stroke="#fff" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+        </Svg>
+    );
+}
 
 interface Props {
     navigation: any;
@@ -20,62 +69,28 @@ export default function ChatScreen({ navigation, route }: Props) {
     const flatListRef = useRef<FlatList>(null);
     const isAtBottomRef = useRef(true);
 
-    useEffect(() => {
-        loadHistory();
-    }, []);
+    useEffect(() => { loadHistory(); }, []);
 
     const prevMessageCountRef = useRef(0);
     useEffect(() => {
         const newCount = messages.length;
-        const isNewMessage = newCount > prevMessageCountRef.current;
+        if (newCount > prevMessageCountRef.current) isAtBottomRef.current = true;
         prevMessageCountRef.current = newCount;
-
-        if (isNewMessage) {
-            isAtBottomRef.current = true;
-        }
     }, [messages.length]);
 
     const handleScroll = (event: any) => {
         const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-        const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
-        isAtBottomRef.current = distanceFromBottom < 80;
+        isAtBottomRef.current = contentSize.height - layoutMeasurement.height - contentOffset.y < 80;
     };
 
     const handleContentSizeChange = () => {
-        if (isAtBottomRef.current) {
-            flatListRef.current?.scrollToEnd({ animated: false });
-        }
+        if (isAtBottomRef.current) flatListRef.current?.scrollToEnd({ animated: false });
     };
-
-    // Configure header options to be minimal as per design, mostly handled in-screen or via custom header
-    useEffect(() => {
-        navigation.setOptions({
-            headerTitle: '',
-            headerStyle: { backgroundColor: '#F8F9FA', shadowOpacity: 0, elevation: 0 },
-            headerLeft: () => (
-                <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
-                    <Ionicons name="arrow-back" size={24} color="#333" />
-                </TouchableOpacity>
-            ),
-            headerRight: () => (
-                <View style={styles.headerButtons}>
-                    <TouchableOpacity onPress={handleNewChat} style={styles.headerButton}>
-                        <Ionicons name="create-outline" size={24} color="#333" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.headerButton}>
-                        <Ionicons name="ellipsis-horizontal" size={24} color="#333" />
-                    </TouchableOpacity>
-                </View>
-            ),
-        });
-    }, [navigation]);
 
     const loadHistory = async () => {
         try {
             const history = await getHistory();
             setMessages(history);
-
-            // Ambil session_id dari pesan terakhir, atau buat session baru jika belum ada riwayat
             if (history.length > 0 && history[history.length - 1].sessionId) {
                 setCurrentSessionId(history[history.length - 1].sessionId);
             } else {
@@ -91,8 +106,8 @@ export default function ChatScreen({ navigation, route }: Props) {
 
     const handleNewChat = () => {
         if (Platform.OS === 'web') {
-            const confirm = window.confirm('Mulai percakapan baru? Chat saat ini akan tersimpan di history.');
-            if (confirm) startNewChat();
+            const confirmed = (window as any).confirm('Mulai percakapan baru? Chat saat ini akan tersimpan di history.');
+            if (confirmed) startNewChat();
         } else {
             Alert.alert(
                 'Chat Baru',
@@ -115,25 +130,25 @@ export default function ChatScreen({ navigation, route }: Props) {
         }
     };
 
-    const handleSend = async () => {
-        if (!inputText.trim()) return;
+    const handleSend = async (text?: string) => {
+        const msgText = (text ?? inputText).trim();
+        if (!msgText) return;
 
         const userMsg: ChatMessage = {
             id: Date.now().toString(),
             sender: 'user',
-            message: inputText,
+            message: msgText,
             timestamp: new Date().toISOString(),
         };
-
         const aiMsgId = (Date.now() + 1).toString();
-        const aiMsgPlaceholder: ChatMessage = {
+        const aiPlaceholder: ChatMessage = {
             id: aiMsgId,
             sender: 'ai',
             message: '',
             timestamp: new Date().toISOString(),
         };
 
-        setMessages(prev => [...prev, userMsg, aiMsgPlaceholder]);
+        setMessages(prev => [...prev, userMsg, aiPlaceholder]);
         setInputText('');
         setSending(true);
 
@@ -164,204 +179,383 @@ export default function ChatScreen({ navigation, route }: Props) {
         }
     };
 
+    const isTyping = sending &&
+        messages.length > 0 &&
+        messages[messages.length - 1]?.sender === 'ai' &&
+        messages[messages.length - 1]?.message === '';
+
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
     const renderItem = ({ item }: { item: ChatMessage }) => {
         const isUser = item.sender === 'user';
-        
-        let parsedMessage = null;
+
+        let parsedMessage: any = null;
         if (!isUser) {
-            try {
-                parsedMessage = JSON.parse(item.message);
-            } catch (e) {
-                // Not a JSON message, fallback to raw text
-            }
+            try { parsedMessage = JSON.parse(item.message); } catch { }
         }
 
-        if (parsedMessage && parsedMessage.action === 'show_gad7') {
+        if (parsedMessage?.action === 'show_gad7') {
             return (
-                <View style={[styles.bubble, styles.aiBubble, { padding: 0, backgroundColor: 'transparent', shadowOpacity: 0 }]}>
-                    <Gad7Form 
-                        data={parsedMessage.data} 
+                <View style={styles.aiBubbleRow}>
+                    <View style={styles.phaAvatar}><PHAChatIcon size={16} /></View>
+                    <Gad7Form
+                        data={parsedMessage.data}
                         sessionId={item.sessionId ?? ''}
-                        onSubmitted={(aiMsg) => {
-                            setMessages(prev => [...prev, aiMsg]);
-                        }} 
+                        onSubmitted={(aiMsg) => setMessages(prev => [...prev, aiMsg])}
                     />
                 </View>
             );
         }
 
+        if (!isUser && item.message === '' && sending) {
+            return (
+                <View style={styles.aiBubbleRow}>
+                    <View style={styles.phaAvatar}><PHAChatIcon size={16} /></View>
+                    <View style={styles.typingBubble}>
+                        <View style={[styles.dot, { backgroundColor: '#c0c6d5' }]} />
+                        <View style={[styles.dot, { backgroundColor: '#aab0bf' }]} />
+                        <View style={[styles.dot, { backgroundColor: '#c0c6d5' }]} />
+                    </View>
+                </View>
+            );
+        }
+
+        if (isUser) {
+            return (
+                <View style={styles.userBubbleRow}>
+                    <View style={styles.userBubble}>
+                        <Text style={styles.userText}>{item.message}</Text>
+                    </View>
+                </View>
+            );
+        }
+
         return (
-            <View style={[styles.messageRow, isUser ? styles.userRow : styles.aiRow]}>
-                {!isUser && (
-                    <View style={styles.avatarContainer}>
-                        <Ionicons name="leaf" size={16} color="#48B096" />
-                    </View>
-                )}
-                <View style={[styles.bubble, isUser ? styles.userBubble : styles.aiBubble]}>
-                    <View>
-                        {isUser ? (
-                            <Text style={styles.userText}>{item.message}</Text>
-                        ) : (
-                            <Markdown style={markdownStyles}>
-                                {item.message}
-                            </Markdown>
-                        )}
-                    </View>
+            <View style={styles.aiBubbleRow}>
+                <View style={styles.phaAvatar}><PHAChatIcon size={16} /></View>
+                <View style={styles.phaBubble}>
+                    <Markdown style={markdownStyles}>{item.message}</Markdown>
                 </View>
             </View>
         );
     };
 
-    const GreetingHeader = () => (
-        <View style={styles.greetingContainer}>
-            <Text style={styles.greetingText}>Halo, bagaimana</Text>
-            <Text style={styles.greetingText}>perasaanmu hari ini?</Text>
-            <View style={styles.dateBadge}>
-                <Text style={styles.dateText}>Hari ini, {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
-            </View>
-        </View>
-    );
-
     if (loading) {
-        return <View style={styles.center}><ActivityIndicator size="large" color="#48B096" /></View>;
+        return (
+            <SafeAreaView style={styles.safe}>
+                <View style={styles.center}>
+                    <ActivityIndicator size="large" color={PRIMARY} />
+                </View>
+            </SafeAreaView>
+        );
     }
 
     return (
-        <KeyboardAvoidingView
-            style={styles.container}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-        >
-            <FlatList
-                ref={flatListRef}
-                data={messages}
-                renderItem={renderItem}
-                keyExtractor={item => item.id}
-                contentContainerStyle={styles.listContent}
-                ListHeaderComponent={messages.length === 0 ? GreetingHeader : null}
-                style={styles.chatArea}
-                contentInset={{ bottom: 10 }}
-                onScroll={handleScroll}
-                scrollEventThrottle={100}
-                onContentSizeChange={handleContentSizeChange}
-            />
+        <SafeAreaView style={styles.safe}>
 
-            <View style={styles.inputWrapper}>
-                <TouchableOpacity style={styles.plusButton}>
-                    <Ionicons name="add" size={24} color="#999" />
+            {/* App Bar */}
+            <View style={styles.appBar}>
+                <TouchableOpacity style={styles.appBarBtn} onPress={() => navigation.goBack()}>
+                    <Ionicons name="chevron-back" size={22} color={D.iconDim} />
                 </TouchableOpacity>
 
-                <View style={styles.inputContainer}>
+                <View style={styles.appBarCenter}>
+                    <View style={styles.phaAvatarLg}>
+                        <PHAChatIcon color={PRIMARY} size={19} />
+                    </View>
+                    <View>
+                        <Text style={styles.phaName}>PHA</Text>
+                        <View style={styles.statusRow}>
+                            <View style={styles.statusDot} />
+                            <Text style={styles.statusText}>
+                                {isTyping ? 'Sedang mengetik…' : 'Pendamping kamu'}
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+
+                <TouchableOpacity style={styles.appBarBtn} onPress={handleNewChat}>
+                    <Ionicons name="ellipsis-horizontal" size={22} color={D.iconDim} />
+                </TouchableOpacity>
+            </View>
+
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={0}
+            >
+                {messages.length === 0 ? (
+                    /* Empty state */
+                    <View style={styles.emptyState}>
+                        <Text style={styles.greetingText}>Halo, bagaimana perasaanmu hari ini?</Text>
+                        <View style={styles.timePill}>
+                            <Text style={styles.timePillText}>Hari ini, {timeStr}</Text>
+                        </View>
+                        <View style={styles.suggestionsWrap}>
+                            <Text style={styles.suggestLabel}>Mulai dengan</Text>
+                            {SUGGESTIONS.map(s => (
+                                <TouchableOpacity key={s} style={styles.suggChip} onPress={() => handleSend(s)}>
+                                    <Text style={styles.suggText}>{s}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
+                ) : (
+                    <FlatList
+                        ref={flatListRef}
+                        data={messages}
+                        renderItem={renderItem}
+                        keyExtractor={item => item.id}
+                        contentContainerStyle={styles.listContent}
+                        ListHeaderComponent={() => (
+                            <View style={styles.timeStampRow}>
+                                <Text style={styles.timePillText}>Hari ini, {timeStr}</Text>
+                            </View>
+                        )}
+                        style={styles.chatArea}
+                        onScroll={handleScroll}
+                        scrollEventThrottle={100}
+                        onContentSizeChange={handleContentSizeChange}
+                    />
+                )}
+
+                {/* Input Bar */}
+                <View style={styles.inputBar}>
+                    <TouchableOpacity style={styles.plusBtn}>
+                        <Ionicons name="add" size={24} color={D.textSub} />
+                    </TouchableOpacity>
+
                     <TextInput
-                        style={styles.input}
+                        style={styles.textInput}
                         value={inputText}
                         onChangeText={setInputText}
-                        placeholder="Tulis apa yang ingin kamu ceritakan..."
-                        placeholderTextColor="#aaa"
+                        placeholder="Tulis apa yang ingin kamu ceritakan…"
+                        placeholderTextColor={D.textMuted}
                         multiline
                         maxLength={500}
                     />
-                    <TouchableOpacity style={styles.sendButton} onPress={handleSend} disabled={sending}>
-                        {sending && messages[messages.length - 1]?.sender !== 'ai' ? (
+
+                    <TouchableOpacity
+                        style={[styles.sendBtn, sending && { opacity: 0.7 }]}
+                        onPress={() => handleSend()}
+                        disabled={sending}
+                    >
+                        {sending && !isTyping ? (
                             <ActivityIndicator size="small" color="#fff" />
                         ) : (
-                            <Ionicons name="send" size={18} color="#fff" />
+                            <SendIcon />
                         )}
                     </TouchableOpacity>
                 </View>
-            </View>
-        </KeyboardAvoidingView>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#F8F9FA',
-        ...(Platform.OS === 'web'
-            ? ({ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, overflow: 'hidden' } as any)
-            : {}),
-    },
-    headerButtons: { flexDirection: 'row', marginRight: 15 },
-    headerButton: { padding: 8, marginLeft: 5 },
-
+    safe: { flex: 1, backgroundColor: D.bg },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    chatArea: { flex: 1, minHeight: 0 },
-    listContent: { padding: 20, paddingBottom: 10, flexGrow: 1 },
 
-    greetingContainer: { marginBottom: 30, marginTop: 10 },
-    greetingText: { fontSize: 28, fontWeight: 'bold', color: '#2C3E50', lineHeight: 34 },
-    dateBadge: { alignSelf: 'center', backgroundColor: '#F0F2F5', paddingHorizontal: 15, paddingVertical: 5, borderRadius: 15, marginTop: 20 },
-    dateText: { fontSize: 12, color: '#999' },
-
-    messageRow: { flexDirection: 'row', marginBottom: 20, maxWidth: '100%' },
-    userRow: { justifyContent: 'flex-end' },
-    aiRow: { justifyContent: 'flex-start' },
-
-    avatarContainer: { width: 30, height: 30, borderRadius: 15, backgroundColor: '#E0F2F1', justifyContent: 'center', alignItems: 'center', marginRight: 10, alignSelf: 'flex-start' },
-
-    bubble: { padding: 15, borderRadius: 20, maxWidth: '80%' },
-    userBubble: { backgroundColor: '#E8F1F8', borderTopRightRadius: 5 }, // Light blue/gray
-    aiBubble: { backgroundColor: '#E0F2F1', borderTopLeftRadius: 5 }, // Light green
-
-    userText: { color: '#2C3E50', fontSize: 16, lineHeight: 22 },
-    aiText: { color: '#2C3E50', fontSize: 16, lineHeight: 22 },
-
-    inputWrapper: {
+    appBar: {
+        height: 58,
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 15,
-        backgroundColor: '#fff',
-        borderTopWidth: 1,
-        borderColor: '#f0f0f0',
-        paddingBottom: Platform.OS === 'ios' ? 30 : 15,
+        justifyContent: 'space-between',
+        paddingHorizontal: 18,
+        borderBottomWidth: 1,
+        borderBottomColor: D.appBarBorder,
+        backgroundColor: D.bg,
     },
-    plusButton: { padding: 10, marginRight: 5 },
-    inputContainer: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#fff',
-        borderRadius: 30,
-        borderWidth: 1,
-        borderColor: '#EFEFEF',
-        paddingHorizontal: 5,
-        paddingVertical: 5,
-        // Shadow
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 5,
-        elevation: 2,
-    },
-    input: {
-        flex: 1,
-        paddingHorizontal: 15,
-        paddingVertical: 10,
-        fontSize: 16,
-        maxHeight: 100,
-        color: '#333',
-    },
-    sendButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#48B096',
+    appBarBtn: {
+        width: 38,
+        height: 38,
+        borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 5,
+    },
+    appBarCenter: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    phaAvatarLg: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        backgroundColor: D.phaAvatarBg,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    phaName: { fontFamily: 'Lora_500Medium', fontSize: 16, color: D.textDark, lineHeight: 20 },
+    statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 },
+    statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: PRIMARY },
+    statusText: { fontSize: 11, color: D.textSub },
+
+    // Empty state
+    emptyState: { flex: 1, padding: 24, paddingTop: 24 },
+    greetingText: {
+        fontFamily: 'Lora_600SemiBold',
+        fontSize: 25,
+        lineHeight: 32,
+        color: '#353b4a',
+        letterSpacing: -0.2,
+    },
+    timePill: {
+        alignSelf: 'center',
+        backgroundColor: D.timePillBg,
+        borderRadius: 20,
+        paddingHorizontal: 13,
+        paddingVertical: 5,
+        marginTop: 18,
+    },
+    timePillText: { fontSize: 11.5, color: D.textSub },
+    suggestionsWrap: { marginTop: 'auto' as any, paddingBottom: 8 },
+    suggestLabel: {
+        fontSize: 12,
+        letterSpacing: 0.4,
+        color: '#a4aabc',
+        fontWeight: '600',
+        marginBottom: 12,
+    },
+    suggChip: {
+        backgroundColor: D.suggBg,
+        borderWidth: 1,
+        borderColor: D.cardBorder,
+        borderRadius: 16,
+        paddingVertical: 13,
+        paddingHorizontal: 16,
+        marginBottom: 10,
+    },
+    suggText: { fontSize: 14, color: '#525a6b' },
+
+    // Chat list
+    chatArea: { flex: 1 },
+    listContent: { padding: 20, paddingBottom: 10, flexGrow: 1 },
+    timeStampRow: {
+        alignSelf: 'center',
+        backgroundColor: D.timePillBg,
+        borderRadius: 20,
+        paddingHorizontal: 13,
+        paddingVertical: 5,
+        marginBottom: 16,
+    },
+
+    // Bubbles
+    aiBubbleRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 9, maxWidth: '84%', marginBottom: 14 },
+    phaAvatar: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        backgroundColor: D.phaAvatarBg,
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexShrink: 0,
+    },
+    phaBubble: {
+        backgroundColor: '#ffffff',
+        borderWidth: 1,
+        borderColor: D.cardBorder,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        borderBottomRightRadius: 20,
+        borderBottomLeftRadius: 6,
+        paddingVertical: 12,
+        paddingHorizontal: 15,
+        flexShrink: 1,
+    },
+    typingBubble: {
+        backgroundColor: '#ffffff',
+        borderWidth: 1,
+        borderColor: D.cardBorder,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        borderBottomRightRadius: 20,
+        borderBottomLeftRadius: 6,
+        paddingVertical: 15,
+        paddingHorizontal: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+    },
+    dot: { width: 7, height: 7, borderRadius: 3.5 },
+
+    userBubbleRow: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 14 },
+    userBubble: {
+        backgroundColor: PRIMARY,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        borderBottomRightRadius: 6,
+        borderBottomLeftRadius: 20,
+        paddingVertical: 12,
+        paddingHorizontal: 15,
+        maxWidth: '80%',
+    },
+    userText: { color: '#fff', fontSize: 14, lineHeight: 21 },
+
+    // Input bar
+    inputBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        borderTopWidth: 1,
+        borderTopColor: D.cardBorder,
+        paddingHorizontal: 18,
+        paddingTop: 13,
+        paddingBottom: Platform.OS === 'ios' ? 26 : 22,
+        backgroundColor: D.bg,
+    },
+    plusBtn: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexShrink: 0,
+    },
+    textInput: {
+        flex: 1,
+        backgroundColor: D.inputBg,
+        borderWidth: 1,
+        borderColor: D.cardBorder,
+        borderRadius: 24,
+        paddingHorizontal: 18,
+        paddingVertical: 13,
+        fontSize: 14,
+        color: D.textDark,
+        maxHeight: 120,
+    },
+    sendBtn: {
+        width: 46,
+        height: 46,
+        borderRadius: 23,
+        backgroundColor: PRIMARY,
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexShrink: 0,
+        shadowColor: PRIMARY,
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.55,
+        shadowRadius: 11,
+        elevation: 6,
     },
 });
 
 const markdownStyles = StyleSheet.create({
-    body: { fontSize: 16, lineHeight: 24, color: '#2C3E50' },
-    heading1: { fontSize: 24, fontWeight: 'bold', marginVertical: 10 },
-    heading2: { fontSize: 20, fontWeight: 'bold', marginVertical: 8 },
-    strong: { fontWeight: 'bold' },
+    body: { fontSize: 14, lineHeight: 21, color: D.textDark },
+    heading1: { fontSize: 18, fontWeight: '700', marginVertical: 8 },
+    heading2: { fontSize: 16, fontWeight: '600', marginVertical: 6 },
+    strong: { fontWeight: '600' },
     em: { fontStyle: 'italic' },
-    list_item: { marginVertical: 4 },
-    bullet_list: { marginBottom: 10 },
-    ordered_list: { marginBottom: 10 },
-    code_inline: { backgroundColor: '#f0f0f0', fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', borderRadius: 4, padding: 2 },
-    code_block: { backgroundColor: '#f0f0f0', padding: 10, borderRadius: 8, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', marginVertical: 8 },
+    list_item: { marginVertical: 3 },
+    bullet_list: { marginBottom: 8 },
+    ordered_list: { marginBottom: 8 },
+    code_inline: {
+        backgroundColor: '#f1f2f8',
+        fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+        borderRadius: 4,
+        paddingHorizontal: 4,
+    } as any,
+    code_block: {
+        backgroundColor: '#f1f2f8',
+        padding: 10,
+        borderRadius: 8,
+        fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+        marginVertical: 6,
+    } as any,
 });

@@ -108,7 +108,7 @@ function RootNavigator() {
                     <Stack.Screen
                         name="Chat"
                         component={ChatScreen}
-                        options={{ headerShown: true, title: 'PHA Chatbot', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }}
+                        options={{ headerShown: false }}
                     />
                     <Stack.Screen
                         name="ChatHistory"
