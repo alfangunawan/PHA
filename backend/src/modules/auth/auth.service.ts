@@ -32,9 +32,10 @@ export const registerUser = async (email: string, password: string, name?: strin
     return user;
 };
 
-export const loginUser = async (email: string, password: string): Promise<{ token: string; user: User }> => {
+export const loginUser = async (email: string, password: string): Promise<{ token: string; user: User & { profile: { displayName: string } | null } }> => {
     const user = await prisma.user.findUnique({
         where: { email },
+        include: { profile: { select: { displayName: true } } },
     });
 
     if (!user) {

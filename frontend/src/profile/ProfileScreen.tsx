@@ -173,6 +173,35 @@ export default function ProfileScreen({ navigation }: any) {
                     </View>
                 </View>
 
+                {/* Riwayat */}
+                <View style={[styles.section, { backgroundColor: colors.bgCard }]}>
+                    <Text style={[styles.sectionTitle, { color: colors.charcoal, fontFamily: Typography.heading }]}>Riwayat Saya</Text>
+
+                    <TouchableOpacity
+                        style={[styles.historyBtn, { backgroundColor: colors.softBlueLight }]}
+                        onPress={() => navigation.navigate('ActivityHistory')}
+                    >
+                        <Ionicons name="fitness" size={20} color={colors.softBlue} />
+                        <View style={{ flex: 1 }}>
+                            <Text style={[styles.historyTitle, { color: colors.softBlueDark, fontFamily: Typography.bodyMedium }]}>Riwayat Latihan</Text>
+                            <Text style={[styles.historySub, { color: colors.softBlue, fontFamily: Typography.body }]}>Napas · Meditasi</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={colors.softBlue} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.historyBtn, { backgroundColor: colors.lavender + '33', marginTop: Spacing.xs }]}
+                        onPress={() => navigation.navigate('History')}
+                    >
+                        <Ionicons name="chatbubbles" size={20} color={colors.lavenderDark} />
+                        <View style={{ flex: 1 }}>
+                            <Text style={[styles.historyTitle, { color: colors.lavenderDark, fontFamily: Typography.bodyMedium }]}>Riwayat Chat</Text>
+                            <Text style={[styles.historySub, { color: colors.lavender, fontFamily: Typography.body }]}>Percakapan dengan PHA</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={colors.lavenderDark} />
+                    </TouchableOpacity>
+                </View>
+
                 {/* Admin Nav */}
                 {isAdmin && (
                     <TouchableOpacity
@@ -230,4 +259,7 @@ const styles = StyleSheet.create({
     adminText: { flex: 1, fontSize: Typography.sizes.base },
     logoutBtn: { alignItems: 'center', padding: Spacing.md },
     logoutText: { fontSize: Typography.sizes.base },
+    historyBtn: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.sm, borderRadius: BorderRadius.md },
+    historyTitle: { fontSize: Typography.sizes.base },
+    historySub: { fontSize: Typography.sizes.xs, marginTop: 2 },
 });
