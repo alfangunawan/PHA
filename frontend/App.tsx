@@ -34,6 +34,7 @@ import ProfileScreen from './src/profile/ProfileScreen';
 import ChatScreen from './src/chat/ChatScreen';
 import ChatHistoryScreen from './src/chat/ChatHistoryScreen';
 import HistoryScreen from './src/chat/HistoryScreen';
+import ActivityHistoryScreen from './src/screens/ActivityHistoryScreen';
 
 import BreathingListScreen from './src/screens/breathing/BreathingListScreen';
 import BreathingExerciseScreen from './src/screens/breathing/BreathingExerciseScreen';
@@ -180,6 +181,16 @@ function RootNavigator() {
                         name="ChatHistory"
                         component={ChatHistoryScreen}
                         options={{ headerShown: true, title: 'Detail Riwayat', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }}
+                    />
+                    <Stack.Screen
+                        name="History"
+                        component={HistoryScreen}
+                        options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                        name="ActivityHistory"
+                        component={ActivityHistoryScreen}
+                        options={{ headerShown: false }}
                     />
                     <Stack.Screen
                         name="BreathingExercise"
