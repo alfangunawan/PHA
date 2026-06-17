@@ -13,10 +13,13 @@ const validate = (schema) => (req, res, next) => {
     }
     catch (error) {
         if (error instanceof zod_1.ZodError) {
+            console.log('Validation Error Caught:', error);
+            console.log('Error keys:', Object.keys(error));
+            const errors = error.errors || error.issues || [];
             return res.status(400).json({
                 error: 'Validation Error',
-                details: error.errors.map((e) => ({
-                    path: e.path.join('.'),
+                details: errors.map((e) => ({
+                    path: e.path ? e.path.join('.') : 'unknown',
                     message: e.message,
                 })),
             });

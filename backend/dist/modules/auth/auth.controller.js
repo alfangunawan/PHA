@@ -46,9 +46,8 @@ exports.login = exports.register = void 0;
 const AuthService = __importStar(require("./auth.service"));
 const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { email, password } = req.body;
-        // Validation handled by middleware
-        const user = yield AuthService.registerUser(email, password);
+        const { email, password, name } = req.body;
+        const user = yield AuthService.registerUser(email, password, name);
         res.status(201).json({ message: 'User registered successfully', userId: user.id });
     }
     catch (error) {
@@ -59,9 +58,8 @@ exports.register = register;
 const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { email, password } = req.body;
-        // Validation handled by middleware
         const { token, user } = yield AuthService.loginUser(email, password);
-        res.json({ token, user: { id: user.id, email: user.email } });
+        res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
     }
     catch (error) {
         res.status(401).json({ error: error.message });
