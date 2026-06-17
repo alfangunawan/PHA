@@ -23,6 +23,22 @@ export const createTechnique = (data: {
     icon?: string;
 }) => prisma.breathingTechnique.create({ data });
 
+export const updateTechnique = (id: string, data: Partial<{
+    name: string;
+    description?: string;
+    inhaleDuration: number;
+    holdDuration?: number;
+    exhaleDuration: number;
+    holdAfterExhale?: number;
+    cycles?: number;
+    colorTheme?: string;
+    icon?: string;
+    isActive?: boolean;
+}>) => prisma.breathingTechnique.update({ where: { id }, data });
+
+export const deleteTechnique = (id: string) =>
+    prisma.breathingTechnique.delete({ where: { id } });
+
 export const saveLog = (userId: string, data: {
     techniqueId: string;
     duration: number;

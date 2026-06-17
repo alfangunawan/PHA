@@ -337,6 +337,47 @@ export default function ProfileScreen({ navigation }: any) {
                     </View>
                 </View>
 
+                {/* Riwayat */}
+                <View style={[styles.card, { backgroundColor: isDark ? colors.bgCard : D.card, borderColor: isDark ? colors.divider : D.cardBorder }]}>
+                    <Text style={[styles.cardTitle, { color: isDark ? colors.charcoal : D.textMid, fontFamily: Typography.heading }]}>
+                        Riwayat Saya
+                    </Text>
+
+                    <TouchableOpacity
+                        style={[styles.historyBtn, { backgroundColor: isDark ? '#1a2640' : D.primaryLight }]}
+                        onPress={() => navigation.navigate('ActivityHistory')}
+                        activeOpacity={0.85}
+                    >
+                        <Ionicons name="fitness-outline" size={20} color={D.primary} />
+                        <View style={styles.historyMeta}>
+                            <Text style={[styles.historyTitle, { color: isDark ? colors.charcoal : D.badgeText, fontFamily: Typography.bodyMedium }]}>
+                                Riwayat Latihan
+                            </Text>
+                            <Text style={[styles.historySub, { color: isDark ? colors.mediumGray : D.textMuted, fontFamily: Typography.body }]}>
+                                Napas dan meditasi
+                            </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={D.primary} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.historyBtn, { backgroundColor: isDark ? '#281f34' : '#f3eef6', marginTop: 8 }]}
+                        onPress={() => navigation.navigate('History')}
+                        activeOpacity={0.85}
+                    >
+                        <Ionicons name="chatbubbles-outline" size={20} color={D.purpleAcc} />
+                        <View style={styles.historyMeta}>
+                            <Text style={[styles.historyTitle, { color: isDark ? colors.charcoal : D.purpleAcc, fontFamily: Typography.bodyMedium }]}>
+                                Riwayat Chat
+                            </Text>
+                            <Text style={[styles.historySub, { color: isDark ? colors.mediumGray : D.textMuted, fontFamily: Typography.body }]}>
+                                Percakapan dengan PHA
+                            </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={D.purpleAcc} />
+                    </TouchableOpacity>
+                </View>
+
                 {/* ── Admin ── */}
                 {isAdmin && (
                     <TouchableOpacity
@@ -452,6 +493,19 @@ const styles = StyleSheet.create({
     toggleMeta: { flex: 1 },
     toggleLabel: { fontSize: 15 },
     toggleSub: { fontSize: 12.5, marginTop: 2 },
+
+    // History
+    historyBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 13,
+        borderRadius: 15,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+    },
+    historyMeta: { flex: 1 },
+    historyTitle: { fontSize: 14.5 },
+    historySub: { fontSize: 12.5, marginTop: 2 },
 
     // Admin
     adminRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 16 },

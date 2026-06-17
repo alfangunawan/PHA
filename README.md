@@ -44,3 +44,8 @@ npx expo start
 - **Authentication**: Register & Login.
 - **Profile**: Edit user details (Name, Age, Language).
 - **Chatbot**: Chat with Gemini AI (Context-aware).
+
+
+login sebagai admin
+Email: admin@admin.com
+Password: admin123

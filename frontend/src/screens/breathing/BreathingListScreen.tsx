@@ -3,40 +3,49 @@ import {
     View, Text, FlatList, StyleSheet, TouchableOpacity, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../../context/ThemeContext';
+import { LinearGradient } from 'expo-linear-gradient';
 import { breathingAPI } from '../../api';
 import { LoadingState, EmptyState, ErrorState } from '../../components/LoadingState';
 import AnimatedView from '../../components/AnimatedView';
-import { Typography, Spacing } from '../../theme';
+import { Typography, Spacing, BorderRadius } from '../../theme';
+
+// === Palet warna sesuai beranda ===
+const P = '#8a9ccc';
+const D = {
+    bg:        '#fcfcfe',
+    card:      '#ffffff',
+    cardBorder:'#ecedf6',
+    gradStart: '#eef2fb',
+    gradEnd:   '#dce4f6',
+    textDark:  '#353b4a',
+    textMid:   '#3b4150',
+    textSub:   '#717a96',
+    textMuted: '#949bae',
+    blue:      '#8a9ccc',
+    blueLight: '#eef2fb',
+    purple:    '#9387c8',
+    purpleLight:'#f1eefa',
+    green:     '#7bab97',
+    greenLight:'#edf5f1',
+    peach:     '#c09475',
+    peachLight:'#fdf0e8',
+};
 
 const ICON_MAP: Record<string, string> = {
-    moon: '🌙',
-    square: '⬛',
-    wind: '🌬️',
-    heart: '❤️',
-    star: '⭐',
-    sun: '☀️',
-    leaf: '🌿',
-    wave: '🌊',
-    fire: '🔥',
-    cloud: '☁️',
+    moon:  '🌙', square: '⬛', wind:  '🌬️', heart: '❤️',
+    star:  '⭐', sun:    '☀️', leaf:  '🌿', wave:  '🌊',
+    fire:  '🔥', cloud:  '☁️',
 };
 
 const resolveIcon = (icon?: string) =>
-    icon ? (ICON_MAP[icon.toLowerCase()] ?? icon) : '🌬️';
+    icon ? (ICON_MAP[icon.toLowerCase()] ?? '🌬️') : '🌬️';
 
-const ICON_COLORS = [
-    { bg: '#eceff8', color: '#7d6fb5' },
-    { bg: '#eef2fb', color: '#6477ad' },
-    { bg: '#e9f1f8', color: '#5b82a8' },
-    { bg: '#f3eef6', color: '#a87fae' },
-];
-
-const PHASE_TOKENS = {
-    inhale: { bg: '#eef2fb', text: '#6477ad' },
-    hold: { bg: '#efecfa', text: '#7d6fb5' },
-    exhale: { bg: '#e9f1f8', text: '#5b82a8' },
-    hold2: { bg: '#f2eef8', text: '#8a7bb0' },
+// Warna fase yang harmonis dengan palet beranda
+const PHASE_COLORS = {
+    inhale: { bg: D.blueLight,   text: D.blue,   label: 'Tarik' },
+    hold:   { bg: D.purpleLight, text: D.purple, label: 'Tahan' },
+    exhale: { bg: D.greenLight,  text: D.green,  label: 'Hembus' },
+    hold2:  { bg: D.peachLight,  text: D.peach,  label: 'Jeda' },
 };
 
 interface Technique {
@@ -52,22 +61,7 @@ interface Technique {
     icon: string;
 }
 
-interface PhaseChipProps {
-    label: string;
-    value: number;
-    bg: string;
-    textColor: string;
-}
-
-const PhaseChip = ({ label, value, bg, textColor }: PhaseChipProps) => (
-    <View style={[styles.chip, { backgroundColor: bg }]}>
-        <Text style={[styles.chipValue, { color: textColor }]}>{value}s</Text>
-        <Text style={styles.chipLabel}>{label}</Text>
-    </View>
-);
-
 export default function BreathingListScreen({ navigation }: any) {
-    const { colors } = useTheme();
     const [techniques, setTechniques] = useState<Technique[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -88,30 +82,26 @@ export default function BreathingListScreen({ navigation }: any) {
     };
 
     useEffect(() => { fetchTechniques(); }, []);
-
-    const onRefresh = () => {
-        setRefreshing(true);
-        fetchTechniques(true);
-    };
+    const onRefresh = () => { setRefreshing(true); fetchTechniques(true); };
 
     if (loading) return <LoadingState />;
     if (error) return <ErrorState message={error} />;
 
     return (
-        <SafeAreaView style={[styles.safe, { backgroundColor: colors.bgPrimary }]}>
-            <View style={styles.header}>
-                <View style={styles.headerIconBox}>
-                    <Text style={styles.headerIconEmoji}>🌬️</Text>
-                </View>
+        <SafeAreaView style={styles.safe}>
+            {/* Header gradient seperti beranda */}
+            <LinearGradient
+                colors={[D.gradStart, D.gradEnd]}
+                start={{ x: 0.1, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.headerCard}
+            >
+                <Text style={styles.headerEmoji}>🫁</Text>
                 <View>
-                    <Text style={[styles.title, { color: colors.charcoal }]}>
-                        Latihan Pernapasan
-                    </Text>
-                    <Text style={[styles.subtitle, { color: colors.darkGray }]}>
-                        Pilih teknik yang kamu suka
-                    </Text>
+                    <Text style={styles.headerTitle}>Latihan Pernapasan</Text>
+                    <Text style={styles.headerSub}>Pilih teknik yang kamu suka 🌬️</Text>
                 </View>
-            </View>
+            </LinearGradient>
 
             <FlatList
                 data={techniques}
@@ -119,74 +109,56 @@ export default function BreathingListScreen({ navigation }: any) {
                 contentContainerStyle={styles.list}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
-                    <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={onRefresh}
-                        tintColor="#8a9ccc"
-                    />
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P} />
                 }
                 ListEmptyComponent={<EmptyState message="Belum ada teknik tersedia." />}
                 renderItem={({ item, index }) => {
-                    const iconStyle = ICON_COLORS[index % ICON_COLORS.length];
+                    const phases = [
+                        item.inhaleDuration > 0 && { ...PHASE_COLORS.inhale, val: item.inhaleDuration },
+                        item.holdDuration > 0    && { ...PHASE_COLORS.hold,   val: item.holdDuration },
+                        item.exhaleDuration > 0  && { ...PHASE_COLORS.exhale, val: item.exhaleDuration },
+                        item.holdAfterExhale > 0 && { ...PHASE_COLORS.hold2,  val: item.holdAfterExhale },
+                    ].filter(Boolean) as { bg: string; text: string; label: string; val: number }[];
+
                     return (
                         <AnimatedView delay={index * 80}>
                             <TouchableOpacity
-                                style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.divider }]}
+                                style={styles.card}
                                 onPress={() => navigation.navigate('BreathingExercise', { technique: item })}
                                 activeOpacity={0.85}
                             >
-                                <View style={[styles.iconBox, { backgroundColor: iconStyle.bg }]}>
-                                    <Text style={styles.iconEmoji}>{resolveIcon(item.icon)}</Text>
-                                </View>
-                                <View style={styles.cardBody}>
-                                    <View style={styles.cardTopRow}>
-                                        <Text
-                                            style={[styles.name, { color: colors.charcoal }]}
-                                            numberOfLines={1}
-                                        >
-                                            {item.name}
-                                        </Text>
-                                        <View style={styles.cycleBadge}>
-                                            <Text style={styles.cycleBadgeText}>{item.cycles}×</Text>
+                                {/* Accent strip warna teknik */}
+                                <View style={[styles.accentBar, { backgroundColor: item.colorTheme || P }]} />
+
+                                <View style={styles.cardInner}>
+                                    {/* Icon + nama */}
+                                    <View style={styles.cardTop}>
+                                        <View style={[styles.iconBox, { backgroundColor: (item.colorTheme || P) + '20' }]}>
+                                            <Text style={styles.iconText}>{resolveIcon(item.icon)}</Text>
+                                        </View>
+                                        <View style={styles.cardMeta}>
+                                            <Text style={styles.cardName}>{item.name}</Text>
+                                            {item.description ? (
+                                                <Text style={styles.cardDesc} numberOfLines={2}>
+                                                    {item.description}
+                                                </Text>
+                                            ) : null}
+                                        </View>
+                                        {/* Siklus badge */}
+                                        <View style={[styles.cycleBadge, { backgroundColor: D.blueLight }]}>
+                                            <Text style={styles.cycleNum}>{item.cycles}x</Text>
+                                            <Text style={styles.cycleLbl}>siklus</Text>
                                         </View>
                                     </View>
-                                    {item.description ? (
-                                        <Text
-                                            style={[styles.desc, { color: colors.darkGray }]}
-                                            numberOfLines={2}
-                                        >
-                                            {item.description}
-                                        </Text>
-                                    ) : null}
-                                    <View style={styles.chips}>
-                                        <PhaseChip
-                                            label="Tarik"
-                                            value={item.inhaleDuration}
-                                            bg={PHASE_TOKENS.inhale.bg}
-                                            textColor={PHASE_TOKENS.inhale.text}
-                                        />
-                                        {item.holdDuration > 0 && (
-                                            <PhaseChip
-                                                label="Tahan"
-                                                value={item.holdDuration}
-                                                bg={PHASE_TOKENS.hold.bg}
-                                                textColor={PHASE_TOKENS.hold.text}
-                                            />
-                                        )}
-                                        <PhaseChip
-                                            label="Hembus"
-                                            value={item.exhaleDuration}
-                                            bg={PHASE_TOKENS.exhale.bg}
-                                            textColor={PHASE_TOKENS.exhale.text}
-                                        />
-                                        {item.holdAfterExhale > 0 && (
-                                            <PhaseChip
-                                                label="Jeda"
-                                                value={item.holdAfterExhale}
-                                                bg={PHASE_TOKENS.hold2.bg}
-                                                textColor={PHASE_TOKENS.hold2.text}
-                                            />
-                                        )}
+
+                                    {/* Phase badges */}
+                                    <View style={styles.phasesRow}>
+                                        {phases.map(p => (
+                                            <View key={p.label} style={[styles.phasePill, { backgroundColor: p.bg }]}>
+                                                <Text style={[styles.phaseVal, { color: p.text }]}>{p.val}s</Text>
+                                                <Text style={[styles.phaseLbl, { color: p.text + 'bb' }]}>{p.label}</Text>
+                                            </View>
+                                        ))}
                                     </View>
                                 </View>
                             </TouchableOpacity>
@@ -199,108 +171,122 @@ export default function BreathingListScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-    safe: { flex: 1 },
-    header: {
+    safe: { flex: 1, backgroundColor: D.bg },
+
+    // Header
+    headerCard: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: Spacing.md,
-        paddingHorizontal: Spacing.lg,
-        paddingTop: Spacing.md,
-        paddingBottom: Spacing.sm,
+        borderRadius: 24,
+        margin: Spacing.lg,
+        marginBottom: Spacing.sm,
+        padding: Spacing.lg,
+        paddingVertical: 18,
     },
-    headerIconBox: {
-        width: 48,
-        height: 48,
-        borderRadius: 15,
-        backgroundColor: '#eef2fb',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    headerIconEmoji: { fontSize: 22 },
-    title: {
-        fontFamily: Typography.heading,
-        fontSize: 22,
+    headerEmoji: { fontSize: 38 },
+    headerTitle: {
+        fontFamily: 'Lora_600SemiBold',
+        fontSize: 20,
+        color: D.textDark,
         letterSpacing: -0.2,
     },
-    subtitle: {
-        fontFamily: Typography.body,
-        fontSize: Typography.sizes.sm,
+    headerSub: {
+        fontSize: 13,
+        color: D.textSub,
         marginTop: 3,
     },
+
+    // List
     list: {
         paddingHorizontal: Spacing.lg,
         paddingBottom: Spacing.xl,
-        paddingTop: Spacing.sm,
-        gap: 14,
+        paddingTop: Spacing.xs,
+        gap: Spacing.sm,
     },
+
+    // Card
     card: {
+        backgroundColor: D.card,
+        borderRadius: 20,
         borderWidth: 1,
-        borderRadius: 22,
-        padding: 17,
+        borderColor: D.cardBorder,
+        flexDirection: 'row',
+        overflow: 'hidden',
+        shadowColor: P,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.07,
+        shadowRadius: 8,
+        elevation: 2,
+    },
+    accentBar: { width: 4, borderRadius: 2 },
+    cardInner: { flex: 1, padding: Spacing.md, gap: Spacing.sm },
+
+    cardTop: {
         flexDirection: 'row',
         alignItems: 'flex-start',
+        gap: Spacing.sm,
     },
     iconBox: {
         width: 46,
         height: 46,
         borderRadius: 14,
-        alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 14,
-        flexShrink: 0,
-    },
-    iconEmoji: { fontSize: 20 },
-    cardBody: { flex: 1, minWidth: 0 },
-    cardTopRow: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
-        gap: 8,
-        marginBottom: 5,
-    },
-    name: {
-        fontFamily: Typography.headingBold,
-        fontSize: 16,
-        flex: 1,
-    },
-    cycleBadge: {
-        backgroundColor: '#eff1f7',
-        borderRadius: 20,
-        paddingHorizontal: 9,
-        paddingVertical: 3,
-        flexShrink: 0,
-    },
-    cycleBadgeText: {
-        fontFamily: Typography.bodyMedium,
-        fontSize: 11,
-        fontWeight: '600',
-        color: '#9197aa',
-    },
-    desc: {
-        fontFamily: Typography.body,
-        fontSize: 13,
-        lineHeight: 13 * 1.5,
-        marginBottom: 11,
-    },
-    chips: {
-        flexDirection: 'row',
-        gap: 8,
-        marginTop: 2,
-    },
-    chip: {
-        flex: 1,
         alignItems: 'center',
-        borderRadius: 12,
+        flexShrink: 0,
+    },
+    iconText: { fontSize: 22 },
+    cardMeta: { flex: 1 },
+    cardName: {
+        fontFamily: 'Poppins_600SemiBold',
+        fontSize: 15,
+        color: D.textDark,
+        lineHeight: 20,
+    },
+    cardDesc: {
+        fontFamily: 'Inter_400Regular',
+        fontSize: 12,
+        color: D.textSub,
+        marginTop: 2,
+        lineHeight: 16,
+    },
+
+    // Cycle badge
+    cycleBadge: {
+        borderRadius: 10,
+        paddingHorizontal: 10,
         paddingVertical: 6,
+        alignItems: 'center',
+        flexShrink: 0,
     },
-    chipValue: {
-        fontFamily: Typography.headingBold,
-        fontSize: 13.5,
+    cycleNum: {
+        fontFamily: 'Poppins_700Bold',
+        fontSize: 16,
+        color: P,
+        lineHeight: 19,
     },
-    chipLabel: {
-        fontFamily: Typography.body,
+    cycleLbl: {
+        fontFamily: 'Inter_400Regular',
         fontSize: 10,
-        color: '#9197aa',
-        marginTop: 1,
+        color: D.textMuted,
+    },
+
+    // Phases
+    phasesRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+    phasePill: {
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        alignItems: 'center',
+        flexDirection: 'row',
+        gap: 4,
+    },
+    phaseVal: {
+        fontFamily: 'Poppins_600SemiBold',
+        fontSize: 13,
+    },
+    phaseLbl: {
+        fontFamily: 'Inter_400Regular',
+        fontSize: 11,
     },
 });

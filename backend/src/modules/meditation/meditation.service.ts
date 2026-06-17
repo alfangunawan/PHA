@@ -22,6 +22,20 @@ export const createSession = (data: {
     colorTheme?: string;
 }) => prisma.meditationSession.create({ data });
 
+export const updateSession = (id: string, data: Partial<{
+    title: string;
+    description?: string;
+    category?: MeditationCategory;
+    audioUrl?: string;
+    thumbnailUrl?: string;
+    durationOptions: number[];
+    colorTheme?: string;
+    isActive?: boolean;
+}>) => prisma.meditationSession.update({ where: { id }, data });
+
+export const deleteSession = (id: string) =>
+    prisma.meditationSession.delete({ where: { id } });
+
 export const saveLog = (userId: string, data: {
     sessionId: string;
     duration: number;

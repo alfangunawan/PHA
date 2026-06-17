@@ -1,15 +1,17 @@
 const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcrypt');
 const prisma = new PrismaClient();
 
 async function main() {
-  const users = await prisma.user.findMany({
-    select: {
-      id: true,
-      email: true
-    }
+  const user = await prisma.user.findUnique({
+    where: { email: 'admin@admin.com' },
   });
-  console.log("Users in database:");
-  console.table(users);
+  console.log(user);
+
+  if (user) {
+     const match = await bcrypt.compare('admin123', user.passwordHash);
+     console.log('Password match test:', match);
+  }
 }
 
 main()

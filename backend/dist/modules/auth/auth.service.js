@@ -43,6 +43,7 @@ exports.registerUser = registerUser;
 const loginUser = (email, password) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield prisma_1.prisma.user.findUnique({
         where: { email },
+        include: { profile: { select: { displayName: true } } },
     });
     if (!user) {
         throw new Error('Invalid credentials');

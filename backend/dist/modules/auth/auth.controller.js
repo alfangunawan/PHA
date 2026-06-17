@@ -56,10 +56,19 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 });
 exports.register = register;
 const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         const { email, password } = req.body;
         const { token, user } = yield AuthService.loginUser(email, password);
-        res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
+        res.json({
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                role: user.role,
+                name: ((_a = user.profile) === null || _a === void 0 ? void 0 : _a.displayName) || user.email.split('@')[0],
+            },
+        });
     }
     catch (error) {
         res.status(401).json({ error: error.message });

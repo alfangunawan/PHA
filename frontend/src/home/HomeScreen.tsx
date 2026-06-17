@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
@@ -142,11 +143,12 @@ function ChevronIcon() {
 
 export default function HomeScreen() {
     const navigation = useNavigation<any>();
-    const { user } = useAuthContext();
+    const { user, isAdmin } = useAuthContext();
     const [selectedMood, setSelectedMood] = useState<string>('baik');
+    const insets = useSafeAreaInsets();
 
     return (
-        <SafeAreaView style={styles.safe}>
+        <SafeAreaView style={[styles.safe, { paddingTop: insets.top > 0 ? 0 : 20 }]}>
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
                 {/* Header card with illustration */}
@@ -158,13 +160,23 @@ export default function HomeScreen() {
                 >
                     <HeaderIllustration />
                     <View style={styles.headerRow}>
-                        <View>
-                            <Text style={styles.greeting}>Halo, {user?.name || 'Teman'}</Text>
+                        <View style={{ flex: 1, paddingRight: 10 }}>
+                            <Text style={styles.greeting} numberOfLines={2}>Halo, {user?.name || 'Teman'}</Text>
                             <Text style={styles.greetingSub}>Senang kamu hadir hari ini.</Text>
                         </View>
-                        <TouchableOpacity onPress={() => navigation.navigate('Profil')} style={styles.avatar}>
-                            <PersonIcon />
-                        </TouchableOpacity>
+                        <View style={{ alignItems: 'flex-end', gap: 8 }}>
+                            <TouchableOpacity onPress={() => navigation.navigate('Profil')} style={styles.avatar}>
+                                <PersonIcon />
+                            </TouchableOpacity>
+                            {isAdmin && (
+                                <TouchableOpacity
+                                    onPress={() => navigation.navigate('AdminDashboard')}
+                                    style={styles.adminBadge}
+                                >
+                                    <Text style={styles.adminBadgeText}>Admin Panel</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
                     </View>
                 </LinearGradient>
 
@@ -243,6 +255,8 @@ const styles = StyleSheet.create({
     greeting: { fontFamily: 'Lora_600SemiBold', fontSize: 26, lineHeight: 30, color: D.textDark, letterSpacing: -0.2 },
     greetingSub: { fontSize: 14, color: D.textSub, marginTop: 8 },
     avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.7)', justifyContent: 'center', alignItems: 'center' },
+    adminBadge: { backgroundColor: PRIMARY, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+    adminBadgeText: { color: '#fff', fontSize: 11, fontWeight: '600' },
 
     moodCard: { backgroundColor: D.card, borderWidth: 1, borderColor: D.cardBorder, borderRadius: 24, padding: 18, paddingBottom: 20 },
     moodTitle: { fontFamily: 'Lora_600SemiBold', fontSize: 14, color: '#474d5e', marginBottom: 16 },

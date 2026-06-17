@@ -15,20 +15,23 @@ import { Typography, Spacing } from '../../theme';
 import config from '../../config';
 
 const { width: SCREEN_W } = Dimensions.get('window');
+const CIRCLE_SIZE = SCREEN_W * 0.62;
+const MIN_SIZE = CIRCLE_SIZE * 0.55;
 
-const CONTAINER    = SCREEN_W * 0.74;
-const OUTER_RING   = CONTAINER * 0.967;
-const MIDDLE_SHAPE = CONTAINER * 0.747;
-const INNER_MAX    = CONTAINER * 0.567;
-const INNER_MIN    = INNER_MAX * 0.48;
-
-const PHASE_COLORS = ['#6477ad', '#7d6fb5', '#5b82a8', '#8a7bb0'];
+const PHASE_COLORS = ['#A8C5DA', '#C9B8E8', '#B2C9AD', '#F5CBA7'];
 
 const CIRCLE_BG = [
-    'rgba(100,119,173,0.22)',
-    'rgba(125,111,181,0.22)',
-    'rgba(91,130,168,0.22)',
-    'rgba(138,123,176,0.22)',
+    'rgba(168, 197, 218, 0.21)',
+    'rgba(201, 184, 232, 0.21)',
+    'rgba(178, 201, 173, 0.21)',
+    'rgba(245, 203, 167, 0.21)',
+];
+
+const CIRCLE_BORDER = [
+    'rgba(168, 197, 218, 0.50)',
+    'rgba(201, 184, 232, 0.50)',
+    'rgba(178, 201, 173, 0.50)',
+    'rgba(245, 203, 167, 0.50)',
 ];
 
 type Status = 'ready' | 'running' | 'paused' | 'done';
@@ -46,34 +49,49 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
     const { colors } = useTheme();
 
     const phases: PhaseStep[] = ([
-        { key: 'inhale', label: 'Tarik Napas',  duration: technique.inhaleDuration,    instruction: 'Hirup perlahan...',       colorIdx: 0 },
-        { key: 'hold',   label: 'Tahan',         duration: technique.holdDuration,       instruction: 'Tahan napas...',          colorIdx: 1 },
-        { key: 'exhale', label: 'Hembus',         duration: technique.exhaleDuration,    instruction: 'Lepaskan perlahan...',    colorIdx: 2 },
-        { key: 'hold2',  label: 'Jeda',           duration: technique.holdAfterExhale,   instruction: 'Istirahat sejenak...',    colorIdx: 3 },
+        { key: 'inhale', label: 'Tarik Napas', duration: technique.inhaleDuration, instruction: 'Hirup perlahan...', colorIdx: 0 },
+        { key: 'hold', label: 'Tahan', duration: technique.holdDuration, instruction: 'Tahan napas...', colorIdx: 1 },
+        { key: 'exhale', label: 'Hembus', duration: technique.exhaleDuration, instruction: 'Lepaskan perlahan...', colorIdx: 2 },
+        { key: 'hold2', label: 'Jeda', duration: technique.holdAfterExhale, instruction: 'Istirahat sejenak...', colorIdx: 3 },
     ] as PhaseStep[]).filter(p => p.duration > 0);
 
-    const [status,          setStatus]          = useState<Status>('ready');
+    const [status, setStatus] = useState<Status>('ready');
     const [currentPhaseIdx, setCurrentPhaseIdx] = useState(0);
-    const [phaseCountdown,  setPhaseCountdown]  = useState(phases[0]?.duration ?? 0);
-    const [cyclesDone,      setCyclesDone]      = useState(0);
-    const [elapsedSeconds,  setElapsedSeconds]  = useState(0);
-    const [phaseColorIdx,   setPhaseColorIdx]   = useState(0);
+    const [phaseCountdown, setPhaseCountdown] = useState(phases[0]?.duration ?? 0);
+    const [cyclesDone, setCyclesDone] = useState(0);
+    const [elapsedSeconds, setElapsedSeconds] = useState(0);
+    const [phaseColorIdx, setPhaseColorIdx] = useState(0);
 
-    const statusRef    = useRef<Status>('ready');
-    const phaseTimer   = useRef<ReturnType<typeof setInterval> | null>(null);
+    const statusRef = useRef<Status>('ready');
+    const phaseTimer = useRef<ReturnType<typeof setInterval> | null>(null);
     const sessionTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-    const elapsedRef   = useRef(0);
-    const cyclesRef    = useRef(0);
-    const inhaleSound  = useRef<Audio.Sound | null>(null);
-    const exhaleSound  = useRef<Audio.Sound | null>(null);
+    const elapsedRef = useRef(0);
+    const cyclesRef = useRef(0);
+    const inhaleSound = useRef<Audio.Sound | null>(null);
+    const exhaleSound = useRef<Audio.Sound | null>(null);
 
-    const progress      = useSharedValue(0);
+    const progress = useSharedValue(0);
     const colorProgress = useSharedValue(0);
-    const glowScale     = useSharedValue(1.0);
+    const glowScale = useSharedValue(1.0);
 
-    const innerGlowStyle = useAnimatedStyle(() => {
-        const size = INNER_MIN + (INNER_MAX - INNER_MIN) * progress.value;
-        const bg   = interpolateColor(colorProgress.value, [0, 1, 2, 3], CIRCLE_BG);
+    const circleStyle = useAnimatedStyle(() => {
+        const size = MIN_SIZE + (CIRCLE_SIZE - MIN_SIZE) * progress.value;
+        const bg = interpolateColor(colorProgress.value, [0, 1, 2, 3], CIRCLE_BG);
+        const border = interpolateColor(colorProgress.value, [0, 1, 2, 3], CIRCLE_BORDER);
+        return {
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            backgroundColor: bg,
+            borderColor: border,
+            borderWidth: 2,
+            opacity: 0.35 + progress.value * 0.65,
+        };
+    });
+
+    const innerCircleStyle = useAnimatedStyle(() => {
+        const size = MIN_SIZE * 0.7 + (CIRCLE_SIZE * 0.7 - MIN_SIZE * 0.7) * progress.value;
+        const bg = interpolateColor(colorProgress.value, [0, 1, 2, 3], CIRCLE_BG);
         return {
             width: size,
             height: size,
@@ -82,20 +100,22 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
         };
     });
 
-    const ambientGlowStyle = useAnimatedStyle(() => ({
+    const glowStyle = useAnimatedStyle(() => ({
         transform: [{ scale: glowScale.value }],
-        opacity: 0.15,
+        opacity: 0.22,
     }));
 
     useEffect(() => {
         glowScale.value = withRepeat(
             withSequence(
-                withTiming(1.14, { duration: 1800, easing: Easing.inOut(Easing.ease) }),
-                withTiming(1.0,  { duration: 1800, easing: Easing.inOut(Easing.ease) }),
+                withTiming(1.18, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+                withTiming(1.0, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
             ),
             -1,
         );
 
+        // Preload breathing cue sounds served by the backend. playsInSilentModeIOS
+        // is required or the iOS ringer switch silences playback.
         (async () => {
             try {
                 await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
@@ -116,7 +136,7 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
             cancelAnimation(glowScale);
             cancelAnimation(progress);
             cancelAnimation(colorProgress);
-            if (phaseTimer.current)   clearInterval(phaseTimer.current);
+            if (phaseTimer.current) clearInterval(phaseTimer.current);
             if (sessionTimer.current) clearInterval(sessionTimer.current);
             inhaleSound.current?.unloadAsync();
             exhaleSound.current?.unloadAsync();
@@ -184,11 +204,11 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
     const startSession = useCallback(() => {
         statusRef.current = 'running';
         setStatus('running');
-        cyclesRef.current  = 0;
+        cyclesRef.current = 0;
         elapsedRef.current = 0;
         setCyclesDone(0);
         setElapsedSeconds(0);
-        progress.value      = withTiming(0, { duration: 200 });
+        progress.value = withTiming(0, { duration: 200 });
         colorProgress.value = withTiming(0, { duration: 200 });
 
         sessionTimer.current = setInterval(() => {
@@ -203,7 +223,7 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
         if (statusRef.current === 'running') {
             statusRef.current = 'paused';
             setStatus('paused');
-            if (phaseTimer.current)   clearInterval(phaseTimer.current);
+            if (phaseTimer.current) clearInterval(phaseTimer.current);
             if (sessionTimer.current) clearInterval(sessionTimer.current);
         } else if (statusRef.current === 'paused') {
             statusRef.current = 'running';
@@ -219,13 +239,13 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
     const confirmStop = () => {
         Alert.alert(
             'Hentikan Sesi?',
-            'Kemajuanmu akan tetap tersimpan.',
+            'Kemajuanmu akan tetap tersimpan 🌿',
             [
                 { text: 'Lanjutkan', style: 'cancel' },
                 {
                     text: 'Hentikan',
                     onPress: () => {
-                        if (phaseTimer.current)   clearInterval(phaseTimer.current);
+                        if (phaseTimer.current) clearInterval(phaseTimer.current);
                         if (sessionTimer.current) clearInterval(sessionTimer.current);
                         saveLog();
                         navigation.goBack();
@@ -242,8 +262,8 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
         setCurrentPhaseIdx(0);
         setPhaseColorIdx(0);
         elapsedRef.current = 0;
-        cyclesRef.current  = 0;
-        progress.value      = withTiming(0, { duration: 300 });
+        cyclesRef.current = 0;
+        progress.value = withTiming(0, { duration: 300 });
         colorProgress.value = withTiming(0, { duration: 300 });
     };
 
@@ -259,134 +279,118 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
         }
     };
 
-    const pad          = (n: number) => String(Math.floor(n)).padStart(2, '0');
+    const pad = (n: number) => String(Math.floor(n)).padStart(2, '0');
+
     const currentPhase = phases[currentPhaseIdx];
-    const phaseColor   = PHASE_COLORS[phaseColorIdx] ?? PHASE_COLORS[0];
+    const phaseColor = PHASE_COLORS[phaseColorIdx] ?? PHASE_COLORS[0];
+    const themeColor = technique.colorTheme || PHASE_COLORS[0];
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
+        <View style={[styles.container, { backgroundColor: '#fcfcfe' }]}>
             <SafeAreaView style={styles.safe}>
-
                 {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity
-                        style={[styles.closeBtn, { backgroundColor: colors.lightGray }]}
+                        style={styles.headerBtn}
                         onPress={status === 'running' || status === 'paused' ? confirmStop : () => navigation.goBack()}
                     >
-                        <Text style={[styles.closeBtnText, { color: colors.darkGray }]}>✕</Text>
+                        <Text style={[styles.closeBtn, { color: '#717a96' }]}>✕</Text>
                     </TouchableOpacity>
-                    <Text style={[styles.techniqueTitle, { color: colors.charcoal }]} numberOfLines={1}>
-                        {technique.name}
-                    </Text>
-                    <Text style={styles.cycleText}>
-                        {cyclesDone}/{technique.cycles} siklus
+                    <View style={styles.headerCenter}>
+                        <Text style={[styles.techniqueTitle, { color: '#353b4a' }]} numberOfLines={1}>
+                            {technique.name}
+                        </Text>
+                    </View>
+                    <Text style={[styles.cycleText, { color: '#8a9ccc' }]}>
+                        {cyclesDone}/{technique.cycles} 🔄
                     </Text>
                 </View>
 
-                {/* Circle */}
-                <View style={styles.circleArea}>
-                    <View style={styles.circleContainer}>
-                        {/* Outer ring */}
-                        <View style={styles.outerRing} />
-                        {/* Middle guide shape */}
-                        <View style={styles.middleShape} />
-                        {/* Ambient glow pulse */}
-                        <Animated.View style={[styles.ambientGlow, ambientGlowStyle]} />
-                        {/* Breathing circle (animates) */}
-                        <Animated.View style={[styles.innerGlow, innerGlowStyle]} />
+                {/* Circle area */}
+                <View style={styles.circleContainer}>
+                    <Animated.View style={[styles.glowRing, { borderColor: phaseColor }, glowStyle]} />
+                    <Animated.View style={[styles.breathCircle, circleStyle]} />
+                    <Animated.View style={[styles.innerCircle, innerCircleStyle]} />
 
-                        {/* Center text */}
-                        <View style={styles.centerContent}>
-                            {status === 'ready' && (
-                                <AnimatedView style={styles.centeredItems}>
-                                    <Text style={styles.phaseUpperLabel}>Bersiap</Text>
-                                    <Text style={[styles.readyText, { color: colors.charcoal }]}>
-                                        Siap memulai?
-                                    </Text>
-                                    <Text style={[styles.readySubtext, { color: colors.darkGray }]}>
-                                        Tarik napas perlahan, lalu mulai
-                                    </Text>
-                                </AnimatedView>
-                            )}
+                    <View style={styles.centerContent}>
+                        {status === 'ready' && (
+                            <AnimatedView style={styles.centeredItems}>
+                                <Text style={styles.readyEmoji}>{technique.icon || '🌬️'}</Text>
+                                <Text style={[styles.readyText, { color: colors.charcoal }]}>Siap memulai?</Text>
+                            </AnimatedView>
+                        )}
 
-                            {(status === 'running' || status === 'paused') && (
-                                <View style={styles.centeredItems}>
-                                    <Text style={[styles.phaseUpperLabel, { color: phaseColor }]}>
-                                        {currentPhase?.label}
-                                    </Text>
-                                    <Text style={[styles.phaseCountdown, { color: colors.charcoal }]}>
-                                        {phaseCountdown}
-                                    </Text>
-                                    <Text style={[styles.phaseInstruction, { color: colors.darkGray }]}>
-                                        {status === 'paused' ? 'Dijeda' : currentPhase?.instruction}
-                                    </Text>
-                                </View>
-                            )}
+                        {(status === 'running' || status === 'paused') && (
+                            <View style={styles.centeredItems}>
+                                <Text style={[styles.phaseLabel, { color: phaseColor }]}>
+                                    {currentPhase?.label}
+                                </Text>
+                                <Text style={[styles.phaseCountdown, { color: colors.charcoal }]}>
+                                    {phaseCountdown}
+                                </Text>
+                                <Text style={[styles.phaseInstruction, { color: colors.darkGray }]}>
+                                    {status === 'paused' ? '⏸ Dijeda' : currentPhase?.instruction}
+                                </Text>
+                            </View>
+                        )}
 
-                            {status === 'done' && (
-                                <AnimatedView style={styles.centeredItems}>
-                                    <Text style={styles.phaseUpperLabel}>Selesai</Text>
-                                    <Text style={[styles.readyText, { color: colors.charcoal }]}>
-                                        Luar biasa!
-                                    </Text>
-                                    <Text style={[styles.readySubtext, { color: colors.darkGray }]}>
-                                        Sesi napas kamu selesai ✨
-                                    </Text>
-                                </AnimatedView>
-                            )}
-                        </View>
+                        {status === 'done' && (
+                            <AnimatedView style={styles.centeredItems}>
+                                <Text style={styles.doneEmoji}>✨</Text>
+                                <Text style={[styles.doneText, { color: colors.charcoal }]}>Luar biasa!</Text>
+                            </AnimatedView>
+                        )}
                     </View>
                 </View>
 
                 {/* Stats */}
-                <View style={[styles.statsRow, { borderTopColor: colors.divider, marginHorizontal: Spacing.lg }]}>
+                <View style={[styles.statsRow, { borderTopColor: '#ecedf6', backgroundColor: '#ffffff' }]}>
                     <View style={styles.stat}>
-                        <Text style={[styles.statValue, { color: colors.charcoal }]}>
+                        <Text style={[styles.statValue, { color: '#353b4a' }]}>
                             {pad(Math.floor(elapsedSeconds / 60))}:{pad(elapsedSeconds % 60)}
                         </Text>
-                        <Text style={styles.statLabel}>Durasi</Text>
+                        <Text style={[styles.statLabel, { color: '#949bae' }]}>⏱ Durasi</Text>
                     </View>
-                    <View style={[styles.statDivider, { backgroundColor: colors.divider }]} />
                     <View style={styles.stat}>
-                        <Text style={[styles.statValue, { color: colors.charcoal }]}>{cyclesDone}</Text>
-                        <Text style={styles.statLabel}>Siklus</Text>
+                        <Text style={[styles.statValue, { color: '#8a9ccc' }]}>{cyclesDone}</Text>
+                        <Text style={[styles.statLabel, { color: '#949bae' }]}>🔄 Siklus</Text>
                     </View>
-                    <View style={[styles.statDivider, { backgroundColor: colors.divider }]} />
                     <View style={styles.stat}>
-                        <Text style={[styles.statValue, { color: colors.charcoal }]}>
+                        <Text style={[styles.statValue, { color: '#9387c8' }]}>
                             {technique.cycles - cyclesDone}
                         </Text>
-                        <Text style={styles.statLabel}>Tersisa</Text>
+                        <Text style={[styles.statLabel, { color: '#949bae' }]}>🎯 Tersisa</Text>
                     </View>
                 </View>
 
                 {/* Controls */}
                 <View style={styles.controls}>
                     {status === 'ready' && (
-                        <TouchableOpacity style={styles.primaryBtn} onPress={startSession}>
-                            <Text style={styles.primaryBtnText}>▶  Mulai Sekarang</Text>
+                        <TouchableOpacity
+                            style={[styles.mainBtn, { backgroundColor: themeColor }]}
+                            onPress={startSession}
+                        >
+                            <Text style={styles.mainBtnText}>🌬️ Mulai Sekarang</Text>
                         </TouchableOpacity>
                     )}
 
                     {(status === 'running' || status === 'paused') && (
                         <View style={styles.btnRow}>
                             <TouchableOpacity
-                                style={[styles.secondaryBtn, { backgroundColor: colors.lightGray }]}
+                                style={[styles.stopBtn, { backgroundColor: '#ecedf6' }]}
                                 onPress={confirmStop}
                             >
-                                <Text style={[styles.secondaryBtnText, { color: colors.darkGray }]}>
-                                    Hentikan
-                                </Text>
+                                <Text style={[styles.stopBtnText, { color: '#717a96' }]}>✕ Hentikan</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[
-                                    styles.primaryBtn,
-                                    { flex: 1, backgroundColor: status === 'paused' ? '#8a9ccc' : '#b0bcdf' },
+                                    styles.mainBtn,
+                                    { backgroundColor: status === 'paused' ? themeColor : '#c09475', flex: 1 },
                                 ]}
                                 onPress={pauseSession}
                             >
-                                <Text style={styles.primaryBtnText}>
-                                    {status === 'paused' ? '▶  Lanjutkan' : '⏸  Jeda'}
+                                <Text style={styles.mainBtnText}>
+                                    {status === 'paused' ? '▶ Lanjutkan' : '⏸ Jeda'}
                                 </Text>
                             </TouchableOpacity>
                         </View>
@@ -395,23 +399,20 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
                     {status === 'done' && (
                         <View style={styles.btnRow}>
                             <TouchableOpacity
-                                style={[styles.secondaryBtn, { backgroundColor: colors.lightGray }]}
+                                style={[styles.stopBtn, { backgroundColor: '#ecedf6' }]}
                                 onPress={() => navigation.goBack()}
                             >
-                                <Text style={[styles.secondaryBtnText, { color: colors.darkGray }]}>
-                                    ← Kembali
-                                </Text>
+                                <Text style={[styles.stopBtnText, { color: '#717a96' }]}>← Kembali</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.primaryBtn, { flex: 1 }]}
+                                style={[styles.mainBtn, { backgroundColor: themeColor, flex: 1 }]}
                                 onPress={resetSession}
                             >
-                                <Text style={styles.primaryBtnText}>🔄 Ulangi</Text>
+                                <Text style={styles.mainBtnText}>🔄 Ulangi</Text>
                             </TouchableOpacity>
                         </View>
                     )}
                 </View>
-
             </SafeAreaView>
         </View>
     );
@@ -420,176 +421,135 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
     container: { flex: 1 },
     safe: { flex: 1 },
-
     header: {
         flexDirection: 'row',
-        alignItems: 'center',
         justifyContent: 'space-between',
+        alignItems: 'center',
         paddingHorizontal: Spacing.lg,
         paddingTop: Spacing.md,
         paddingBottom: Spacing.sm,
     },
-    closeBtn: {
-        width: 38,
-        height: 38,
-        borderRadius: 12,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    closeBtnText: { fontSize: 15, fontWeight: '600' },
+    headerBtn: { padding: 4, minWidth: 32 },
+    headerCenter: { flex: 1, alignItems: 'center' },
+    closeBtn: { fontSize: 20 },
     techniqueTitle: {
-        fontFamily: Typography.heading,
-        fontSize: 17,
+        fontFamily: 'Lora_600SemiBold',
+        fontSize: 16,
         flex: 1,
         textAlign: 'center',
         marginHorizontal: Spacing.sm,
     },
     cycleText: {
-        fontFamily: Typography.bodyMedium,
-        fontSize: 13,
-        color: '#9197aa',
+        fontFamily: 'Inter_500Medium',
+        fontSize: Typography.sizes.sm,
         minWidth: 64,
         textAlign: 'right',
     },
-
-    circleArea: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
     circleContainer: {
-        width: CONTAINER,
-        height: CONTAINER,
-        alignItems: 'center',
+        flex: 1,
         justifyContent: 'center',
+        alignItems: 'center',
     },
-    outerRing: {
+    glowRing: {
         position: 'absolute',
-        width: OUTER_RING,
-        height: OUTER_RING,
-        borderRadius: OUTER_RING / 2,
-        borderWidth: 1,
-        borderColor: '#e8eaf3',
-    },
-    middleShape: {
-        position: 'absolute',
-        width: MIDDLE_SHAPE,
-        height: MIDDLE_SHAPE,
-        borderRadius: MIDDLE_SHAPE * 0.178,
+        width: CIRCLE_SIZE + 60,
+        height: CIRCLE_SIZE + 60,
+        borderRadius: (CIRCLE_SIZE + 60) / 2,
         borderWidth: 2,
-        borderColor: '#d6deef',
     },
-    ambientGlow: {
+    breathCircle: {
         position: 'absolute',
-        width: INNER_MAX + 24,
-        height: INNER_MAX + 24,
-        borderRadius: (INNER_MAX + 24) / 2,
-        backgroundColor: '#e1e8f7',
     },
-    innerGlow: {
+    innerCircle: {
         position: 'absolute',
     },
     centerContent: {
         position: 'absolute',
-        alignItems: 'center',
         justifyContent: 'center',
+        alignItems: 'center',
         zIndex: 10,
-        paddingHorizontal: Spacing.md,
+        paddingHorizontal: Spacing.lg,
     },
     centeredItems: { alignItems: 'center' },
-
-    phaseUpperLabel: {
-        fontFamily: Typography.bodyMedium,
-        fontSize: 11,
-        letterSpacing: 2,
-        textTransform: 'uppercase',
-        color: '#a4aabc',
-        fontWeight: '600',
-        marginBottom: 8,
-    },
+    readyEmoji: { fontSize: 48, marginBottom: 8, textAlign: 'center' },
     readyText: {
         fontFamily: Typography.heading,
-        fontSize: 30,
-        letterSpacing: -0.3,
+        fontSize: Typography.sizes.xl,
         textAlign: 'center',
     },
-    readySubtext: {
-        fontFamily: Typography.body,
-        fontSize: 14,
-        marginTop: 8,
+    phaseLabel: {
+        fontFamily: Typography.headingBold,
+        fontSize: Typography.sizes.md,
+        textTransform: 'uppercase',
+        letterSpacing: 1.5,
+        marginBottom: 4,
         textAlign: 'center',
     },
     phaseCountdown: {
         fontFamily: Typography.headingBold,
-        fontSize: 52,
-        lineHeight: 60,
+        fontSize: Typography.sizes['4xl'],
+        lineHeight: Typography.sizes['4xl'] + 8,
         textAlign: 'center',
     },
     phaseInstruction: {
         fontFamily: Typography.body,
-        fontSize: 14,
-        marginTop: 6,
+        fontSize: Typography.sizes.base,
+        marginTop: 8,
         textAlign: 'center',
     },
-
+    doneEmoji: { fontSize: 56, textAlign: 'center', marginBottom: 8 },
+    doneText: {
+        fontFamily: Typography.headingBold,
+        fontSize: Typography.sizes.xl,
+        textAlign: 'center',
+    },
     statsRow: {
         flexDirection: 'row',
-        alignItems: 'center',
+        justifyContent: 'space-around',
+        paddingHorizontal: Spacing.xl,
+        paddingVertical: Spacing.md,
         borderTopWidth: 1,
-        paddingVertical: 20,
+        marginHorizontal: Spacing.lg,
+        borderRadius: 16,
     },
-    stat: { flex: 1, alignItems: 'center' },
+    stat: { alignItems: 'center' },
     statValue: {
         fontFamily: Typography.headingBold,
-        fontSize: 26,
-        letterSpacing: -0.5,
+        fontSize: Typography.sizes.xl,
+        letterSpacing: 1,
     },
     statLabel: {
-        fontFamily: Typography.bodyMedium,
-        fontSize: 10.5,
-        color: '#a4aabc',
+        fontFamily: Typography.body,
+        fontSize: Typography.sizes.xs,
         textTransform: 'uppercase',
-        letterSpacing: 1.2,
-        marginTop: 4,
-        fontWeight: '600',
+        letterSpacing: 0.8,
+        marginTop: 2,
     },
-    statDivider: {
-        width: 1,
-        height: 36,
-    },
-
     controls: {
-        paddingHorizontal: Spacing.lg,
+        padding: Spacing.lg,
         paddingBottom: Spacing.xl,
     },
     btnRow: { flexDirection: 'row', gap: Spacing.sm },
-    primaryBtn: {
-        backgroundColor: '#8a9ccc',
-        paddingVertical: 18,
-        borderRadius: 18,
+    mainBtn: {
+        paddingVertical: 16,
+        borderRadius: 50,
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: '#8a9ccc',
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.55,
-        shadowRadius: 18,
-        elevation: 8,
     },
-    primaryBtnText: {
+    mainBtnText: {
         fontFamily: Typography.heading,
-        fontSize: 16,
-        color: '#ffffff',
-        fontWeight: '600',
+        fontSize: Typography.sizes.md,
+        color: '#FFFFFF',
     },
-    secondaryBtn: {
-        paddingVertical: 18,
+    stopBtn: {
+        paddingVertical: 16,
         paddingHorizontal: Spacing.lg,
-        borderRadius: 18,
+        borderRadius: 50,
         alignItems: 'center',
         justifyContent: 'center',
     },
-    secondaryBtnText: {
+    stopBtnText: {
         fontFamily: Typography.bodyMedium,
-        fontSize: 14,
+        fontSize: Typography.sizes.sm,
     },
 });
