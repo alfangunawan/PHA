@@ -7,7 +7,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { breathingAPI } from '../../api';
 import { LoadingState, EmptyState, ErrorState } from '../../components/LoadingState';
 import AnimatedView from '../../components/AnimatedView';
-import { Typography, Spacing, BorderRadius } from '../../theme';
+import { Typography, Spacing } from '../../theme';
 
 const ICON_MAP: Record<string, string> = {
     moon: '🌙',
@@ -25,6 +25,20 @@ const ICON_MAP: Record<string, string> = {
 const resolveIcon = (icon?: string) =>
     icon ? (ICON_MAP[icon.toLowerCase()] ?? icon) : '🌬️';
 
+const ICON_COLORS = [
+    { bg: '#eceff8', color: '#7d6fb5' },
+    { bg: '#eef2fb', color: '#6477ad' },
+    { bg: '#e9f1f8', color: '#5b82a8' },
+    { bg: '#f3eef6', color: '#a87fae' },
+];
+
+const PHASE_TOKENS = {
+    inhale: { bg: '#eef2fb', text: '#6477ad' },
+    hold: { bg: '#efecfa', text: '#7d6fb5' },
+    exhale: { bg: '#e9f1f8', text: '#5b82a8' },
+    hold2: { bg: '#f2eef8', text: '#8a7bb0' },
+};
+
 interface Technique {
     id: string;
     name: string;
@@ -38,22 +52,22 @@ interface Technique {
     icon: string;
 }
 
-interface PhaseBadgeProps {
+interface PhaseChipProps {
     label: string;
     value: number;
-    color: string;
+    bg: string;
     textColor: string;
 }
 
-const PhaseBadge = ({ label, value, color, textColor }: PhaseBadgeProps) => (
-    <View style={[styles.badge, { backgroundColor: color + '28' }]}>
-        <Text style={[styles.badgeValue, { color }]}>{value}s</Text>
-        <Text style={[styles.badgeLabel, { color: textColor }]}>{label}</Text>
+const PhaseChip = ({ label, value, bg, textColor }: PhaseChipProps) => (
+    <View style={[styles.chip, { backgroundColor: bg }]}>
+        <Text style={[styles.chipValue, { color: textColor }]}>{value}s</Text>
+        <Text style={styles.chipLabel}>{label}</Text>
     </View>
 );
 
 export default function BreathingListScreen({ navigation }: any) {
-    const { colors, shadows } = useTheme();
+    const { colors } = useTheme();
     const [techniques, setTechniques] = useState<Technique[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -85,14 +99,15 @@ export default function BreathingListScreen({ navigation }: any) {
 
     return (
         <SafeAreaView style={[styles.safe, { backgroundColor: colors.bgPrimary }]}>
-            {/* Header */}
             <View style={styles.header}>
-                <Text style={styles.headerEmoji}>🫁</Text>
+                <View style={styles.headerIconBox}>
+                    <Text style={styles.headerIconEmoji}>🌬️</Text>
+                </View>
                 <View>
-                    <Text style={[styles.title, { color: colors.charcoal, fontFamily: Typography.headingBold }]}>
+                    <Text style={[styles.title, { color: colors.charcoal }]}>
                         Latihan Pernapasan
                     </Text>
-                    <Text style={[styles.subtitle, { color: colors.darkGray, fontFamily: Typography.body }]}>
+                    <Text style={[styles.subtitle, { color: colors.darkGray }]}>
                         Pilih teknik yang kamu suka
                     </Text>
                 </View>
@@ -107,53 +122,77 @@ export default function BreathingListScreen({ navigation }: any) {
                     <RefreshControl
                         refreshing={refreshing}
                         onRefresh={onRefresh}
-                        tintColor={colors.softBlue}
+                        tintColor="#8a9ccc"
                     />
                 }
                 ListEmptyComponent={<EmptyState message="Belum ada teknik tersedia." />}
-                renderItem={({ item, index }) => (
-                    <AnimatedView delay={index * 80}>
-                        <TouchableOpacity
-                            style={[
-                                styles.card,
-                                { backgroundColor: colors.bgCard, borderTopColor: item.colorTheme || colors.softBlue },
-                                shadows.md,
-                            ]}
-                            onPress={() => navigation.navigate('BreathingExercise', { technique: item })}
-                            activeOpacity={0.85}
-                        >
-                            <View style={[styles.iconBox, { backgroundColor: (item.colorTheme || colors.softBlue) + '22' }]}>
-                                <Text style={styles.icon}>{resolveIcon(item.icon)}</Text>
-                            </View>
-                            <View style={styles.cardBody}>
-                                <Text style={[styles.name, { color: colors.charcoal, fontFamily: Typography.heading }]}>
-                                    {item.name}
-                                </Text>
-                                {item.description ? (
-                                    <Text
-                                        style={[styles.desc, { color: colors.darkGray, fontFamily: Typography.body }]}
-                                        numberOfLines={2}
-                                    >
-                                        {item.description}
-                                    </Text>
-                                ) : null}
-                                <View style={styles.badges}>
-                                    <PhaseBadge label="Tarik" value={item.inhaleDuration} color={colors.softBlue} textColor={colors.darkGray} />
-                                    {item.holdDuration > 0 && (
-                                        <PhaseBadge label="Tahan" value={item.holdDuration} color={colors.lavender} textColor={colors.darkGray} />
-                                    )}
-                                    <PhaseBadge label="Hembus" value={item.exhaleDuration} color={colors.sageGreen} textColor={colors.darkGray} />
-                                    {item.holdAfterExhale > 0 && (
-                                        <PhaseBadge label="Jeda" value={item.holdAfterExhale} color={colors.peach} textColor={colors.darkGray} />
-                                    )}
+                renderItem={({ item, index }) => {
+                    const iconStyle = ICON_COLORS[index % ICON_COLORS.length];
+                    return (
+                        <AnimatedView delay={index * 80}>
+                            <TouchableOpacity
+                                style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.divider }]}
+                                onPress={() => navigation.navigate('BreathingExercise', { technique: item })}
+                                activeOpacity={0.85}
+                            >
+                                <View style={[styles.iconBox, { backgroundColor: iconStyle.bg }]}>
+                                    <Text style={styles.iconEmoji}>{resolveIcon(item.icon)}</Text>
                                 </View>
-                            </View>
-                            <Text style={[styles.cycles, { color: colors.mediumGray, fontFamily: Typography.headingBold }]}>
-                                {item.cycles}x
-                            </Text>
-                        </TouchableOpacity>
-                    </AnimatedView>
-                )}
+                                <View style={styles.cardBody}>
+                                    <View style={styles.cardTopRow}>
+                                        <Text
+                                            style={[styles.name, { color: colors.charcoal }]}
+                                            numberOfLines={1}
+                                        >
+                                            {item.name}
+                                        </Text>
+                                        <View style={styles.cycleBadge}>
+                                            <Text style={styles.cycleBadgeText}>{item.cycles}×</Text>
+                                        </View>
+                                    </View>
+                                    {item.description ? (
+                                        <Text
+                                            style={[styles.desc, { color: colors.darkGray }]}
+                                            numberOfLines={2}
+                                        >
+                                            {item.description}
+                                        </Text>
+                                    ) : null}
+                                    <View style={styles.chips}>
+                                        <PhaseChip
+                                            label="Tarik"
+                                            value={item.inhaleDuration}
+                                            bg={PHASE_TOKENS.inhale.bg}
+                                            textColor={PHASE_TOKENS.inhale.text}
+                                        />
+                                        {item.holdDuration > 0 && (
+                                            <PhaseChip
+                                                label="Tahan"
+                                                value={item.holdDuration}
+                                                bg={PHASE_TOKENS.hold.bg}
+                                                textColor={PHASE_TOKENS.hold.text}
+                                            />
+                                        )}
+                                        <PhaseChip
+                                            label="Hembus"
+                                            value={item.exhaleDuration}
+                                            bg={PHASE_TOKENS.exhale.bg}
+                                            textColor={PHASE_TOKENS.exhale.text}
+                                        />
+                                        {item.holdAfterExhale > 0 && (
+                                            <PhaseChip
+                                                label="Jeda"
+                                                value={item.holdAfterExhale}
+                                                bg={PHASE_TOKENS.hold2.bg}
+                                                textColor={PHASE_TOKENS.hold2.text}
+                                            />
+                                        )}
+                                    </View>
+                                </View>
+                            </TouchableOpacity>
+                        </AnimatedView>
+                    );
+                }}
             />
         </SafeAreaView>
     );
@@ -169,46 +208,99 @@ const styles = StyleSheet.create({
         paddingTop: Spacing.md,
         paddingBottom: Spacing.sm,
     },
-    headerEmoji: { fontSize: 44 },
-    title: { fontSize: Typography.sizes.xl },
-    subtitle: { fontSize: Typography.sizes.sm, marginTop: 2 },
+    headerIconBox: {
+        width: 48,
+        height: 48,
+        borderRadius: 15,
+        backgroundColor: '#eef2fb',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    headerIconEmoji: { fontSize: 22 },
+    title: {
+        fontFamily: Typography.heading,
+        fontSize: 22,
+        letterSpacing: -0.2,
+    },
+    subtitle: {
+        fontFamily: Typography.body,
+        fontSize: Typography.sizes.sm,
+        marginTop: 3,
+    },
     list: {
         paddingHorizontal: Spacing.lg,
         paddingBottom: Spacing.xl,
         paddingTop: Spacing.sm,
+        gap: 14,
     },
     card: {
-        borderRadius: BorderRadius.xl,
-        padding: Spacing.md,
-        marginBottom: Spacing.md,
+        borderWidth: 1,
+        borderRadius: 22,
+        padding: 17,
         flexDirection: 'row',
         alignItems: 'flex-start',
-        borderTopWidth: 3,
     },
     iconBox: {
-        width: 48,
-        height: 48,
-        borderRadius: BorderRadius.md,
+        width: 46,
+        height: 46,
+        borderRadius: 14,
+        alignItems: 'center',
         justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: Spacing.md,
+        marginRight: 14,
+        flexShrink: 0,
     },
-    icon: { fontSize: 22 },
-    cardBody: { flex: 1 },
-    name: { fontSize: Typography.sizes.md, marginBottom: 4 },
+    iconEmoji: { fontSize: 20 },
+    cardBody: { flex: 1, minWidth: 0 },
+    cardTopRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+        gap: 8,
+        marginBottom: 5,
+    },
+    name: {
+        fontFamily: Typography.headingBold,
+        fontSize: 16,
+        flex: 1,
+    },
+    cycleBadge: {
+        backgroundColor: '#eff1f7',
+        borderRadius: 20,
+        paddingHorizontal: 9,
+        paddingVertical: 3,
+        flexShrink: 0,
+    },
+    cycleBadgeText: {
+        fontFamily: Typography.bodyMedium,
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#9197aa',
+    },
     desc: {
-        fontSize: Typography.sizes.sm,
-        lineHeight: Typography.sizes.sm * 1.6,
-        marginBottom: Spacing.sm,
+        fontFamily: Typography.body,
+        fontSize: 13,
+        lineHeight: 13 * 1.5,
+        marginBottom: 11,
     },
-    badges: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
-    badge: {
+    chips: {
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 2,
+    },
+    chip: {
+        flex: 1,
         alignItems: 'center',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: BorderRadius.sm,
+        borderRadius: 12,
+        paddingVertical: 6,
     },
-    badgeValue: { fontFamily: 'Poppins_700Bold', fontSize: Typography.sizes.sm },
-    badgeLabel: { fontFamily: 'Inter_400Regular', fontSize: Typography.sizes.xs },
-    cycles: { fontSize: Typography.sizes.sm, marginLeft: Spacing.sm },
+    chipValue: {
+        fontFamily: Typography.headingBold,
+        fontSize: 13.5,
+    },
+    chipLabel: {
+        fontFamily: Typography.body,
+        fontSize: 10,
+        color: '#9197aa',
+        marginTop: 1,
+    },
 });

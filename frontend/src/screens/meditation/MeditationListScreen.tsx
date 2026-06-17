@@ -1,26 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
+import {
+    View, Text, FlatList, StyleSheet, TouchableOpacity, ScrollView, RefreshControl,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { meditationAPI } from '../../api';
 import { LoadingState, EmptyState, ErrorState } from '../../components/LoadingState';
 import AnimatedView from '../../components/AnimatedView';
-import { Typography, Spacing, BorderRadius } from '../../theme';
+import { Typography, Spacing } from '../../theme';
 
 interface CategoryConfig {
     key: string;
     label: string;
     emoji: string;
-    color: string;
+    iconBg: string;
+    iconColor: string;
+    badgeBg: string;
+    badgeColor: string;
 }
 
 const CATEGORY_CONFIG: CategoryConfig[] = [
-    { key: 'all', label: 'Semua', emoji: '✨', color: '#C9B8E8' },
-    { key: 'sleep', label: 'Tidur', emoji: '🌙', color: '#A78BFA' },
-    { key: 'focus', label: 'Fokus', emoji: '🎯', color: '#A8C5DA' },
-    { key: 'anxiety', label: 'Cemas', emoji: '💚', color: '#B2C9AD' },
-    { key: 'morning', label: 'Pagi', emoji: '🌅', color: '#F5CBA7' },
-    { key: 'general', label: 'Umum', emoji: '🌿', color: '#B2C9AD' },
+    { key: 'all',     label: 'Semua', emoji: '✨', iconBg: '#eaeef8', iconColor: '#7e8cc4', badgeBg: '#eaeef8', badgeColor: '#7e8cc4' },
+    { key: 'sleep',   label: 'Tidur', emoji: '🌙', iconBg: '#eef2fb', iconColor: '#6477ad', badgeBg: '#eef2fb', badgeColor: '#5868a3' },
+    { key: 'focus',   label: 'Fokus', emoji: '🎯', iconBg: '#f3eef6', iconColor: '#a87fae', badgeBg: '#f3eef6', badgeColor: '#8f689a' },
+    { key: 'morning', label: 'Pagi',  emoji: '🌅', iconBg: '#f6efe2', iconColor: '#c2965c', badgeBg: '#f6efe2', badgeColor: '#b58642' },
+    { key: 'general', label: 'Umum',  emoji: '🌿', iconBg: '#eaf2ec', iconColor: '#6f9e80', badgeBg: '#eaf2ec', badgeColor: '#558168' },
+    { key: 'anxiety', label: 'Cemas', emoji: '💚', iconBg: '#eaf2ec', iconColor: '#6f9e80', badgeBg: '#eaf2ec', badgeColor: '#558168' },
 ];
+
+const DEFAULT_CAT = CATEGORY_CONFIG[0];
 
 interface Session {
     id: string;
@@ -29,198 +37,277 @@ interface Session {
     category: string;
     colorTheme: string;
     durationOptions: number[];
-    thumbnailUrl?: string;
     audioUrl?: string;
-}
-
-function SessionCard({ session, onPress, catColor, catEmoji }: {
-    session: Session;
-    onPress: () => void;
-    catColor: string;
-    catEmoji: string;
-}) {
-    const { colors } = useTheme();
-    return (
-        <TouchableOpacity
-            style={[styles.card, { backgroundColor: colors.bgCard, borderTopColor: catColor }]}
-            onPress={onPress}
-            activeOpacity={0.8}
-        >
-            <View style={styles.cardTop}>
-                <View style={[styles.emojiBadge, { backgroundColor: catColor + '33' }]}>
-                    <Text style={styles.emoji}>{catEmoji}</Text>
-                </View>
-                <View style={styles.cardInfo}>
-                    <Text style={[styles.sessionTitle, { color: colors.charcoal, fontFamily: Typography.heading }]} numberOfLines={2}>
-                        {session.title}
-                    </Text>
-                    <View style={[styles.catTag, { backgroundColor: catColor + '22' }]}>
-                        <Text style={[styles.catTagText, { color: catColor, fontFamily: Typography.bodyMedium }]}>
-                            {session.category}
-                        </Text>
-                    </View>
-                </View>
-            </View>
-
-            {session.description ? (
-                <Text style={[styles.desc, { color: colors.mediumGray, fontFamily: Typography.body }]} numberOfLines={2}>
-                    {session.description}
-                </Text>
-            ) : null}
-
-            <View style={styles.durationRow}>
-                {(session.durationOptions || [5]).map(d => (
-                    <View key={d} style={[styles.durationChip, { backgroundColor: colors.lightGray }]}>
-                        <Text style={[styles.durationText, { color: colors.darkGray, fontFamily: Typography.bodyMedium }]}>
-                            {d} mnt
-                        </Text>
-                    </View>
-                ))}
-            </View>
-        </TouchableOpacity>
-    );
 }
 
 export default function MeditationListScreen({ navigation }: any) {
     const { colors } = useTheme();
     const [sessions, setSessions] = useState<Session[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState('');
     const [activeKey, setActiveKey] = useState('all');
 
-    useEffect(() => {
-        const cat = activeKey === 'all' ? undefined : activeKey;
-        setLoading(true);
+    const fetchSessions = async (isRefresh = false) => {
+        if (!isRefresh) setLoading(true);
         setError('');
-        meditationAPI.getSessions(cat)
-            .then(res => setSessions(res.sessions || []))
-            .catch(() => setError('Gagal memuat sesi meditasi.'))
-            .finally(() => setLoading(false));
-    }, [activeKey]);
+        const cat = activeKey === 'all' ? undefined : activeKey;
+        try {
+            const res = await meditationAPI.getSessions(cat);
+            setSessions(res.sessions || []);
+        } catch {
+            setError('Gagal memuat sesi meditasi.');
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
 
-    const activeCfg = CATEGORY_CONFIG.find(c => c.key === activeKey) || CATEGORY_CONFIG[0];
+    useEffect(() => { fetchSessions(); }, [activeKey]);
+
+    const onRefresh = () => { setRefreshing(true); fetchSessions(true); };
+
+    if (loading) return <LoadingState />;
+    if (error) return <ErrorState message={error} />;
 
     return (
         <SafeAreaView style={[styles.safe, { backgroundColor: colors.bgPrimary }]}>
             <View style={styles.header}>
-                <Text style={[styles.title, { color: colors.charcoal, fontFamily: Typography.headingBold }]}>
-                    Meditasi
-                </Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersContent}>
-                    {CATEGORY_CONFIG.map(cat => {
-                        const isActive = cat.key === activeKey;
-                        return (
-                            <TouchableOpacity
-                                key={cat.key}
-                                onPress={() => setActiveKey(cat.key)}
-                                style={[
-                                    styles.chip,
-                                    {
-                                        backgroundColor: isActive ? colors.lavender : colors.bgCard,
-                                        borderColor: isActive ? colors.lavenderDark : colors.lightGray,
-                                    },
-                                ]}
-                            >
-                                <Text style={styles.chipEmoji}>{cat.emoji}</Text>
-                                <Text style={[
-                                    styles.chipText,
-                                    { color: isActive ? colors.lavenderDark : colors.darkGray, fontFamily: Typography.bodyMedium }
-                                ]}>
-                                    {cat.label}
-                                </Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </ScrollView>
+                <View style={styles.headerIconBox}>
+                    <Text style={styles.headerIconEmoji}>🧘</Text>
+                </View>
+                <View>
+                    <Text style={[styles.title, { color: colors.charcoal }]}>Meditasi</Text>
+                    <Text style={[styles.subtitle, { color: colors.darkGray }]}>
+                        Temukan ketenangan dalam dirimu
+                    </Text>
+                </View>
             </View>
 
-            {loading
-                ? <LoadingState />
-                : error
-                ? <ErrorState message={error} />
-                : sessions.length === 0
-                ? <EmptyState message="Tidak ada sesi untuk kategori ini." />
-                : (
-                    <FlatList
-                        data={sessions}
-                        keyExtractor={item => item.id}
-                        contentContainerStyle={styles.list}
-                        renderItem={({ item, index }) => {
-                            const cfg = CATEGORY_CONFIG.find(c => c.key === item.category) || {
-                                color: item.colorTheme || colors.lavender,
-                                emoji: '🧘',
-                            };
-                            return (
-                                <AnimatedView delay={index * 70}>
-                                    <SessionCard
-                                        session={item}
-                                        catColor={cfg.color}
-                                        catEmoji={cfg.emoji || '🧘'}
-                                        onPress={() => navigation.navigate('MeditationPlayer', { session: item })}
-                                    />
-                                </AnimatedView>
-                            );
-                        }}
-                    />
-                )
-            }
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.filtersContent}
+            >
+                {CATEGORY_CONFIG.map(cat => {
+                    const isActive = cat.key === activeKey;
+                    return (
+                        <TouchableOpacity
+                            key={cat.key}
+                            onPress={() => setActiveKey(cat.key)}
+                            style={[
+                                styles.chip,
+                                isActive ? styles.chipActive : styles.chipInactive,
+                            ]}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={styles.chipEmoji}>{cat.emoji}</Text>
+                            <Text style={[styles.chipText, { color: isActive ? '#fff' : colors.darkGray }]}>
+                                {cat.label}
+                            </Text>
+                        </TouchableOpacity>
+                    );
+                })}
+            </ScrollView>
+
+            <FlatList
+                data={sessions}
+                keyExtractor={item => item.id}
+                contentContainerStyle={styles.list}
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#8a9ccc" />
+                }
+                ListEmptyComponent={<EmptyState message="Tidak ada sesi untuk kategori ini." />}
+                renderItem={({ item, index }) => {
+                    const cfg = CATEGORY_CONFIG.find(c => c.key === item.category) || DEFAULT_CAT;
+                    const durations = item.durationOptions || [5];
+                    return (
+                        <AnimatedView delay={index * 70}>
+                            <TouchableOpacity
+                                style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.divider }]}
+                                onPress={() => navigation.navigate('MeditationPlayer', { session: item })}
+                                activeOpacity={0.85}
+                            >
+                                <View style={styles.cardRow}>
+                                    <View style={[styles.iconBox, { backgroundColor: cfg.iconBg }]}>
+                                        <Text style={styles.iconEmoji}>{cfg.emoji}</Text>
+                                    </View>
+                                    <View style={styles.cardMeta}>
+                                        <Text
+                                            style={[styles.sessionTitle, { color: colors.charcoal }]}
+                                            numberOfLines={1}
+                                        >
+                                            {item.title}
+                                        </Text>
+                                        <View style={[styles.catBadge, { backgroundColor: cfg.badgeBg }]}>
+                                            <Text style={[styles.catBadgeText, { color: cfg.badgeColor }]}>
+                                                {item.category}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                </View>
+
+                                {item.description ? (
+                                    <Text
+                                        style={[styles.desc, { color: colors.darkGray }]}
+                                        numberOfLines={2}
+                                    >
+                                        {item.description}
+                                    </Text>
+                                ) : null}
+
+                                <View style={styles.durationRow}>
+                                    {durations.map((d, i) => (
+                                        <View
+                                            key={d}
+                                            style={[
+                                                styles.durationChip,
+                                                { backgroundColor: i === 0 ? '#eef2fb' : '#f1f2f8' },
+                                            ]}
+                                        >
+                                            <Text style={[
+                                                styles.durationText,
+                                                { color: i === 0 ? '#5f6b9e' : '#7c8398' },
+                                            ]}>
+                                                {d} mnt
+                                            </Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            </TouchableOpacity>
+                        </AnimatedView>
+                    );
+                }}
+            />
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     safe: { flex: 1 },
-    header: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg, paddingBottom: 0 },
-    title: { fontSize: Typography.sizes['2xl'], marginBottom: Spacing.md },
-    filtersContent: { paddingBottom: Spacing.md, gap: Spacing.xs },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.md,
+        paddingHorizontal: Spacing.lg,
+        paddingTop: Spacing.md,
+        paddingBottom: Spacing.sm,
+    },
+    headerIconBox: {
+        width: 48,
+        height: 48,
+        borderRadius: 15,
+        backgroundColor: '#eaeef8',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    headerIconEmoji: { fontSize: 22 },
+    title: {
+        fontFamily: Typography.heading,
+        fontSize: 22,
+        letterSpacing: -0.2,
+    },
+    subtitle: {
+        fontFamily: Typography.body,
+        fontSize: Typography.sizes.sm,
+        marginTop: 3,
+    },
+    filtersContent: {
+        paddingHorizontal: Spacing.lg,
+        paddingBottom: Spacing.sm,
+        gap: 9,
+    },
     chip: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: Spacing.md,
-        paddingVertical: Spacing.xs + 2,
-        borderRadius: BorderRadius.full,
-        borderWidth: 1.5,
-        marginRight: Spacing.xs,
-        gap: 4,
+        gap: 7,
+        paddingHorizontal: 15,
+        paddingVertical: 9,
+        borderRadius: 14,
+        borderWidth: 1,
     },
-    chipEmoji: { fontSize: 14 },
-    chipText: { fontSize: Typography.sizes.sm },
-    list: { padding: Spacing.md, gap: Spacing.sm },
+    chipActive: {
+        backgroundColor: '#8a9ccc',
+        borderColor: '#8a9ccc',
+        shadowColor: '#8a9ccc',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.35,
+        shadowRadius: 10,
+        elevation: 4,
+    },
+    chipInactive: {
+        backgroundColor: '#ffffff',
+        borderColor: '#e7e9f2',
+        elevation: 0,
+    },
+    chipEmoji: { fontSize: 13 },
+    chipText: {
+        fontFamily: Typography.bodyMedium,
+        fontSize: 13,
+    },
+    list: {
+        paddingHorizontal: Spacing.lg,
+        paddingBottom: Spacing.xl,
+        paddingTop: Spacing.xs,
+        gap: 14,
+    },
     card: {
-        borderRadius: BorderRadius.lg,
-        borderTopWidth: 3,
-        padding: Spacing.md,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 6,
-        elevation: 2,
+        borderWidth: 1,
+        borderRadius: 22,
+        padding: 17,
     },
-    cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm, marginBottom: Spacing.xs },
-    emojiBadge: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
+    cardRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 14,
+        marginBottom: 9,
+    },
+    iconBox: {
+        width: 46,
+        height: 46,
+        borderRadius: 14,
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
     },
-    emoji: { fontSize: 22 },
-    cardInfo: { flex: 1, gap: 4 },
-    sessionTitle: { fontSize: Typography.sizes.md, lineHeight: 22 },
-    catTag: {
+    iconEmoji: { fontSize: 21 },
+    cardMeta: { flex: 1, gap: 6 },
+    sessionTitle: {
+        fontFamily: Typography.headingBold,
+        fontSize: 16,
+    },
+    catBadge: {
         alignSelf: 'flex-start',
-        paddingHorizontal: Spacing.sm,
-        paddingVertical: 2,
-        borderRadius: BorderRadius.sm,
-    },
-    catTagText: { fontSize: Typography.sizes.xs },
-    desc: { fontSize: Typography.sizes.sm, lineHeight: 20, marginBottom: Spacing.sm },
-    durationRow: { flexDirection: 'row', gap: Spacing.xs, flexWrap: 'wrap' },
-    durationChip: {
-        paddingHorizontal: Spacing.sm,
+        paddingHorizontal: 10,
         paddingVertical: 3,
-        borderRadius: BorderRadius.sm,
+        borderRadius: 20,
     },
-    durationText: { fontSize: Typography.sizes.xs },
+    catBadgeText: {
+        fontFamily: Typography.bodyMedium,
+        fontSize: 11,
+        fontWeight: '600',
+        textTransform: 'capitalize',
+    },
+    desc: {
+        fontFamily: Typography.body,
+        fontSize: 13,
+        lineHeight: 13 * 1.5,
+        marginBottom: 11,
+    },
+    durationRow: {
+        flexDirection: 'row',
+        gap: 8,
+        flexWrap: 'wrap',
+    },
+    durationChip: {
+        paddingHorizontal: 12,
+        paddingVertical: 5,
+        borderRadius: 11,
+    },
+    durationText: {
+        fontFamily: Typography.bodyMedium,
+        fontSize: 12,
+        fontWeight: '600',
+    },
 });
