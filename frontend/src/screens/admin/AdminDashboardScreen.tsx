@@ -78,8 +78,6 @@ export default function AdminDashboardScreen({ navigation }: any) {
 
     const TABS: { key: Tab; label: string; emoji: string }[] = [
         { key: 'education', label: 'Edukasi', emoji: '📚' },
-        { key: 'breathing', label: 'Napas', emoji: '🫁' },
-        { key: 'meditation', label: 'Meditasi', emoji: '🧘' },
         { key: 'audio', label: 'Audio', emoji: '🎵' },
     ];
 
