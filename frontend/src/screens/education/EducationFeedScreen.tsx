@@ -34,7 +34,6 @@ interface Content {
 
 const SOURCE_COLORS: Record<string, string> = {
     youtube: '#FF0000',
-    tiktok: '#FFFFFF',
     other: '#60A5FA',
 };
 
@@ -113,17 +112,7 @@ function InAppPlayer({ item, isActive, height }: {
         );
     }
 
-    if (item.source === 'tiktok') {
-        return (
-            <WebView
-                source={{ uri: item.url }}
-                style={{ height, width: WINDOW_WIDTH, backgroundColor: '#000' }}
-                allowsInlineMediaPlayback
-                mediaPlaybackRequiresUserAction={false}
-                javaScriptEnabled
-            />
-        );
-    }
+
 
     return (
         <View style={[styles.playerFallback, { height }]}>
