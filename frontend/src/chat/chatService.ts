@@ -105,6 +105,6 @@ export const createNewSession = async (): Promise<{ id: string }> => {
 };
 
 export const submitGad7 = async (sessionId: string, answers: number[]): Promise<ChatMessage> => {
-    const response = await api.post('/chat/gad7-submit', { sessionId, answers });
+    const response = await api.post('/chat/gad7/submit', { sessionId, answers });
     return response.data;
 };

@@ -38,9 +38,16 @@ const validate_middleware_1 = require("../../middleware/validate.middleware");
 const chat_schema_1 = require("./chat.schema");
 const ChatController = __importStar(require("./chat.controller"));
 const router = (0, express_1.Router)();
+// Send a chat message (through n8n)
 router.post('/send', (0, validate_middleware_1.validate)(chat_schema_1.sendMessageSchema), ChatController.sendMessage);
+// Stream a chat message via SSE (through n8n, simulated stream)
+router.post('/stream', (0, validate_middleware_1.validate)(chat_schema_1.sendMessageSchema), ChatController.streamMessage);
+// Conversation history (queries n8n's conversations table)
 router.get('/history', ChatController.getHistory);
+// Session management
 router.get('/sessions', ChatController.getSessions);
 router.get('/sessions/:sessionId', (0, validate_middleware_1.validate)(chat_schema_1.getSessionMessagesSchema), ChatController.getSessionMessages);
 router.post('/sessions/new', ChatController.createNewSession);
+// GAD-7 assessment submission (forwards to n8n pha-gad7-submit webhook)
+router.post('/gad7/submit', (0, validate_middleware_1.validate)(chat_schema_1.submitGad7Schema), ChatController.submitGad7);
 exports.default = router;

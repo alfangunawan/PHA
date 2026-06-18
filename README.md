@@ -46,6 +46,6 @@ npx expo start
 - **Chatbot**: Chat with Gemini AI (Context-aware).
 
 
-login sebagai admin 
+login sebagai admin
 Email: admin@admin.com
 Password: admin123

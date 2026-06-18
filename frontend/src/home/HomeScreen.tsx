@@ -169,7 +169,7 @@ export default function HomeScreen() {
                                 <PersonIcon />
                             </TouchableOpacity>
                             {isAdmin && (
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                     onPress={() => navigation.navigate('AdminDashboard')}
                                     style={styles.adminBadge}
                                 >

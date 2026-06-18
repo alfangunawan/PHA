@@ -7,10 +7,10 @@ async function main() {
     where: { email: 'admin@admin.com' },
   });
   console.log(user);
-  
+
   if (user) {
-     const match = await bcrypt.compare('admin123', user.passwordHash);
-     console.log('Password match test:', match);
+    const match = await bcrypt.compare('admin123', user.passwordHash);
+    console.log('Password match test:', match);
   }
 }
 

@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React, { useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -34,6 +34,7 @@ import ProfileScreen from './src/profile/ProfileScreen';
 import ChatScreen from './src/chat/ChatScreen';
 import ChatHistoryScreen from './src/chat/ChatHistoryScreen';
 import HistoryScreen from './src/chat/HistoryScreen';
+import ActivityHistoryScreen from './src/screens/ActivityHistoryScreen';
 
 import BreathingListScreen from './src/screens/breathing/BreathingListScreen';
 import BreathingExerciseScreen from './src/screens/breathing/BreathingExerciseScreen';
@@ -50,22 +51,88 @@ const Stack = createStackNavigator();
 const AuthStack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
+const tabIcons: Record<string, [string, string]> = {
+    Beranda: ['home', 'home-outline'],
+    Napas: ['leaf', 'leaf-outline'],
+    Meditasi: ['planet', 'planet-outline'],
+    Edukasi: ['book', 'book-outline'],
+    Profil: ['person', 'person-outline'],
+};
+
+function CustomTabBar({ state, descriptors, navigation }: any) {
+    const { colors } = useTheme();
+
+    return (
+        <View
+            style={[
+                styles.tabBar,
+                {
+                    backgroundColor: colors.tabBar,
+                    borderTopColor: colors.tabBarBorder,
+                },
+            ]}
+        >
+            {state.routes.map((route: any, index: number) => {
+                const focused = state.index === index;
+                const { options } = descriptors[route.key];
+                const label =
+                    options.tabBarLabel !== undefined
+                        ? options.tabBarLabel
+                        : options.title !== undefined
+                            ? options.title
+                            : route.name;
+                const [active, inactive] = tabIcons[route.name] || ['ellipse', 'ellipse-outline'];
+                const color = focused ? colors.softBlue : colors.mediumGray;
+
+                const onPress = () => {
+                    const event = navigation.emit({
+                        type: 'tabPress',
+                        target: route.key,
+                        canPreventDefault: true,
+                    });
+
+                    if (!focused && !event.defaultPrevented) {
+                        navigation.navigate(route.name, route.params);
+                    }
+                };
+
+                const onLongPress = () => {
+                    navigation.emit({
+                        type: 'tabLongPress',
+                        target: route.key,
+                    });
+                };
+
+                return (
+                    <TouchableOpacity
+                        key={route.key}
+                        accessibilityRole="button"
+                        accessibilityState={focused ? { selected: true } : {}}
+                        accessibilityLabel={options.tabBarAccessibilityLabel}
+                        testID={options.tabBarButtonTestID}
+                        onPress={onPress}
+                        onLongPress={onLongPress}
+                        style={styles.tabItem}
+                    >
+                        <Ionicons name={(focused ? active : inactive) as any} size={24} color={color} />
+                        <Text style={[styles.tabLabel, { color }]}>{label}</Text>
+                    </TouchableOpacity>
+                );
+            })}
+        </View>
+    );
+}
+
 function MainTabs() {
     const { colors } = useTheme();
 
     return (
         <Tab.Navigator
+            tabBar={(props) => <CustomTabBar {...props} />}
             screenOptions={({ route }) => ({
                 headerShown: false,
                 tabBarIcon: ({ focused, color, size }) => {
-                    const icons: Record<string, [string, string]> = {
-                        Beranda: ['home', 'home-outline'],
-                        Napas: ['leaf', 'leaf-outline'],
-                        Meditasi: ['planet', 'planet-outline'],
-                        Edukasi: ['book', 'book-outline'],
-                        Profil: ['person', 'person-outline'],
-                    };
-                    const [active, inactive] = icons[route.name] || ['ellipse', 'ellipse-outline'];
+                    const [active, inactive] = tabIcons[route.name] || ['ellipse', 'ellipse-outline'];
                     return <Ionicons name={(focused ? active : inactive) as any} size={size} color={color} />;
                 },
                 tabBarActiveTintColor: colors.softBlue,
@@ -114,6 +181,16 @@ function RootNavigator() {
                         name="ChatHistory"
                         component={ChatHistoryScreen}
                         options={{ headerShown: true, title: 'Detail Riwayat', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }}
+                    />
+                    <Stack.Screen
+                        name="History"
+                        component={HistoryScreen}
+                        options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                        name="ActivityHistory"
+                        component={ActivityHistoryScreen}
+                        options={{ headerShown: false }}
                     />
                     <Stack.Screen
                         name="BreathingExercise"
@@ -174,4 +251,19 @@ export default function App() {
 
 const styles = StyleSheet.create({
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    tabBar: {
+        flexDirection: 'row',
+        borderTopWidth: StyleSheet.hairlineWidth,
+        height: 60,
+        paddingBottom: 8,
+    },
+    tabItem: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 2,
+    },
+    tabLabel: {
+        fontSize: 11,
+    },
 });
