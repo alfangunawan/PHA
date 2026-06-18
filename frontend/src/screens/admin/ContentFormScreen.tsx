@@ -5,7 +5,7 @@ import { educationAPI } from '../../api';
 import Button from '../../components/Button';
 import { Typography, Spacing, BorderRadius } from '../../theme';
 
-const SOURCES = ['youtube', 'tiktok', 'other'];
+const SOURCES = ['youtube', 'other'];
 
 export default function ContentFormScreen({ route, navigation }: any) {
     const existing = route.params?.content;
