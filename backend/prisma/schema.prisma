@@ -7,24 +7,48 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  USER
+  ADMIN
+}
+
+enum MeditationCategory {
+  sleep
+  focus
+  anxiety
+  morning
+  general
+}
+
+enum ContentSource {
+  youtube
+  tiktok
+  other
+}
+
 model User {
-  id            String       @id @default(uuid())
-  email         String       @unique
-  passwordHash  String
-  createdAt     DateTime     @default(now())
-  profile       UserProfile?
-  sessions      ChatSession[]
+  id                String             @id @default(uuid())
+  email             String             @unique
+  passwordHash      String
+  role              Role               @default(USER)
+  createdAt         DateTime           @default(now())
+  profile           UserProfile?
+  sessions          ChatSession[]
+  breathingLogs     BreathingLog[]
+  meditationLogs    MeditationLog[]
+  educationContents EducationContent[] @relation("EducationAdmin")
+  audioContents     AudioContent[]     @relation("AudioAdmin")
 }
 
 model UserProfile {
-  id           String  @id @default(uuid())
-  userId       String  @unique
-  user         User    @relation(fields: [userId], references: [id])
-  displayName  String
-  age          Int?
-  gender       String?
-  language     String  @default("id")
-  bio          String?
+  id          String  @id @default(uuid())
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id])
+  displayName String
+  age         Int?
+  gender      String?
+  language    String  @default("id")
+  bio         String?
 }
 
 model ChatSession {
@@ -42,4 +66,85 @@ model ChatMessage {
   sender    String
   message   String
   timestamp DateTime    @default(now())
+}
+
+model BreathingTechnique {
+  id              String         @id @default(uuid())
+  name            String
+  description     String?
+  inhaleDuration  Int
+  holdDuration    Int            @default(0)
+  exhaleDuration  Int
+  holdAfterExhale Int            @default(0)
+  cycles          Int            @default(4)
+  colorTheme      String         @default("#A8C5DA")
+  icon            String         @default("wind")
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  logs            BreathingLog[]
+}
+
+model BreathingLog {
+  id              String             @id @default(uuid())
+  userId          String
+  techniqueId     String
+  duration        Int
+  cyclesCompleted Int                @default(0)
+  completedAt     DateTime           @default(now())
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  technique       BreathingTechnique @relation(fields: [techniqueId], references: [id], onDelete: Cascade)
+}
+
+model MeditationSession {
+  id              String              @id @default(uuid())
+  title           String
+  description     String?
+  category        MeditationCategory  @default(general)
+  audioUrl        String?
+  thumbnailUrl    String?
+  durationOptions Json
+  colorTheme      String              @default("#C9B8E8")
+  isActive        Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+  logs            MeditationLog[]
+}
+
+model MeditationLog {
+  id          String            @id @default(uuid())
+  userId      String
+  sessionId   String
+  duration    Int
+  completed   Boolean           @default(false)
+  completedAt DateTime          @default(now())
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session     MeditationSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model EducationContent {
+  id               String        @id @default(uuid())
+  title            String
+  description      String?
+  source           ContentSource @default(youtube)
+  url              String
+  thumbnailUrl     String?
+  category         String        @default("general")
+  tags             Json?
+  createdByAdminId String?
+  isActive         Boolean       @default(true)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  createdByAdmin   User?         @relation("EducationAdmin", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+}
+
+model AudioContent {
+  id               String   @id @default(uuid())
+  title            String
+  fileUrl          String
+  category         String   @default("general")
+  duration         Int?
+  description      String?
+  createdByAdminId String?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  createdByAdmin   User?    @relation("AudioAdmin", fields: [createdByAdminId], references: [id], onDelete: SetNull)
 }

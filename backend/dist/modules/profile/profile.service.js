@@ -10,16 +10,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateProfile = exports.getProfile = void 0;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../../config/prisma");
 const getProfile = (userId) => __awaiter(void 0, void 0, void 0, function* () {
-    return yield prisma.userProfile.findUnique({
+    return yield prisma_1.prisma.userProfile.findUnique({
         where: { userId },
     });
 });
 exports.getProfile = getProfile;
 const updateProfile = (userId, data) => __awaiter(void 0, void 0, void 0, function* () {
-    return yield prisma.userProfile.update({
+    return yield prisma_1.prisma.userProfile.update({
         where: { userId },
         data,
     });

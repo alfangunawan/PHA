@@ -4,7 +4,7 @@ import config from '../config';
 
 export interface ChatMessage {
     id: string;
-    sessionId: string;
+    sessionId?: string;
     sender: 'user' | 'ai';
     message: string;
     timestamp: string;
@@ -105,6 +105,6 @@ export const createNewSession = async (): Promise<{ id: string }> => {
 };
 
 export const submitGad7 = async (sessionId: string, answers: number[]): Promise<ChatMessage> => {
-    const response = await api.post('/chat/gad7-submit', { sessionId, answers });
+    const response = await api.post('/chat/gad7/submit', { sessionId, answers });
     return response.data;
 };

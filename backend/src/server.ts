@@ -14,32 +14,37 @@ import cors from 'cors';
 import authRoutes from './modules/auth/auth.routes';
 import profileRoutes from './modules/profile/profile.routes';
 import chatRoutes from './modules/chat/chat.routes';
+import breathingRoutes from './modules/breathing/breathing.routes';
+import meditationRoutes from './modules/meditation/meditation.routes';
+import educationRoutes from './modules/education/education.routes';
+import audioRoutes from './modules/audio/audio.routes';
 import { authenticateToken, AuthRequest } from './middleware/auth.middleware';
-
-// Mindfulness module routes (CommonJS JS — require MySQL via src/config/db.js)
-/* eslint-disable @typescript-eslint/no-var-requires */
-const breathingRoutes = require('./routes/breathingRoutes');
-const meditationRoutes = require('./routes/meditationRoutes');
-const educationRoutes = require('./routes/educationRoutes');
-const audioRoutes = require('./routes/audioRoutes');
-/* eslint-enable @typescript-eslint/no-var-requires */
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
-app.use(express.json());
+// Must be before cors() — cors() swallows OPTIONS and won't call next()
+app.use((req, res, next) => {
+  if (req.headers['access-control-request-private-network']) {
+    res.setHeader('Access-Control-Allow-Private-Network', 'true');
+  }
+  next();
+});
 
-// Routes
+app.use(cors({ origin: true, credentials: true }));
+app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Existing routes
 app.use('/auth', authRoutes);
 app.use('/profile', authenticateToken, profileRoutes);
 app.use('/chat', authenticateToken, chatRoutes);
 
-// Mindfulness module routes (requires MySQL — see backend/src/config/db.js)
+// Mindfulness module routes
 app.use('/api/breathing', breathingRoutes);
 app.use('/api/meditation', meditationRoutes);
-app.use('/api/education', educationRoutes);
-app.use('/api/audio', audioRoutes);
+app.use('/api/education-contents', educationRoutes);
+app.use('/api/audio-contents', audioRoutes);
 
 app.get('/protected', authenticateToken, (req: AuthRequest, res) => {
     res.json({ message: 'This is a protected route', user: req.user });
