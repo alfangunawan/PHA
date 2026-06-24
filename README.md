@@ -77,8 +77,17 @@ docker compose up -d --build
 
 The stack runs:
 - PostgreSQL on the internal Docker network only.
-- Backend Node/Express on the internal Docker network.
-- Caddy on public ports `80` and `443`, proxying `api.anxietypha.my.id` to the backend.
+- Backend Node/Express on `127.0.0.1:3000`.
+- Host Nginx on public ports `80` and `443`, proxying `api.anxietypha.my.id` to the backend.
+
+Install the Nginx site template:
+
+```bash
+sudo cp deploy/nginx-api.anxietypha.my.id.conf /etc/nginx/sites-available/api.anxietypha.my.id
+sudo ln -s /etc/nginx/sites-available/api.anxietypha.my.id /etc/nginx/sites-enabled/api.anxietypha.my.id
+sudo nginx -t
+sudo systemctl reload nginx
+```
 
 Check the backend from outside the VPS:
 
