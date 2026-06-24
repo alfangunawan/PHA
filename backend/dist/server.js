@@ -7,12 +7,10 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const path_1 = __importDefault(require("path"));
 // Load env from one level up (since we are in src/) if not in root
 const envPath = path_1.default.resolve(__dirname, '../.env');
-const result = dotenv_1.default.config({ path: envPath });
-console.log('Dotenv result:', result);
-console.log('GEMINI_API_KEY present:', !!process.env.GEMINI_API_KEY);
-console.log('DATABASE_URL present:', !!process.env.DATABASE_URL);
+dotenv_1.default.config({ path: envPath, quiet: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
+const env_1 = require("./config/env");
 const auth_routes_1 = __importDefault(require("./modules/auth/auth.routes"));
 const profile_routes_1 = __importDefault(require("./modules/profile/profile.routes"));
 const chat_routes_1 = __importDefault(require("./modules/chat/chat.routes"));
@@ -21,6 +19,7 @@ const meditation_routes_1 = __importDefault(require("./modules/meditation/medita
 const education_routes_1 = __importDefault(require("./modules/education/education.routes"));
 const audio_routes_1 = __importDefault(require("./modules/audio/audio.routes"));
 const auth_middleware_1 = require("./middleware/auth.middleware");
+(0, env_1.validateServerEnv)();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3000;
 // Must be before cors() — cors() swallows OPTIONS and won't call next()
@@ -42,6 +41,14 @@ app.use('/api/breathing', breathing_routes_1.default);
 app.use('/api/meditation', meditation_routes_1.default);
 app.use('/api/education-contents', education_routes_1.default);
 app.use('/api/audio-contents', audio_routes_1.default);
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        service: 'pha-backend',
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString(),
+    });
+});
 app.get('/protected', auth_middleware_1.authenticateToken, (req, res) => {
     res.json({ message: 'This is a protected route', user: req.user });
 });

@@ -3,14 +3,11 @@ import path from 'path';
 
 // Load env from one level up (since we are in src/) if not in root
 const envPath = path.resolve(__dirname, '../.env');
-const result = dotenv.config({ path: envPath });
-
-console.log('Dotenv result:', result);
-console.log('GEMINI_API_KEY present:', !!process.env.GEMINI_API_KEY);
-console.log('DATABASE_URL present:', !!process.env.DATABASE_URL);
+dotenv.config({ path: envPath, quiet: true });
 
 import express from 'express';
 import cors from 'cors';
+import { validateServerEnv } from './config/env';
 import authRoutes from './modules/auth/auth.routes';
 import profileRoutes from './modules/profile/profile.routes';
 import chatRoutes from './modules/chat/chat.routes';
@@ -19,6 +16,8 @@ import meditationRoutes from './modules/meditation/meditation.routes';
 import educationRoutes from './modules/education/education.routes';
 import audioRoutes from './modules/audio/audio.routes';
 import { authenticateToken, AuthRequest } from './middleware/auth.middleware';
+
+validateServerEnv();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -45,6 +44,15 @@ app.use('/api/breathing', breathingRoutes);
 app.use('/api/meditation', meditationRoutes);
 app.use('/api/education-contents', educationRoutes);
 app.use('/api/audio-contents', audioRoutes);
+
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        service: 'pha-backend',
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString(),
+    });
+});
 
 app.get('/protected', authenticateToken, (req: AuthRequest, res) => {
     res.json({ message: 'This is a protected route', user: req.user });

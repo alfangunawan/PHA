@@ -1,0 +1,9 @@
+api.anxietypha.my.id {
+  encode gzip zstd
+
+  reverse_proxy backend:3000
+
+  header {
+    -Server
+  }
+}
