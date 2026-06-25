@@ -1,4 +1,4 @@
-import { api } from '../auth/useAuth';
+import client from '../api/client';
 
 export interface UserProfile {
     id: string;
@@ -11,11 +11,11 @@ export interface UserProfile {
 }
 
 export const getProfile = async (): Promise<UserProfile> => {
-    const response = await api.get('/profile');
+    const response = await client.get('/profile');
     return response.data;
 };
 
 export const updateProfile = async (data: Partial<UserProfile>): Promise<UserProfile> => {
-    const response = await api.put('/profile', data);
+    const response = await client.put('/profile', data);
     return response.data;
 };

@@ -1,5 +1,7 @@
 import axios from 'axios';
-import { getToken, removeToken, removeUser } from '../auth/useAuth';
+import { isInvalidAuthError } from './authError';
+import { getToken, removeToken, removeUser } from '../auth/storage';
+import { notifyInvalidSession } from '../auth/sessionEvents';
 import config from '../config';
 
 const client = axios.create({ baseURL: config.API_URL });
@@ -14,9 +16,10 @@ client.interceptors.request.use(async (cfg) => {
 client.interceptors.response.use(
     (res) => res,
     async (error) => {
-        if (error.response?.status === 401) {
+        if (isInvalidAuthError(error)) {
             await removeToken();
             await removeUser();
+            notifyInvalidSession();
         }
         return Promise.reject(error);
     }

@@ -1,5 +1,8 @@
-import { api, getToken } from '../auth/useAuth';
 import EventSource, { EventSourceListener } from 'react-native-sse';
+import { isInvalidAuthError } from '../api/authError';
+import client from '../api/client';
+import { notifyInvalidSession } from '../auth/sessionEvents';
+import { getToken, removeToken, removeUser } from '../auth/storage';
 import config from '../config';
 
 export interface ChatMessage {
@@ -18,7 +21,7 @@ export interface ChatSession {
 }
 
 export const sendMessage = async (message: string, sessionId?: string): Promise<ChatMessage[]> => {
-    const response = await api.post('/chat/send', { message, sessionId });
+    const response = await client.post('/chat/send', { message, sessionId });
     return response.data;
 };
 
@@ -70,6 +73,12 @@ export const streamMessage = async (
             if (completed) return;
             console.error('Connection error:', event.message);
             es.close();
+            if (isInvalidAuthError(event.message)) {
+                removeToken()
+                    .then(removeUser)
+                    .then(notifyInvalidSession)
+                    .catch(() => {});
+            }
             onError(event.message);
         }
     };
@@ -85,26 +94,26 @@ export const streamMessage = async (
 };
 
 export const getHistory = async (): Promise<ChatMessage[]> => {
-    const response = await api.get('/chat/history');
+    const response = await client.get('/chat/history');
     return response.data;
 };
 
 export const getSessions = async (): Promise<ChatSession[]> => {
-    const response = await api.get('/chat/sessions');
+    const response = await client.get('/chat/sessions');
     return response.data;
 };
 
 export const getSessionMessages = async (sessionId: string): Promise<ChatMessage[]> => {
-    const response = await api.get(`/chat/sessions/${sessionId}`);
+    const response = await client.get(`/chat/sessions/${sessionId}`);
     return response.data;
 };
 
 export const createNewSession = async (): Promise<{ id: string }> => {
-    const response = await api.post('/chat/sessions/new');
+    const response = await client.post('/chat/sessions/new');
     return response.data;
 };
 
 export const submitGad7 = async (sessionId: string, answers: number[]): Promise<ChatMessage> => {
-    const response = await api.post('/chat/gad7/submit', { sessionId, answers });
+    const response = await client.post('/chat/gad7/submit', { sessionId, answers });
     return response.data;
 };

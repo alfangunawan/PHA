@@ -44,6 +44,8 @@ import EducationFeedScreen from './src/screens/education/EducationFeedScreen';
 import AdminDashboardScreen from './src/screens/admin/AdminDashboardScreen';
 import ContentFormScreen from './src/screens/admin/ContentFormScreen';
 import AudioFormScreen from './src/screens/admin/AudioFormScreen';
+import BreathingFormScreen from './src/screens/admin/BreathingFormScreen';
+import MeditationFormScreen from './src/screens/admin/MeditationFormScreen';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -205,6 +207,8 @@ function RootNavigator() {
                     <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ headerShown: true, title: 'Admin', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
                     <Stack.Screen name="ContentForm" component={ContentFormScreen} options={{ headerShown: true, title: 'Konten', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
                     <Stack.Screen name="AudioForm" component={AudioFormScreen} options={{ headerShown: true, title: 'Audio', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
+                    <Stack.Screen name="BreathingForm" component={BreathingFormScreen} options={{ headerShown: true, title: 'Teknik Napas', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
+                    <Stack.Screen name="MeditationForm" component={MeditationFormScreen} options={{ headerShown: true, title: 'Sesi Meditasi', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
                 </Stack.Navigator>
             ) : (
                 <AuthStack.Navigator screenOptions={{ headerShown: false }}>

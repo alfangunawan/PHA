@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { getToken, getUser, removeToken, removeUser, login as apiLogin, register as apiRegister, saveUser } from './useAuth';
+import { setInvalidSessionHandler } from './sessionEvents';
 
 interface UserInfo {
     id: string;
@@ -27,6 +28,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => {
         checkAuth();
+        setInvalidSessionHandler(() => {
+            setIsAuthenticated(false);
+            setUser(null);
+        });
+
+        return () => setInvalidSessionHandler(null);
     }, []);
 
     const checkAuth = async () => {

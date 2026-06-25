@@ -14,7 +14,7 @@ const authenticateToken = (req, res, next) => {
     }
     jsonwebtoken_1.default.verify(token, (0, env_1.getJwtSecret)(), (err, user) => {
         if (err) {
-            return res.status(403).json({ error: 'Invalid or expired token' });
+            return res.status(401).json({ error: 'Invalid or expired token' });
         }
         req.user = user;
         next();
