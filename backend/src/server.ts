@@ -10,7 +10,7 @@ import cors from 'cors';
 import { validateServerEnv } from './config/env';
 import authRoutes from './modules/auth/auth.routes';
 import profileRoutes from './modules/profile/profile.routes';
-import chatRoutes from './modules/chat/chat.routes';
+import chatRoutes, { chatbotApiRouter } from './modules/chat/chat.routes';
 import breathingRoutes from './modules/breathing/breathing.routes';
 import meditationRoutes from './modules/meditation/meditation.routes';
 import educationRoutes from './modules/education/education.routes';
@@ -38,6 +38,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/auth', authRoutes);
 app.use('/profile', authenticateToken, profileRoutes);
 app.use('/chat', authenticateToken, chatRoutes);
+app.use('/api/chatbot', authenticateToken, chatbotApiRouter);
 
 // Mindfulness module routes
 app.use('/api/breathing', breathingRoutes);

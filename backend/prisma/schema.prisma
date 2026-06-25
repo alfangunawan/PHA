@@ -27,17 +27,20 @@ enum ContentSource {
 }
 
 model User {
-  id                String             @id @default(uuid())
-  email             String             @unique
+  id                String                @id @default(uuid())
+  email             String                @unique
   passwordHash      String
-  role              Role               @default(USER)
-  createdAt         DateTime           @default(now())
+  role              Role                  @default(USER)
+  createdAt         DateTime              @default(now())
   profile           UserProfile?
   sessions          ChatSession[]
+  conversations     Conversation[]
+  gad7Results       Gad7Result[]
+  chatbotStates     ChatbotSessionState[]
   breathingLogs     BreathingLog[]
   meditationLogs    MeditationLog[]
-  educationContents EducationContent[] @relation("EducationAdmin")
-  audioContents     AudioContent[]     @relation("AudioAdmin")
+  educationContents EducationContent[]    @relation("EducationAdmin")
+  audioContents     AudioContent[]        @relation("AudioAdmin")
 }
 
 model UserProfile {
@@ -66,6 +69,50 @@ model ChatMessage {
   sender    String
   message   String
   timestamp DateTime    @default(now())
+}
+
+model Conversation {
+  id        Int       @id @default(autoincrement())
+  userId    String    @map("user_id")
+  sessionId String    @map("session_id")
+  role      String
+  content   String
+  cbtPhase  String?   @default("ventilasi") @map("cbt_phase")
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId], map: "idx_conv_session")
+  @@index([userId, createdAt(sort: Desc)], map: "idx_conv_user_created")
+  @@map("conversations")
+}
+
+model Gad7Result {
+  id       Int      @id @default(autoincrement())
+  userId   String   @map("user_id")
+  score    Int
+  severity String
+  answers  Json?
+  takenAt  DateTime @default(now()) @map("taken_at") @db.Timestamptz(6)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, takenAt(sort: Desc)], map: "idx_gad7_user_taken")
+  @@map("gad7_results")
+}
+
+model ChatbotSessionState {
+  sessionId              String   @id @map("session_id")
+  userId                 String   @map("user_id")
+  currentPhase           String   @default("ventilasi") @map("current_phase")
+  problemCount           Int      @default(0) @map("problem_count")
+  activeProblemNum       Int      @default(1) @map("active_problem_num")
+  deferredProblemSummary String?  @map("deferred_problem_summary")
+  phaseTurnCount         Int      @default(0) @map("phase_turn_count")
+  homeworkLog            Json     @default("[]") @map("homework_log")
+  sessionComplete        Boolean  @default(false) @map("session_complete")
+  updatedAt              DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("chatbot_session_state")
 }
 
 model BreathingTechnique {

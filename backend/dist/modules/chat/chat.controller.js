@@ -42,7 +42,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.submitGad7 = exports.createNewSession = exports.getSessionMessages = exports.getSessions = exports.getHistory = exports.streamMessage = exports.sendMessage = void 0;
+exports.submitGad7 = exports.getLatestGad7ForUser = exports.createNewSession = exports.getSessionMessages = exports.getSessions = exports.getHistory = exports.streamMessage = exports.sendMessage = void 0;
 const ChatService = __importStar(require("./chat.service"));
 // ─────────────────────────────────────────────────────────────────────────────
 // Chat
@@ -167,6 +167,24 @@ const createNewSession = (req, res) => __awaiter(void 0, void 0, void 0, functio
     }
 });
 exports.createNewSession = createNewSession;
+const getLatestGad7ForUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { id } = req.params;
+        const latest = yield ChatService.getLatestGad7ForUser(id);
+        if (!latest) {
+            return res.status(404).json({ error: 'GAD-7 result not found' });
+        }
+        res.json({
+            score: latest.score,
+            severity: latest.severity,
+            timestamp: latest.takenAt,
+        });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+exports.getLatestGad7ForUser = getLatestGad7ForUser;
 // ─────────────────────────────────────────────────────────────────────────────
 // GAD-7
 // ─────────────────────────────────────────────────────────────────────────────

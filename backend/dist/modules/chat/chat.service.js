@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.submitGad7 = exports.createNewSession = exports.getSessionMessages = exports.getSessions = exports.getHistory = exports.streamMessage = exports.sendMessage = void 0;
+exports.submitGad7 = exports.createNewSession = exports.getLatestGad7ForUser = exports.getSessionMessages = exports.getSessions = exports.getHistory = exports.streamMessage = exports.sendMessage = void 0;
 const prisma_1 = require("../../config/prisma");
 const profile_service_1 = require("../profile/profile.service");
 const N8N_BASE_URL = 'https://n8n.alstore.space';
@@ -164,6 +164,22 @@ const getSessionMessages = (userId, sessionId) => __awaiter(void 0, void 0, void
     }
 });
 exports.getSessionMessages = getSessionMessages;
+/**
+ * Returns the latest GAD-7 screening result for a user from pha_db.
+ */
+const getLatestGad7ForUser = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const gad7Result = prisma_1.prisma.gad7Result;
+    return gad7Result.findFirst({
+        where: { userId },
+        orderBy: { takenAt: 'desc' },
+        select: {
+            score: true,
+            severity: true,
+            takenAt: true,
+        },
+    });
+});
+exports.getLatestGad7ForUser = getLatestGad7ForUser;
 /**
  * Creates a new session token. Since n8n manages sessions implicitly
  * (session_id = user_id by default, or provided by client), we just

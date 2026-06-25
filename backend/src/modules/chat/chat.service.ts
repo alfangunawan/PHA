@@ -191,6 +191,29 @@ export const getSessionMessages = async (userId: string, sessionId: string) => {
 };
 
 /**
+ * Returns the latest GAD-7 screening result for a user from pha_db.
+ */
+export const getLatestGad7ForUser = async (userId: string) => {
+    const gad7Result = (prisma as any).gad7Result as {
+        findFirst: (args: {
+            where: { userId: string };
+            orderBy: { takenAt: 'desc' };
+            select: { score: true; severity: true; takenAt: true };
+        }) => Promise<{ score: number; severity: string; takenAt: Date } | null>;
+    };
+
+    return gad7Result.findFirst({
+        where: { userId },
+        orderBy: { takenAt: 'desc' },
+        select: {
+            score: true,
+            severity: true,
+            takenAt: true,
+        },
+    });
+};
+
+/**
  * Creates a new session token. Since n8n manages sessions implicitly
  * (session_id = user_id by default, or provided by client), we just
  * return a new UUID the frontend can use as session_id in future messages.

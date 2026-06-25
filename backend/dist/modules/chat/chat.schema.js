@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.submitGad7Schema = exports.getSessionMessagesSchema = exports.sendMessageSchema = void 0;
+exports.submitGad7Schema = exports.getLatestGad7Schema = exports.getSessionMessagesSchema = exports.sendMessageSchema = void 0;
 const zod_1 = require("zod");
 exports.sendMessageSchema = zod_1.z.object({
     body: zod_1.z.object({
@@ -12,6 +12,11 @@ exports.sendMessageSchema = zod_1.z.object({
 exports.getSessionMessagesSchema = zod_1.z.object({
     params: zod_1.z.object({
         sessionId: zod_1.z.string().min(1, 'Session ID is required'),
+    }),
+});
+exports.getLatestGad7Schema = zod_1.z.object({
+    params: zod_1.z.object({
+        id: zod_1.z.string().min(1, 'User ID is required'),
     }),
 });
 exports.submitGad7Schema = zod_1.z.object({

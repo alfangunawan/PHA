@@ -14,6 +14,12 @@ export const getSessionMessagesSchema = z.object({
     }),
 });
 
+export const getLatestGad7Schema = z.object({
+    params: z.object({
+        id: z.string().min(1, 'User ID is required'),
+    }),
+});
+
 export const submitGad7Schema = z.object({
     body: z.object({
         sessionId: z.string().min(1, 'Session ID is required'),

@@ -119,6 +119,25 @@ export const createNewSession = async (req: AuthRequest, res: Response) => {
     }
 };
 
+export const getLatestGad7ForUser = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+
+        const latest = await ChatService.getLatestGad7ForUser(id);
+        if (!latest) {
+            return res.status(404).json({ error: 'GAD-7 result not found' });
+        }
+
+        res.json({
+            score: latest.score,
+            severity: latest.severity,
+            timestamp: latest.takenAt,
+        });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // GAD-7
 // ─────────────────────────────────────────────────────────────────────────────
