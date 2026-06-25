@@ -1,4 +1,6 @@
+import { ActivityType } from '@prisma/client';
 import { prisma } from '../../config/prisma';
+import { awardReward } from '../gamification/gamification.service';
 
 export const getAllTechniques = () =>
     prisma.breathingTechnique.findMany({
@@ -39,12 +41,12 @@ export const updateTechnique = (id: string, data: Partial<{
 export const deleteTechnique = (id: string) =>
     prisma.breathingTechnique.delete({ where: { id } });
 
-export const saveLog = (userId: string, data: {
+export const saveLog = async (userId: string, data: {
     techniqueId: string;
     duration: number;
     cyclesCompleted?: number;
-}) =>
-    prisma.breathingLog.create({
+}) => {
+    const log = await prisma.breathingLog.create({
         data: {
             userId,
             techniqueId: data.techniqueId,
@@ -52,6 +54,13 @@ export const saveLog = (userId: string, data: {
             cyclesCompleted: data.cyclesCompleted ?? 0,
         },
     });
+    const reward = await awardReward(userId, ActivityType.BREATHING, log.id, {
+        techniqueId: data.techniqueId,
+        duration: data.duration,
+        cyclesCompleted: data.cyclesCompleted ?? 0,
+    });
+    return { ...log, reward };
+};
 
 export const getUserHistory = (userId: string) =>
     prisma.breathingLog.findMany({

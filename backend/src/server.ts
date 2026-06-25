@@ -15,6 +15,9 @@ import breathingRoutes from './modules/breathing/breathing.routes';
 import meditationRoutes from './modules/meditation/meditation.routes';
 import educationRoutes from './modules/education/education.routes';
 import audioRoutes from './modules/audio/audio.routes';
+import journalRoutes from './modules/journal/journal.routes';
+import gamificationRoutes from './modules/gamification/gamification.routes';
+import gamesRoutes from './modules/games/games.routes';
 import { authenticateToken, AuthRequest } from './middleware/auth.middleware';
 
 validateServerEnv();
@@ -45,6 +48,9 @@ app.use('/api/breathing', breathingRoutes);
 app.use('/api/meditation', meditationRoutes);
 app.use('/api/education-contents', educationRoutes);
 app.use('/api/audio-contents', audioRoutes);
+app.use('/api/journals', journalRoutes);
+app.use('/api/gamification', gamificationRoutes);
+app.use('/api/games', gamesRoutes);
 
 app.get('/health', (req, res) => {
     res.json({

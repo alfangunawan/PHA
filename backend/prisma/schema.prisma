@@ -10,6 +10,8 @@ datasource db {
 enum Role {
   USER
   ADMIN
+  GAMIFICATION_ADMIN
+  MINDFULNESS_ADMIN
 }
 
 enum MeditationCategory {
@@ -26,21 +28,55 @@ enum ContentSource {
   other
 }
 
+enum AnxietyLevel {
+  rendah
+  sedang
+  tinggi
+  risiko_tinggi
+}
+
+enum ActivityType {
+  BREATHING
+  MEDITATION
+  EDUCATION_CONTENT
+  AUDIO_CONTENT
+  JOURNAL_ENTRY
+  WORD_PUZZLE
+  TETRIS
+}
+
+enum GameType {
+  WORD_PUZZLE
+  TETRIS
+}
+
+enum GameStatus {
+  started
+  completed
+  abandoned
+}
+
 model User {
-  id                String                @id @default(uuid())
-  email             String                @unique
-  passwordHash      String
-  role              Role                  @default(USER)
-  createdAt         DateTime              @default(now())
-  profile           UserProfile?
-  sessions          ChatSession[]
-  conversations     Conversation[]
-  gad7Results       Gad7Result[]
-  chatbotStates     ChatbotSessionState[]
-  breathingLogs     BreathingLog[]
-  meditationLogs    MeditationLog[]
-  educationContents EducationContent[]    @relation("EducationAdmin")
-  audioContents     AudioContent[]        @relation("AudioAdmin")
+  id                    String                 @id @default(uuid())
+  email                 String                 @unique
+  passwordHash          String
+  role                  Role                   @default(USER)
+  createdAt             DateTime               @default(now())
+  profile               UserProfile?
+  sessions              ChatSession[]
+  conversations         Conversation[]
+  gad7Results           Gad7Result[]
+  chatbotStates         ChatbotSessionState[]
+  breathingLogs         BreathingLog[]
+  meditationLogs        MeditationLog[]
+  educationContents     EducationContent[]     @relation("EducationAdmin")
+  audioContents         AudioContent[]         @relation("AudioAdmin")
+  journalEntries        JournalEntry[]
+  positiveWords         PersonalPositiveWord[]
+  gameSessions          GameSession[]
+  gamification          UserGamification?
+  rewardEvents          RewardEvent[]
+  rewardRulesCreated    RewardRule[]           @relation("RewardRuleAdmin")
 }
 
 model UserProfile {
@@ -194,4 +230,89 @@ model AudioContent {
   isActive         Boolean  @default(true)
   createdAt        DateTime @default(now())
   createdByAdmin   User?    @relation("AudioAdmin", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+}
+
+model JournalEntry {
+  id             String       @id @default(uuid())
+  userId         String
+  title          String?
+  content        String
+  normalizedText String?
+  anxietyLevel   AnxietyLevel @default(rendah)
+  highRisk       Boolean      @default(false)
+  analysis       Json
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model PersonalPositiveWord {
+  id              String   @id @default(uuid())
+  userId          String
+  word            String
+  category        String?
+  sourceJournalId String?
+  weight          Int      @default(1)
+  lastUsedAt      DateTime?
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, word])
+  @@index([userId, lastUsedAt])
+}
+
+model GameSession {
+  id          String     @id @default(uuid())
+  userId      String
+  gameType    GameType
+  status      GameStatus @default(started)
+  score       Int        @default(0)
+  durationSec Int?
+  payload     Json?
+  createdAt   DateTime   @default(now())
+  completedAt DateTime?
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, gameType, createdAt])
+}
+
+model UserGamification {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  xp        Int      @default(0)
+  points    Int      @default(0)
+  level     Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RewardRule {
+  id               String       @id @default(uuid())
+  activityType     ActivityType @unique
+  xp               Int          @default(0)
+  points           Int          @default(0)
+  isActive         Boolean      @default(true)
+  createdByAdminId String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  createdByAdmin   User?        @relation("RewardRuleAdmin", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+}
+
+model RewardEvent {
+  id             String       @id @default(uuid())
+  userId         String
+  activityType   ActivityType
+  sourceId       String?
+  idempotencyKey String       @unique
+  xp             Int
+  points         Int
+  metadata       Json?
+  createdAt      DateTime     @default(now())
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, activityType])
+  @@index([userId, createdAt])
 }

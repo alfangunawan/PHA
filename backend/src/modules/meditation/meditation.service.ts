@@ -1,5 +1,6 @@
-import { MeditationCategory } from '@prisma/client';
+import { ActivityType, MeditationCategory } from '@prisma/client';
 import { prisma } from '../../config/prisma';
+import { awardReward } from '../gamification/gamification.service';
 
 export const getAllSessions = (category?: MeditationCategory) =>
     prisma.meditationSession.findMany({
@@ -36,12 +37,12 @@ export const updateSession = (id: string, data: Partial<{
 export const deleteSession = (id: string) =>
     prisma.meditationSession.delete({ where: { id } });
 
-export const saveLog = (userId: string, data: {
+export const saveLog = async (userId: string, data: {
     sessionId: string;
     duration: number;
     completed?: boolean;
-}) =>
-    prisma.meditationLog.create({
+}) => {
+    const log = await prisma.meditationLog.create({
         data: {
             userId,
             sessionId: data.sessionId,
@@ -49,6 +50,16 @@ export const saveLog = (userId: string, data: {
             completed: data.completed ?? false,
         },
     });
+
+    const reward = data.completed
+        ? await awardReward(userId, ActivityType.MEDITATION, log.id, {
+            sessionId: data.sessionId,
+            duration: data.duration,
+        })
+        : null;
+
+    return { ...log, reward };
+};
 
 export const getUserHistory = (userId: string) =>
     prisma.meditationLog.findMany({

@@ -10,6 +10,7 @@ import { useAuthContext } from '../auth/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { breathingAPI, meditationAPI } from '../api';
 import { Typography } from '../theme';
+import GamificationSummary from '../components/GamificationSummary';
 
 const D = {
     bg: '#f5f6fb',
@@ -46,7 +47,7 @@ interface ActivityStat {
 }
 
 export default function ProfileScreen({ navigation }: any) {
-    const { logout, user, isAdmin } = useAuthContext();
+    const { logout, user, canManageGamification, canManageMindfulness } = useAuthContext();
     const { isDark, toggleTheme, colors } = useTheme();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
@@ -184,6 +185,8 @@ export default function ProfileScreen({ navigation }: any) {
                         </Text>
                     </View>
                 </View>
+
+                <GamificationSummary compact />
 
                 {/* ── Aktivitas Saya ── */}
                 <View style={[styles.card, { backgroundColor: isDark ? colors.bgCard : D.card, borderColor: isDark ? colors.divider : D.cardBorder }]}>
@@ -379,20 +382,20 @@ export default function ProfileScreen({ navigation }: any) {
                 </View>
 
                 {/* ── Admin ── */}
-                {isAdmin && (
+                {(canManageMindfulness || canManageGamification) && (
                     <TouchableOpacity
                         style={[styles.card, styles.adminRow, {
                             backgroundColor: isDark ? colors.bgCard : '#fff9f2',
                             borderColor: isDark ? colors.divider : '#f5e8d5',
                         }]}
-                        onPress={() => navigation.navigate('AdminDashboard')}
+                        onPress={() => navigation.navigate(canManageMindfulness ? 'AdminDashboard' : 'GamificationRules')}
                         activeOpacity={0.85}
                     >
                         <View style={[styles.toggleIcon, { backgroundColor: isDark ? '#2d1f12' : '#fdebd0' }]}>
                             <Ionicons name="shield-checkmark-outline" size={20} color={D.goldenAcc} />
                         </View>
                         <Text style={[styles.toggleLabel, { flex: 1, color: isDark ? colors.charcoal : D.goldenAcc, fontFamily: Typography.bodyMedium }]}>
-                            Admin Dashboard
+                            {canManageMindfulness ? 'Admin Mindfulness' : 'Admin Gamifikasi'}
                         </Text>
                         <Ionicons name="chevron-forward" size={18} color={isDark ? colors.mediumGray : D.goldenAcc} />
                     </TouchableOpacity>

@@ -13,8 +13,9 @@ const router = Router();
 
 router.get('/', authenticateToken, validate(getEducationContentsSchema), EducationController.getAll);
 router.get('/:id', authenticateToken, EducationController.getOne);
-router.post('/', authenticateToken, requireRole('ADMIN'), validate(createEducationContentSchema), EducationController.create);
-router.put('/:id', authenticateToken, requireRole('ADMIN'), validate(updateEducationContentSchema), EducationController.update);
-router.delete('/:id', authenticateToken, requireRole('ADMIN'), EducationController.remove);
+router.post('/:id/complete', authenticateToken, EducationController.complete);
+router.post('/', authenticateToken, requireRole('MINDFULNESS_ADMIN'), validate(createEducationContentSchema), EducationController.create);
+router.put('/:id', authenticateToken, requireRole('MINDFULNESS_ADMIN'), validate(updateEducationContentSchema), EducationController.update);
+router.delete('/:id', authenticateToken, requireRole('MINDFULNESS_ADMIN'), EducationController.remove);
 
 export default router;

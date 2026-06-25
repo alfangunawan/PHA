@@ -3,17 +3,18 @@ import {
     View, Text, TextInput, StyleSheet, SafeAreaView,
     ScrollView, Alert, TouchableOpacity,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { meditationAPI } from '../../api';
 import Button from '../../components/Button';
 import { Typography, Spacing, BorderRadius } from '../../theme';
 
 const CATEGORIES = [
-    { key: 'sleep', label: '🌙 Tidur' },
-    { key: 'focus', label: '🎯 Fokus' },
-    { key: 'anxiety', label: '💚 Cemas' },
-    { key: 'morning', label: '🌅 Pagi' },
-    { key: 'general', label: '🌿 Umum' },
+    { key: 'sleep', label: 'Tidur', icon: 'moon-outline' },
+    { key: 'focus', label: 'Fokus', icon: 'scan-circle-outline' },
+    { key: 'anxiety', label: 'Cemas', icon: 'heart-outline' },
+    { key: 'morning', label: 'Pagi', icon: 'sunny-outline' },
+    { key: 'general', label: 'Umum', icon: 'leaf-outline' },
 ];
 
 const COLORS = ['#C9B8E8', '#A78BFA', '#60A5FA', '#34D399', '#FBBF24', '#F87171'];
@@ -77,7 +78,6 @@ export default function MeditationFormScreen({ route, navigation }: any) {
                     {existing ? 'Edit Sesi Meditasi' : 'Tambah Sesi Meditasi'}
                 </Text>
 
-                {/* Judul */}
                 <View style={styles.field}>
                     <Text style={[styles.label, { color: colors.darkGray, fontFamily: Typography.bodyMedium }]}>Judul *</Text>
                     <TextInput
@@ -88,7 +88,6 @@ export default function MeditationFormScreen({ route, navigation }: any) {
                     />
                 </View>
 
-                {/* Deskripsi */}
                 <View style={styles.field}>
                     <Text style={[styles.label, { color: colors.darkGray, fontFamily: Typography.bodyMedium }]}>Deskripsi</Text>
                     <TextInput
@@ -100,7 +99,6 @@ export default function MeditationFormScreen({ route, navigation }: any) {
                     />
                 </View>
 
-                {/* Kategori */}
                 <View style={styles.field}>
                     <Text style={[styles.label, { color: colors.darkGray, fontFamily: Typography.bodyMedium }]}>Kategori *</Text>
                     <View style={styles.chipRow}>
@@ -117,6 +115,7 @@ export default function MeditationFormScreen({ route, navigation }: any) {
                                     },
                                 ]}
                             >
+                                <Ionicons name={cat.icon as any} size={15} color={category === cat.key ? colors.lavenderDark : colors.darkGray} />
                                 <Text style={[styles.chipText, { color: category === cat.key ? colors.lavenderDark : colors.darkGray, fontFamily: Typography.bodyMedium }]}>
                                     {cat.label}
                                 </Text>
@@ -125,7 +124,6 @@ export default function MeditationFormScreen({ route, navigation }: any) {
                     </View>
                 </View>
 
-                {/* Durasi */}
                 <View style={styles.field}>
                     <Text style={[styles.label, { color: colors.darkGray, fontFamily: Typography.bodyMedium }]}>Opsi Durasi (menit, pisahkan koma) *</Text>
                     <TextInput
@@ -137,7 +135,6 @@ export default function MeditationFormScreen({ route, navigation }: any) {
                     />
                 </View>
 
-                {/* Audio URL */}
                 <View style={styles.field}>
                     <Text style={[styles.label, { color: colors.darkGray, fontFamily: Typography.bodyMedium }]}>URL Audio (opsional)</Text>
                     <TextInput
@@ -148,7 +145,6 @@ export default function MeditationFormScreen({ route, navigation }: any) {
                     />
                 </View>
 
-                {/* Thumbnail URL */}
                 <View style={styles.field}>
                     <Text style={[styles.label, { color: colors.darkGray, fontFamily: Typography.bodyMedium }]}>URL Thumbnail (opsional)</Text>
                     <TextInput
@@ -159,7 +155,6 @@ export default function MeditationFormScreen({ route, navigation }: any) {
                     />
                 </View>
 
-                {/* Warna Tema */}
                 <View style={styles.field}>
                     <Text style={[styles.label, { color: colors.darkGray, fontFamily: Typography.bodyMedium }]}>Warna Tema</Text>
                     <View style={styles.colorRow}>
@@ -192,7 +187,7 @@ const styles = StyleSheet.create({
     label: { fontSize: Typography.sizes.sm, marginBottom: 6 },
     input: { borderWidth: 1, borderRadius: BorderRadius.md, padding: Spacing.md, fontSize: Typography.sizes.base },
     chipRow: { flexDirection: 'row', gap: Spacing.xs, flexWrap: 'wrap' },
-    chip: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs + 2, borderRadius: BorderRadius.full },
+    chip: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs + 2, borderRadius: BorderRadius.full, flexDirection: 'row', alignItems: 'center', gap: 4 },
     chipText: { fontSize: Typography.sizes.sm },
     colorRow: { flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap' },
     colorDot: { width: 36, height: 36, borderRadius: 18 },
