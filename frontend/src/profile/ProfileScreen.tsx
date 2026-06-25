@@ -13,27 +13,27 @@ import { Typography } from '../theme';
 import GamificationSummary from '../components/GamificationSummary';
 
 const D = {
-    bg: '#f5f6fb',
+    bg: '#ebedf3',
     card: '#ffffff',
     cardBorder: '#ecedf6',
-    primary: '#8a9ccc',
-    primaryLight: '#eef2fb',
-    primaryMid: '#dde5f6',
+    primary: '#1A59A1',
+    primaryLight: '#e9f1fa',
+    primaryMid: '#cfe0f4',
     purpleAcc: '#a87fae',
     goldenAcc: '#c2965c',
     goldenLight: '#f6efe2',
-    breathIconBg: '#eef1f9',
+    breathIconBg: '#e9f1fa',
     textDark: '#353b4a',
     textMid: '#3b4150',
     textSub: '#9197aa',
     textMuted: '#949bae',
-    badgeBg: '#eef2fb',
-    badgeBorder: '#e2e8f7',
-    badgeText: '#5f6b9e',
+    badgeBg: '#e9f1fa',
+    badgeBorder: '#d4e3f4',
+    badgeText: '#1A59A1',
     divider: '#f0f1f7',
     inputBg: '#fbfbfe',
     inputBorder: '#e4e6ef',
-    inputFocus: '#b6c1e2',
+    inputFocus: '#9bbbe0',
     logoutBg: '#fdf3f3',
     logoutBorder: '#f7dede',
     logoutText: '#d98a8a',
@@ -161,7 +161,7 @@ export default function ProfileScreen({ navigation }: any) {
                 <View style={styles.profileHeader}>
                     <View style={styles.avatarWrap}>
                         <LinearGradient
-                            colors={['#eef2fb', '#dde5f6']}
+                            colors={['#e9f1fa', '#cfe0f4']}
                             start={{ x: 0.2, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={styles.avatarCircle}
@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
     avatarCircle: {
         width: 96, height: 96, borderRadius: 48,
         justifyContent: 'center', alignItems: 'center',
-        shadowColor: '#8a9ccc', shadowOffset: { width: 0, height: 14 },
+        shadowColor: '#1A59A1', shadowOffset: { width: 0, height: 14 },
         shadowOpacity: 0.5, shadowRadius: 28, elevation: 8,
     },
     editBadge: {
@@ -449,10 +449,10 @@ const styles = StyleSheet.create({
     rolePill: {
         flexDirection: 'row', alignItems: 'center', gap: 5,
         marginTop: 10, paddingHorizontal: 13, paddingVertical: 5,
-        backgroundColor: '#eef2fb', borderWidth: 1, borderColor: '#e2e8f7',
+        backgroundColor: '#e9f1fa', borderWidth: 1, borderColor: '#d4e3f4',
         borderRadius: 20,
     },
-    roleText: { fontSize: 11, letterSpacing: 1, color: '#5f6b9e' },
+    roleText: { fontSize: 11, letterSpacing: 1, color: '#1A59A1' },
 
     // Cards
     card: {
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
     saveBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
         gap: 9, borderRadius: 16, paddingVertical: 16, marginTop: 4,
-        shadowColor: '#8a9ccc', shadowOffset: { width: 0, height: 8 },
+        shadowColor: '#1A59A1', shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.4, shadowRadius: 20, elevation: 6,
     },
     saveBtnText: { color: '#fff', fontSize: 15.5 },

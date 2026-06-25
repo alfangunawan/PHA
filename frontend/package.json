@@ -11,6 +11,7 @@
     "test:auth-error": "rm -rf /tmp/pha-auth-error-test && tsc tests/authError.test.ts --module commonjs --target es2020 --outDir /tmp/pha-auth-error-test --skipLibCheck --esModuleInterop && node /tmp/pha-auth-error-test/tests/authError.test.js"
   },
   "dependencies": {
+    "@expo-google-fonts/hanken-grotesk": "^0.4.3",
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/lora": "^0.4.2",
     "@expo-google-fonts/poppins": "^0.4.1",

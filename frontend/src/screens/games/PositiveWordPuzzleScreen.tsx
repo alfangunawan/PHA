@@ -4,7 +4,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { gamesAPI } from '../../api';
 import { LoadingState } from '../../components/LoadingState';
 
-const C = { bg: '#fcfcfe', card: '#fff', border: '#ecedf6', primary: '#8a9ccc', text: '#353b4a', body: '#3b4150', muted: '#9197aa', faint: '#aab0bf', soft: '#f3f4f9', avatar: '#eef1f9', green: '#8AAD83', greenSoft: '#f1f8ef', lavender: '#9387c8', lavenderSoft: '#f1eefa', error: '#c45f5f', errorSoft: '#fdeeee' };
+// Fun Blue palette (selaras Beranda)
+const FB = {
+    bg: '#fcfcfe', card: '#ffffff', border: '#ecedf6', borderSoft: '#e1e5ee',
+    primary: '#1A59A1', primaryDeep: '#14457D',
+    text: '#353b4a', textDark: '#243a5c', body: '#3b4150',
+    muted: '#9197aa', muted2: '#9aa7bd', faint: '#aab1c2',
+    tint: '#e9f1fa', tintBorder: '#d9e6f6', tintText: '#3a5c87', hintBg: '#f5f8fc', hintBorder: '#e7eef8',
+    tile: '#f1f2f8', tileText: '#7c8398', track: '#eef1f7',
+    green: '#3f8f63', greenSoft: '#eaf6ef', greenBorder: '#cfe8da',
+    error: '#c45f5f', errorSoft: '#fdeeee', errorBorder: '#f4caca',
+};
 
 type PuzzleItem = {
     id: string;
@@ -15,7 +25,7 @@ type PuzzleItem = {
     source?: string;
 };
 
-export default function PositiveWordPuzzleScreen() {
+export default function PositiveWordPuzzleScreen({ navigation }: any) {
     const { width } = useWindowDimensions();
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -132,53 +142,69 @@ export default function PositiveWordPuzzleScreen() {
 
     const hintText = current?.hintLetters?.slice(0, hintStage).join('') || '';
     const progress = items.length ? ((currentIndex + 1) / items.length) * 100 : 0;
+    const isLast = currentIndex === items.length - 1;
+    const locked = submitting || !!result;
 
     return (
         <SafeAreaView style={styles.safe}>
             <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-                <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-                    <AssistantBubble icon="text-outline">
-                        <Text style={styles.title}>Tebak Kata Positif</Text>
-                        <Text style={styles.bubbleText}>Aku akan memberi satu kata acak. Susun pelan-pelan, gunakan hint kalau perlu, lalu kumpulkan XP setelah selesai.</Text>
-                    </AssistantBubble>
+                <View style={styles.topBar}>
+                    <TouchableOpacity onPress={() => navigation?.goBack?.()} style={styles.backBtn}>
+                        <Ionicons name="chevron-back" size={20} color="#5a6173" />
+                    </TouchableOpacity>
+                    <View style={styles.topBadge}><Text style={styles.topBadgeText}>Aa</Text></View>
+                    <View style={styles.flex}>
+                        <Text style={styles.topTitle}>Tebak Kata Positif</Text>
+                        <Text style={styles.topSub}>Word Puzzle</Text>
+                    </View>
+                </View>
 
-                    <View style={styles.progressBubble}>
+                <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+                    <View style={styles.introCard}>
+                        <View style={styles.introIcon}><Ionicons name="sparkles" size={17} color="#fff" /></View>
+                        <Text style={styles.introText}>Aku akan memberi satu kata acak. Susun pelan-pelan, gunakan hint kalau perlu, lalu kumpulkan XP setelah selesai.</Text>
+                    </View>
+
+                    <View style={styles.progressCard}>
                         <View style={styles.progressTop}>
-                            <Text style={styles.progressText}>Soal {items.length ? Math.min(currentIndex + 1, items.length) : 0}/{items.length || 0}</Text>
-                            {!!limitInfo && <Text style={styles.limitText}>Sisa hari ini {limitInfo.remainingToday}</Text>}
+                            <Text style={styles.progressText}>Soal {items.length ? Math.min(currentIndex + 1, items.length) : 0} / {items.length || 0}</Text>
+                            {!!limitInfo && <Text style={styles.limitText}>Sisa hari ini <Text style={styles.limitNum}>{limitInfo.remainingToday}</Text></Text>}
                         </View>
                         <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${progress}%` }]} /></View>
                     </View>
 
                     {!current ? (
-                        <AssistantBubble icon="refresh-outline">
-                            <Text style={styles.bubbleTitle}>Belum ada soal yang tersedia</Text>
-                            <Text style={styles.bubbleText}>Coba mulai ulang sesi untuk mengambil kata positif baru.</Text>
-                        </AssistantBubble>
+                        <View style={styles.questionCard}>
+                            <Text style={styles.qTitle}>Belum ada soal yang tersedia</Text>
+                            <Text style={styles.metaText}>Coba mulai ulang sesi untuk mengambil kata positif baru.</Text>
+                        </View>
                     ) : (
                         <>
-                            <AssistantBubble icon="sparkles-outline">
-                                <View style={styles.cardHeader}>
+                            <View style={styles.questionCard}>
+                                <View style={styles.qHeader}>
                                     <View style={styles.numberBadge}><Text style={styles.numberText}>{currentIndex + 1}</Text></View>
-                                    <View style={styles.cardTitleWrap}>
-                                        <Text style={styles.bubbleTitle}>Susun huruf ini</Text>
+                                    <View style={styles.flex}>
+                                        <Text style={styles.qTitle}>Susun huruf ini</Text>
                                         <Text style={styles.metaText}>{current.length} huruf • {current.source === 'personal' ? 'dari jurnalmu' : 'dari PHA'}</Text>
                                     </View>
                                 </View>
 
                                 <View style={styles.lettersWrap}>
                                     {current.scrambled.split('').map((letter, letterIndex) => (
-                                        <View key={`${current.id}-${letterIndex}`} style={[styles.letterTile, { width: tileSize, height: tileSize, borderRadius: Math.max(10, tileSize / 3) }]}>
-                                            <Text style={[styles.letter, { fontSize: Math.max(16, tileSize * 0.42) }]}>{letter}</Text>
+                                        <View key={`${current.id}-${letterIndex}`} style={[styles.letterTile, { width: tileSize, height: tileSize, borderRadius: Math.max(12, tileSize / 3) }]}>
+                                            <Text style={[styles.letter, { fontSize: Math.max(18, tileSize * 0.5) }]}>{letter}</Text>
                                         </View>
                                     ))}
                                 </View>
 
                                 <View style={styles.hintBox}>
-                                    <Ionicons name="bulb-outline" size={17} color={C.lavender} />
-                                    <Text style={styles.hintBoxText}>{hintText ? `Hint: dimulai dengan ${hintText}` : 'Hint tersedia: huruf pertama lalu kedua'}</Text>
+                                    <Ionicons name="bulb-outline" size={16} color={FB.primary} />
+                                    <Text style={styles.hintBoxText}>
+                                        <Text style={styles.hintBoxStrong}>{hintText ? `Hint: dimulai dengan ${hintText}. ` : 'Hint tersedia: '}</Text>
+                                        {hintText ? '' : 'huruf pertama lalu kedua.'}
+                                    </Text>
                                 </View>
-                            </AssistantBubble>
+                            </View>
 
                             <View style={styles.composerCard}>
                                 <TextInput
@@ -187,44 +213,48 @@ export default function PositiveWordPuzzleScreen() {
                                     autoCapitalize="characters"
                                     autoCorrect={false}
                                     maxLength={current.length}
-                                    placeholder="Tulis jawaban"
-                                    placeholderTextColor={C.faint}
+                                    placeholder="Tulis jawaban…"
+                                    placeholderTextColor={FB.faint}
                                     style={styles.input}
                                 />
-                                <TouchableOpacity disabled={submitting || !!result} style={[styles.sendBtn, (submitting || !!result) && styles.disabled]} onPress={checkAnswer}>
-                                    <Ionicons name={currentIndex === items.length - 1 ? 'ribbon-outline' : 'arrow-forward-outline'} size={20} color="#fff" />
+                                <TouchableOpacity disabled={locked} style={[styles.sendBtn, locked && styles.disabled]} onPress={checkAnswer}>
+                                    <Ionicons name={isLast ? 'ribbon-outline' : 'arrow-forward'} size={20} color="#fff" />
                                 </TouchableOpacity>
                             </View>
 
                             {feedback && (
-                                <AssistantBubble icon={feedback.type === 'error' ? 'alert-circle-outline' : 'checkmark-circle-outline'} tone={feedback.type}>
-                                    <Text style={[styles.bubbleText, feedback.type === 'error' ? styles.errorText : styles.successText]}>{feedback.text}</Text>
-                                </AssistantBubble>
+                                <View style={[styles.feedbackCard, feedback.type === 'error' ? styles.errorCard : styles.successCard]}>
+                                    <Ionicons name={feedback.type === 'error' ? 'alert-circle' : 'checkmark-circle'} size={18} color={feedback.type === 'error' ? FB.error : FB.green} />
+                                    <Text style={[styles.feedbackText, { color: feedback.type === 'error' ? FB.error : FB.green }]}>{feedback.text}</Text>
+                                </View>
                             )}
 
-                            <View style={styles.quickReplies}>
-                                <TouchableOpacity disabled={hintStage >= 2} style={[styles.quickReply, hintStage >= 2 && styles.disabled]} onPress={revealHint}>
-                                    <Ionicons name="bulb-outline" size={17} color={C.primary} />
-                                    <Text style={styles.quickReplyText}>{hintStage === 0 ? 'Hint 1' : hintStage === 1 ? 'Hint 2' : 'Hint maksimal'}</Text>
+                            <View style={styles.actions}>
+                                <TouchableOpacity disabled={hintStage >= 2} style={[styles.hintBtn, hintStage >= 2 && styles.disabled]} onPress={revealHint}>
+                                    <Ionicons name="bulb-outline" size={16} color={FB.primary} />
+                                    <Text style={styles.hintBtnText}>{hintStage === 0 ? 'Hint 1' : hintStage === 1 ? 'Hint 2' : 'Hint maksimal'}</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity disabled={submitting || !!result} style={[styles.primaryReply, (submitting || !!result) && styles.disabled]} onPress={checkAnswer}>
-                                    <Text style={styles.primaryReplyText}>{currentIndex === items.length - 1 ? (submitting ? 'Mengirim...' : 'Selesai') : 'Lanjut'}</Text>
+                                <TouchableOpacity disabled={locked} style={[styles.primaryBtn, locked && styles.disabled]} onPress={checkAnswer}>
+                                    <Text style={styles.primaryBtnText}>{isLast ? (submitting ? 'Mengirim…' : 'Selesai') : 'Lanjut'}</Text>
+                                    <Ionicons name="arrow-forward" size={16} color="#fff" />
                                 </TouchableOpacity>
                             </View>
                         </>
                     )}
 
                     {result && (
-                        <AssistantBubble icon="ribbon-outline" tone="success">
-                            <Text style={styles.bubbleTitle}>Puzzle selesai</Text>
-                            <Text style={styles.bubbleText}>Benar {result.correctCount}/{result.totalWords} • Skor {result.score}</Text>
-                            {result.reward?.event && <Text style={styles.reward}>+{result.reward.event.xp} XP • +{result.reward.event.points} poin</Text>}
-                        </AssistantBubble>
+                        <View style={[styles.feedbackCard, styles.successCard]}>
+                            <Ionicons name="ribbon" size={18} color={FB.green} />
+                            <View style={styles.flex}>
+                                <Text style={[styles.feedbackText, { color: FB.green }]}>Puzzle selesai • Benar {result.correctCount}/{result.totalWords} • Skor {result.score}</Text>
+                                {result.reward?.event && <Text style={styles.reward}>+{result.reward.event.xp} XP • +{result.reward.event.points} poin</Text>}
+                            </View>
+                        </View>
                     )}
 
-                    <TouchableOpacity style={styles.secondaryBtn} onPress={start}>
-                        <Ionicons name="refresh-outline" size={18} color={C.primary} />
-                        <Text style={styles.secondaryText}>{result ? 'Main Lagi' : 'Muat Ulang Soal'}</Text>
+                    <TouchableOpacity style={styles.reloadBtn} onPress={start}>
+                        <Ionicons name="refresh" size={16} color={FB.tileText} />
+                        <Text style={styles.reloadText}>{result ? 'Main Lagi' : 'Muat Ulang Soal'}</Text>
                     </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>
@@ -232,59 +262,60 @@ export default function PositiveWordPuzzleScreen() {
     );
 }
 
-function AssistantBubble({ icon, tone, children }: { icon: any; tone?: 'error' | 'success'; children: React.ReactNode }) {
-    const danger = tone === 'error';
-    const success = tone === 'success';
-    return (
-        <View style={styles.assistantRow}>
-            <View style={[styles.avatar, danger && styles.avatarError, success && styles.avatarSuccess]}><Ionicons name={icon} size={17} color={danger ? C.error : success ? C.green : C.primary} /></View>
-            <View style={[styles.assistantBubble, danger && styles.errorBubble, success && styles.successBubble]}>{children}</View>
-        </View>
-    );
-}
-
 const styles = StyleSheet.create({
-    safe: { flex: 1, backgroundColor: C.bg },
+    safe: { flex: 1, backgroundColor: FB.bg },
     flex: { flex: 1 },
     container: { padding: 18, gap: 14, paddingBottom: 44 },
-    assistantRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 9, maxWidth: '96%' },
-    avatar: { width: 30, height: 30, borderRadius: 15, backgroundColor: C.avatar, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-    avatarError: { backgroundColor: C.errorSoft },
-    avatarSuccess: { backgroundColor: C.greenSoft },
-    assistantBubble: { flexShrink: 1, backgroundColor: C.card, borderColor: C.border, borderWidth: 1, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderBottomRightRadius: 20, borderBottomLeftRadius: 6, paddingVertical: 13, paddingHorizontal: 15, gap: 10 },
-    errorBubble: { backgroundColor: C.errorSoft, borderColor: '#f4caca' },
-    successBubble: { backgroundColor: C.greenSoft, borderColor: '#dcefd7' },
-    title: { fontSize: 24, fontWeight: '800', color: C.text },
-    bubbleTitle: { color: C.text, fontSize: 16, fontWeight: '800' },
-    bubbleText: { color: C.body, lineHeight: 21, fontSize: 14 },
-    progressBubble: { backgroundColor: C.card, borderColor: C.border, borderWidth: 1, borderRadius: 20, padding: 14, gap: 9 },
-    progressTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-    progressText: { color: C.text, fontWeight: '800' },
-    limitText: { color: C.muted, fontSize: 12, fontWeight: '700' },
-    progressTrack: { height: 8, backgroundColor: C.soft, borderRadius: 99, overflow: 'hidden' },
-    progressFill: { height: '100%', backgroundColor: C.primary, borderRadius: 99 },
-    cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    numberBadge: { width: 32, height: 32, borderRadius: 12, backgroundColor: C.lavenderSoft, alignItems: 'center', justifyContent: 'center' },
-    numberText: { color: C.lavender, fontWeight: '900' },
-    cardTitleWrap: { flex: 1 },
-    metaText: { color: C.muted, fontSize: 12, marginTop: 2, fontWeight: '700' },
-    lettersWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
-    letterTile: { backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', borderColor: C.border, borderWidth: 1 },
-    letter: { color: C.primary, fontWeight: '900' },
-    hintBox: { backgroundColor: C.lavenderSoft, borderRadius: 14, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 8 },
-    hintBoxText: { color: C.lavender, flex: 1, fontWeight: '800', fontSize: 12, lineHeight: 17 },
-    composerCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderBottomLeftRadius: 20, borderBottomRightRadius: 6, borderColor: C.border, borderWidth: 1, padding: 10, alignSelf: 'flex-end', maxWidth: '94%' },
-    input: { minWidth: 180, flex: 1, backgroundColor: C.soft, borderColor: C.border, borderWidth: 1, borderRadius: 22, paddingHorizontal: 16, paddingVertical: 12, color: C.text, fontWeight: '900', letterSpacing: 1.5 },
-    sendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', shadowColor: C.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.22, shadowRadius: 10, elevation: 4 },
-    quickReplies: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'flex-end' },
-    quickReply: { backgroundColor: C.soft, borderColor: C.border, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 11, borderRadius: 16, flexDirection: 'row', alignItems: 'center', gap: 7 },
-    quickReplyText: { color: C.primary, fontWeight: '800' },
-    primaryReply: { backgroundColor: C.primary, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-    primaryReplyText: { color: '#fff', fontWeight: '800' },
-    disabled: { opacity: 0.55 },
-    errorText: { color: C.error, fontWeight: '800' },
-    successText: { color: C.green, fontWeight: '800' },
-    reward: { color: C.green, fontWeight: '900' },
-    secondaryBtn: { backgroundColor: C.soft, borderColor: C.border, borderWidth: 1, padding: 13, borderRadius: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
-    secondaryText: { color: C.primary, fontWeight: '800' },
+
+    topBar: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, paddingTop: 6, paddingBottom: 12 },
+    backBtn: { width: 40, height: 40, borderRadius: 13, backgroundColor: FB.tile, alignItems: 'center', justifyContent: 'center' },
+    topBadge: { width: 40, height: 40, borderRadius: 13, backgroundColor: FB.tint, alignItems: 'center', justifyContent: 'center' },
+    topBadgeText: { fontFamily: 'Lora_600SemiBold', fontSize: 17, color: FB.primary },
+    topTitle: { fontFamily: 'Lora_500Medium', fontSize: 19, color: FB.text, letterSpacing: -0.2 },
+    topSub: { fontFamily: 'Inter_400Regular', fontSize: 12, color: FB.muted, marginTop: 2 },
+
+    introCard: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', backgroundColor: FB.tint, borderColor: FB.tintBorder, borderWidth: 1, borderRadius: 20, padding: 15 },
+    introIcon: { width: 34, height: 34, borderRadius: 11, backgroundColor: FB.primary, alignItems: 'center', justifyContent: 'center' },
+    introText: { flex: 1, fontFamily: 'Inter_400Regular', fontSize: 13, color: FB.tintText, lineHeight: 20 },
+
+    progressCard: { backgroundColor: FB.card, borderColor: FB.border, borderWidth: 1, borderRadius: 20, padding: 15, gap: 11, shadowColor: FB.primary, shadowOffset: { width: 0, height: 14 }, shadowOpacity: 0.06, shadowRadius: 24, elevation: 2 },
+    progressTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+    progressText: { fontFamily: 'Inter_600SemiBold', fontSize: 14, color: FB.text },
+    limitText: { fontFamily: 'Inter_400Regular', fontSize: 12.5, color: FB.muted },
+    limitNum: { fontFamily: 'Inter_600SemiBold', color: FB.primary },
+    progressTrack: { height: 8, backgroundColor: FB.track, borderRadius: 99, overflow: 'hidden' },
+    progressFill: { height: '100%', backgroundColor: FB.primary, borderRadius: 99 },
+
+    questionCard: { backgroundColor: FB.card, borderColor: FB.border, borderWidth: 1, borderRadius: 22, padding: 18, gap: 16, shadowColor: FB.primary, shadowOffset: { width: 0, height: 14 }, shadowOpacity: 0.06, shadowRadius: 24, elevation: 2 },
+    qHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    numberBadge: { width: 34, height: 34, borderRadius: 17, backgroundColor: FB.primary, alignItems: 'center', justifyContent: 'center' },
+    numberText: { fontFamily: 'Inter_600SemiBold', fontSize: 15, color: '#fff' },
+    qTitle: { fontFamily: 'Inter_600SemiBold', fontSize: 16, color: FB.text },
+    metaText: { fontFamily: 'Inter_500Medium', fontSize: 12, color: FB.muted2, marginTop: 2 },
+    lettersWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 11, justifyContent: 'center' },
+    letterTile: { backgroundColor: FB.tint, borderColor: FB.tintBorder, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+    letter: { fontFamily: 'Lora_600SemiBold', color: FB.primary },
+    hintBox: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', backgroundColor: FB.hintBg, borderColor: FB.hintBorder, borderWidth: 1, borderRadius: 14, padding: 12 },
+    hintBoxText: { flex: 1, fontFamily: 'Inter_400Regular', fontSize: 12.5, color: '#5a6f8c', lineHeight: 18 },
+    hintBoxStrong: { fontFamily: 'Inter_600SemiBold', color: FB.primary },
+
+    composerCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: FB.card, borderColor: FB.borderSoft, borderWidth: 1, borderRadius: 18, padding: 7, paddingLeft: 16, shadowColor: FB.primary, shadowOffset: { width: 0, height: 14 }, shadowOpacity: 0.06, shadowRadius: 24, elevation: 2 },
+    input: { flex: 1, fontFamily: 'Inter_600SemiBold', fontSize: 15, color: FB.text, letterSpacing: 1.5, paddingVertical: 10 },
+    sendBtn: { width: 46, height: 46, borderRadius: 14, backgroundColor: FB.primary, alignItems: 'center', justifyContent: 'center', shadowColor: FB.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.5, shadowRadius: 10, elevation: 4 },
+
+    feedbackCard: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 16, padding: 13 },
+    errorCard: { backgroundColor: FB.errorSoft, borderColor: FB.errorBorder },
+    successCard: { backgroundColor: FB.greenSoft, borderColor: FB.greenBorder },
+    feedbackText: { flex: 1, fontFamily: 'Inter_500Medium', fontSize: 13, lineHeight: 19 },
+    reward: { fontFamily: 'Inter_600SemiBold', fontSize: 13, color: FB.green, marginTop: 2 },
+
+    actions: { flexDirection: 'row', gap: 11 },
+    hintBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: FB.card, borderColor: FB.borderSoft, borderWidth: 1, borderRadius: 15, paddingVertical: 13 },
+    hintBtnText: { fontFamily: 'Inter_600SemiBold', fontSize: 14, color: '#5a6f8c' },
+    primaryBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: FB.primary, borderRadius: 15, paddingVertical: 13, shadowColor: FB.primary, shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.5, shadowRadius: 16, elevation: 4 },
+    primaryBtnText: { fontFamily: 'Inter_600SemiBold', fontSize: 14, color: '#fff' },
+    disabled: { opacity: 0.5 },
+
+    reloadBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: FB.tile, borderRadius: 15, paddingVertical: 13 },
+    reloadText: { fontFamily: 'Inter_600SemiBold', fontSize: 13.5, color: FB.tileText },
 });

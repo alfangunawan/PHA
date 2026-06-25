@@ -5,8 +5,18 @@ import { gamesAPI } from '../../api';
 
 const ROWS = 20;
 const COLS = 10;
-const C = { bg: '#fcfcfe', card: '#fff', border: '#ecedf6', primary: '#8a9ccc', text: '#353b4a', body: '#3b4150', muted: '#9197aa', soft: '#f3f4f9', avatar: '#eef1f9', board: '#202333', panel: '#2b3045', grid: '#353b54', ghost: '#596078', boardText: '#fff', boardSub: '#c6cbe2', green: '#8AAD83', greenSoft: '#f1f8ef', danger: '#c45f5f', dangerSoft: '#fdeeee' };
-const PIECE_COLORS: Record<string, string> = { I: '#74d4ff', O: '#ffd66b', T: '#b38cff', S: '#8ee28e', Z: '#ff8f8f', J: '#8fb3ff', L: '#ffb46b' };
+// Fun Blue palette (selaras Beranda)
+const FB = {
+    bg: '#fcfcfe', card: '#ffffff', border: '#ecedf6', borderSoft: '#e1e5ee',
+    primary: '#1A59A1', primaryDeep: '#14457D',
+    text: '#353b4a', body: '#3b4150', muted: '#9197aa', sub: '#5a6f8c',
+    tile: '#f1f2f8', tint: '#e9f1fa',
+    arcade: '#4571b0', arcadeSoft: '#eef2fb', arcadeBorder: '#e0e8f5',
+    board: '#1a2340', cellEmpty: '#28335a', ghost: '#3a466e',
+    green: '#3f8f63', greenSoft: '#eaf6ef', greenBorder: '#cfe8da',
+    danger: '#c45f5f', dangerSoft: '#fdeeee', dangerBorder: '#f4caca',
+};
+const PIECE_COLORS: Record<string, string> = { I: '#74c7f2', O: '#ffd66b', T: '#b38cff', S: '#8ee28e', Z: '#ff8f8f', J: '#5a8bcb', L: '#ffb46b' };
 
 type Board = (string | null)[][];
 type PieceKey = keyof typeof SHAPES;
@@ -45,17 +55,12 @@ export default function TetrisGameScreen({ navigation }: any) {
     const intervalRef = useRef<any>(null);
     const endingRef = useRef(false);
 
-    const layout = useMemo(() => {
-        const horizontalPadding = 24;
-        const sidePanelWidth = 78;
-        const sideGap = 8;
-        const canUseSide = width >= 430;
-        const availableWidth = canUseSide ? width - horizontalPadding - sidePanelWidth - sideGap - 12 : width - horizontalPadding - 14;
-        const availableHeight = Math.max(250, height - 360);
-        const raw = Math.min(availableWidth / COLS - 2, availableHeight / ROWS - 2);
-        const maxCell = width < 380 ? 14 : width < 430 ? 16 : 20;
-        const cell = Math.max(10, Math.min(maxCell, Math.floor(raw)));
-        return { cell, canUseSide, miniCell: Math.max(8, Math.min(12, Math.floor(cell * 0.68))) };
+    const cell = useMemo(() => {
+        const availableWidth = width - 36 - 18 - (COLS - 1) * 4 - 18;
+        const availableHeight = Math.max(250, height - 420);
+        const raw = Math.min(availableWidth / COLS, availableHeight / ROWS);
+        const maxCell = width < 380 ? 16 : 20;
+        return Math.max(11, Math.min(maxCell, Math.floor(raw)));
     }, [width, height]);
 
     const collides = (shape = piece.shape, row = piece.row, col = piece.col, targetBoard = board) => {
@@ -178,62 +183,70 @@ export default function TetrisGameScreen({ navigation }: any) {
         if (cell && nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) displayBoard[nr][nc] = piece.key;
     }));
 
-    const nextPanel = (
-        <View style={[styles.side, !layout.canUseSide && styles.sideCompact]}>
-            <View style={styles.nextWrap}>
-                <Text style={styles.sideTitle}>Next</Text>
-                <MiniPiece pieceKey={nextPiece} cell={layout.miniCell} />
-            </View>
-            <TouchableOpacity style={styles.sideBtn} onPress={() => moveDown(true)}><Ionicons name="arrow-down-outline" size={17} color={C.primary} /><Text style={styles.sideBtnText}>Soft</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.sideBtn} onPress={hardDrop}><Ionicons name="download-outline" size={17} color={C.primary} /><Text style={styles.sideBtnText}>Drop</Text></TouchableOpacity>
-        </View>
-    );
-
     return (
         <SafeAreaView style={styles.safe}>
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
                 <View style={styles.appBar}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.appBarBtn}>
-                        <Ionicons name="chevron-back" size={22} color={C.body} />
+                    <TouchableOpacity onPress={() => navigation?.goBack?.()} style={styles.backBtn}>
+                        <Ionicons name="chevron-back" size={20} color="#5a6173" />
                     </TouchableOpacity>
-                    <View style={styles.appBarCenter}>
-                        <View style={styles.avatar}><Ionicons name="grid-outline" size={17} color={C.primary} /></View>
-                        <View>
-                            <Text style={styles.title}>Tetris Tenang</Text>
-                            <Text style={styles.subtitle}>Susun blok dalam sesi singkat</Text>
-                        </View>
+                    <View style={styles.appBarIcon}><Ionicons name="grid" size={20} color={FB.arcade} /></View>
+                    <View style={styles.flex}>
+                        <Text style={styles.title}>Tetris Tenang</Text>
+                        <Text style={styles.subtitle}>Susun blok dalam sesi singkat</Text>
                     </View>
-                    <TouchableOpacity disabled={gameOver} onPress={() => setPaused(p => !p)} style={[styles.pauseBtn, gameOver && styles.disabled]}><Ionicons name={paused ? 'play-outline' : 'pause-outline'} size={17} color={C.primary} /><Text style={styles.pauseText}>{paused ? 'Lanjut' : 'Jeda'}</Text></TouchableOpacity>
+                    <TouchableOpacity disabled={gameOver} onPress={() => setPaused(p => !p)} style={[styles.pausePill, gameOver && styles.disabled]}>
+                        <Ionicons name={paused ? 'play' : 'pause'} size={13} color={FB.primary} />
+                        <Text style={styles.pauseText}>{paused ? 'Lanjut' : 'Jeda'}</Text>
+                    </TouchableOpacity>
                 </View>
 
-                <View style={styles.scoreBubble}>
+                <View style={styles.statsCard}>
                     <Stat label="Skor" value={score} />
+                    <View style={styles.statDivider} />
                     <Stat label="Level" value={level} />
+                    <View style={styles.statDivider} />
                     <Stat label="Lines" value={lines} />
                 </View>
 
-                {!layout.canUseSide && nextPanel}
+                <View style={styles.nextStrip}>
+                    <Text style={styles.nextLabel}>Next</Text>
+                    <MiniPiece pieceKey={nextPiece} />
+                    <Text style={styles.nextHint}>Blok berikutnya</Text>
+                </View>
 
-                <View style={styles.gameCard}>
-                    <View style={styles.gameRow}>
-                        <View style={styles.board}>{displayBoard.map((row, r) => <View key={r} style={styles.row}>{row.map((cell, c) => {
-                            const backgroundColor = cell === 'ghost' ? C.ghost : cell ? PIECE_COLORS[cell] : C.grid;
-                            const opacity = cell === 'ghost' ? 0.45 : 1;
-                            return <View key={`${r}-${c}`} style={{ width: layout.cell, height: layout.cell, margin: 1, borderRadius: Math.max(2, layout.cell * 0.16), backgroundColor, opacity }} />;
-                        })}</View>)}</View>
-                        {layout.canUseSide && nextPanel}
-                    </View>
+                <View style={[styles.board, { padding: 9 }]}>
+                    {displayBoard.map((row, r) => (
+                        <View key={r} style={styles.row}>
+                            {row.map((c, ci) => {
+                                const isGhost = c === 'ghost';
+                                const backgroundColor = isGhost ? FB.ghost : c ? PIECE_COLORS[c] : FB.cellEmpty;
+                                return <View key={`${r}-${ci}`} style={{ width: cell, height: cell, margin: 2, borderRadius: 4, backgroundColor, opacity: isGhost ? 0.5 : 1, borderBottomWidth: c && !isGhost ? Math.max(2, cell * 0.16) : 0, borderBottomColor: 'rgba(0,0,0,0.16)' }} />;
+                            })}
+                        </View>
+                    ))}
+                </View>
+
+                <View style={styles.dropRow}>
+                    <TouchableOpacity style={styles.flatBtn} onPress={() => moveDown(true)}>
+                        <Ionicons name="chevron-down" size={16} color={FB.primary} />
+                        <Text style={styles.flatBtnText}>Soft</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.flatBtn} onPress={hardDrop}>
+                        <Ionicons name="download-outline" size={16} color={FB.primary} />
+                        <Text style={styles.flatBtnText}>Drop</Text>
+                    </TouchableOpacity>
                 </View>
 
                 <View style={styles.controls}>
-                    <IconButton icon="arrow-back-outline" label="Kiri" onPress={() => move(-1)} />
-                    <IconButton icon="sync-outline" label="Putar" onPress={rotate} />
-                    <IconButton icon="arrow-forward-outline" label="Kanan" onPress={() => move(1)} />
+                    <Pad icon="arrow-back" label="Kiri" onPress={() => move(-1)} />
+                    <Pad icon="refresh" label="Putar" onPress={rotate} />
+                    <Pad icon="arrow-forward" label="Kanan" onPress={() => move(1)} />
                 </View>
 
-                {paused && !gameOver && <StatusBubble icon="pause-circle-outline" text="Game dijeda. Tarik napas sebentar, lalu lanjut saat siap." color={C.primary} />}
-                {gameOver && <StatusBubble icon="close-circle-outline" text="Game selesai. Reward akan dihitung dari skor sesi ini." color={C.danger} tone="danger" />}
-                {reward?.event && <StatusBubble icon="ribbon-outline" text={`+${reward.event.xp} XP • +${reward.event.points} poin`} color={C.green} tone="success" />}
+                {paused && !gameOver && <StatusCard icon="pause-circle" text="Game dijeda. Tarik napas sebentar, lalu lanjut saat siap." tone="info" />}
+                {gameOver && <StatusCard icon="close-circle" text="Game selesai. Reward akan dihitung dari skor sesi ini." tone="danger" />}
+                {reward?.event && <StatusCard icon="ribbon" text={`+${reward.event.xp} XP • +${reward.event.points} poin`} tone="success" />}
             </ScrollView>
         </SafeAreaView>
     );
@@ -243,59 +256,79 @@ function Stat({ label, value }: { label: string; value: number }) {
     return <View style={styles.statItem}><Text style={styles.statValue}>{value}</Text><Text style={styles.statLabel}>{label}</Text></View>;
 }
 
-function IconButton({ icon, label, onPress }: { icon: any; label: string; onPress: () => void }) {
-    return <TouchableOpacity style={styles.btn} onPress={onPress}><Ionicons name={icon} size={22} color="#fff" /><Text style={styles.btnLabel}>{label}</Text></TouchableOpacity>;
+function Pad({ icon, label, onPress }: { icon: any; label: string; onPress: () => void }) {
+    return (
+        <TouchableOpacity style={styles.pad} onPress={onPress} activeOpacity={0.85}>
+            <Ionicons name={icon} size={22} color="#fff" />
+            <Text style={styles.padLabel}>{label}</Text>
+        </TouchableOpacity>
+    );
 }
 
-function StatusBubble({ icon, text, color, tone }: { icon: any; text: string; color: string; tone?: 'success' | 'danger' }) {
+function StatusCard({ icon, text, tone }: { icon: any; text: string; tone: 'info' | 'success' | 'danger' }) {
+    const color = tone === 'danger' ? FB.danger : tone === 'success' ? FB.green : FB.primary;
+    const card = tone === 'danger' ? styles.dangerCard : tone === 'success' ? styles.successCard : styles.infoCard;
     return (
-        <View style={styles.assistantRow}>
-            <View style={[styles.smallAvatar, tone === 'success' && styles.avatarSuccess, tone === 'danger' && styles.avatarDanger]}><Ionicons name={icon} size={18} color={color} /></View>
-            <View style={[styles.statusBubble, tone === 'success' && styles.successBubble, tone === 'danger' && styles.dangerBubble]}><Text style={[styles.statusText, { color }]}>{text}</Text></View>
+        <View style={[styles.statusCard, card]}>
+            <Ionicons name={icon} size={18} color={color} />
+            <Text style={[styles.statusText, { color }]}>{text}</Text>
         </View>
     );
 }
 
-function MiniPiece({ pieceKey, cell }: { pieceKey: PieceKey; cell: number }) {
-    return <View style={styles.mini}>{SHAPES[pieceKey].map((row, r) => <View key={r} style={styles.row}>{row.map((filled, c) => <View key={c} style={{ width: cell, height: cell, margin: 1, borderRadius: 3, backgroundColor: filled ? PIECE_COLORS[pieceKey] : 'transparent' }} />)}</View>)}</View>;
+function MiniPiece({ pieceKey }: { pieceKey: PieceKey }) {
+    return (
+        <View style={styles.mini}>
+            {SHAPES[pieceKey].map((row, r) => (
+                <View key={r} style={styles.row}>
+                    {row.map((filled, c) => <View key={c} style={{ width: 11, height: 11, margin: 1.5, borderRadius: 3, backgroundColor: filled ? PIECE_COLORS[pieceKey] : 'transparent' }} />)}
+                </View>
+            ))}
+        </View>
+    );
 }
 
+const CARD_SHADOW = { shadowColor: FB.primary, shadowOffset: { width: 0, height: 14 }, shadowOpacity: 0.06, shadowRadius: 24, elevation: 2 };
+
 const styles = StyleSheet.create({
-    safe: { flex: 1, backgroundColor: C.bg },
-    scroll: { padding: 12, gap: 12, paddingBottom: 34, alignItems: 'center' },
-    appBar: { width: '100%', maxWidth: 430, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, backgroundColor: C.card, borderColor: C.border, borderWidth: 1, borderRadius: 22, padding: 10 },
-    appBarBtn: { width: 38, height: 38, borderRadius: 14, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
-    appBarCenter: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
-    avatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: C.avatar, alignItems: 'center', justifyContent: 'center' },
-    title: { color: C.text, fontSize: 18, fontWeight: '800' },
-    subtitle: { color: C.muted, fontSize: 11, marginTop: 2 },
-    pauseBtn: { backgroundColor: C.soft, borderColor: C.border, borderWidth: 1, borderRadius: 16, paddingHorizontal: 11, paddingVertical: 9, flexDirection: 'row', alignItems: 'center', gap: 5 },
-    pauseText: { color: C.primary, fontWeight: '800', fontSize: 12 },
+    safe: { flex: 1, backgroundColor: FB.bg },
+    scroll: { padding: 18, gap: 12, paddingBottom: 36, alignItems: 'stretch' },
+    flex: { flex: 1, minWidth: 0 },
+
+    appBar: { flexDirection: 'row', alignItems: 'center', gap: 11 },
+    backBtn: { width: 40, height: 40, borderRadius: 13, backgroundColor: FB.tile, alignItems: 'center', justifyContent: 'center' },
+    appBarIcon: { width: 40, height: 40, borderRadius: 13, backgroundColor: FB.arcadeSoft, alignItems: 'center', justifyContent: 'center' },
+    title: { fontFamily: 'Lora_500Medium', fontSize: 19, color: FB.text, letterSpacing: -0.2 },
+    subtitle: { fontFamily: 'Inter_400Regular', fontSize: 12, color: FB.muted, marginTop: 2 },
+    pausePill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: FB.card, borderColor: FB.borderSoft, borderWidth: 1, borderRadius: 13, paddingHorizontal: 13, paddingVertical: 8 },
+    pauseText: { fontFamily: 'Inter_600SemiBold', fontSize: 13, color: FB.primary },
     disabled: { opacity: 0.45 },
-    scoreBubble: { width: '100%', maxWidth: 430, backgroundColor: C.card, borderColor: C.border, borderWidth: 1, borderRadius: 20, padding: 13, flexDirection: 'row', justifyContent: 'space-between' },
-    statItem: { flex: 1, alignItems: 'center', gap: 2 },
-    statValue: { color: C.text, fontSize: 18, fontWeight: '900' },
-    statLabel: { color: C.muted, fontSize: 11, fontWeight: '800' },
-    gameCard: { backgroundColor: C.card, borderColor: C.border, borderWidth: 1, borderRadius: 24, padding: 8 },
-    gameRow: { flexDirection: 'row', gap: 10, justifyContent: 'center', alignItems: 'flex-start' },
-    board: { backgroundColor: C.board, padding: 5, borderRadius: 14 },
+
+    statsCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: FB.card, borderColor: FB.border, borderWidth: 1, borderRadius: 20, paddingVertical: 15, paddingHorizontal: 8, ...CARD_SHADOW },
+    statItem: { flex: 1, alignItems: 'center' },
+    statValue: { fontFamily: 'Lora_500Medium', fontSize: 26, color: FB.primary, lineHeight: 28 },
+    statLabel: { fontFamily: 'Inter_500Medium', fontSize: 12, color: FB.muted, marginTop: 5 },
+    statDivider: { width: 1, height: 34, backgroundColor: FB.border },
+
+    nextStrip: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: FB.arcadeSoft, borderColor: FB.arcadeBorder, borderWidth: 1, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10 },
+    nextLabel: { fontFamily: 'Inter_600SemiBold', fontSize: 12, color: FB.sub, letterSpacing: 0.4 },
+    nextHint: { marginLeft: 'auto', fontFamily: 'Inter_400Regular', fontSize: 12, color: FB.muted },
+    mini: { alignItems: 'center', justifyContent: 'center' },
+
+    board: { alignSelf: 'center', backgroundColor: FB.board, borderRadius: 18, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 10 },
     row: { flexDirection: 'row' },
-    side: { width: 86, backgroundColor: C.soft, borderColor: C.border, borderWidth: 1, borderRadius: 18, padding: 8, gap: 9, alignItems: 'center' },
-    sideCompact: { width: '100%', maxWidth: 330, flexDirection: 'row', justifyContent: 'space-between' },
-    nextWrap: { alignItems: 'center', gap: 4 },
-    sideTitle: { color: C.text, fontWeight: '800', fontSize: 12 },
-    mini: { minHeight: 42, minWidth: 42, alignItems: 'center', justifyContent: 'center' },
-    sideBtn: { backgroundColor: C.card, borderColor: C.border, borderWidth: 1, paddingHorizontal: 9, paddingVertical: 8, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
-    sideBtnText: { color: C.primary, fontWeight: '900', fontSize: 12 },
-    controls: { flexDirection: 'row', justifyContent: 'center', gap: 10, flexWrap: 'wrap' },
-    btn: { backgroundColor: C.primary, width: 86, height: 58, borderRadius: 18, alignItems: 'center', justifyContent: 'center', gap: 3, shadowColor: C.primary, shadowOffset: { width: 0, height: 7 }, shadowOpacity: 0.18, shadowRadius: 8, elevation: 3 },
-    btnLabel: { color: '#fff', fontSize: 11, fontWeight: '900' },
-    assistantRow: { width: '100%', maxWidth: 430, flexDirection: 'row', alignItems: 'flex-end', gap: 9 },
-    smallAvatar: { width: 30, height: 30, borderRadius: 15, backgroundColor: C.avatar, alignItems: 'center', justifyContent: 'center' },
-    avatarSuccess: { backgroundColor: C.greenSoft },
-    avatarDanger: { backgroundColor: C.dangerSoft },
-    statusBubble: { flex: 1, backgroundColor: C.card, borderColor: C.border, borderWidth: 1, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderBottomRightRadius: 20, borderBottomLeftRadius: 6, paddingVertical: 12, paddingHorizontal: 15 },
-    successBubble: { backgroundColor: C.greenSoft, borderColor: '#dcefd7' },
-    dangerBubble: { backgroundColor: C.dangerSoft, borderColor: '#f4caca' },
-    statusText: { fontSize: 14, lineHeight: 20, fontWeight: '800' },
+
+    dropRow: { flexDirection: 'row', gap: 10, marginTop: 2 },
+    flatBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: FB.card, borderColor: FB.borderSoft, borderWidth: 1, borderRadius: 14, paddingVertical: 12 },
+    flatBtnText: { fontFamily: 'Inter_600SemiBold', fontSize: 13.5, color: FB.sub },
+
+    controls: { flexDirection: 'row', gap: 10 },
+    pad: { flex: 1, alignItems: 'center', gap: 5, backgroundColor: FB.primary, borderRadius: 18, paddingVertical: 14, borderBottomWidth: 5, borderBottomColor: FB.primaryDeep, shadowColor: FB.primary, shadowOffset: { width: 0, height: 14 }, shadowOpacity: 0.4, shadowRadius: 18, elevation: 4 },
+    padLabel: { fontFamily: 'Inter_600SemiBold', fontSize: 13, color: '#fff' },
+
+    statusCard: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 16, padding: 13 },
+    infoCard: { backgroundColor: FB.tint, borderColor: '#d9e6f6' },
+    successCard: { backgroundColor: FB.greenSoft, borderColor: FB.greenBorder },
+    dangerCard: { backgroundColor: FB.dangerSoft, borderColor: FB.dangerBorder },
+    statusText: { flex: 1, fontFamily: 'Inter_500Medium', fontSize: 13.5, lineHeight: 19 },
 });

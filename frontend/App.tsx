@@ -23,6 +23,12 @@ import {
     Lora_500Medium,
     Lora_600SemiBold,
 } from '@expo-google-fonts/lora';
+import {
+    HankenGrotesk_400Regular,
+    HankenGrotesk_500Medium,
+    HankenGrotesk_600SemiBold,
+    HankenGrotesk_700Bold,
+} from '@expo-google-fonts/hanken-grotesk';
 
 import { AuthProvider, useAuthContext } from './src/auth/AuthContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
@@ -256,6 +262,10 @@ function AppContent() {
         Lora_400Regular,
         Lora_500Medium,
         Lora_600SemiBold,
+        HankenGrotesk_400Regular,
+        HankenGrotesk_500Medium,
+        HankenGrotesk_600SemiBold,
+        HankenGrotesk_700Bold,
     });
 
     useEffect(() => {
