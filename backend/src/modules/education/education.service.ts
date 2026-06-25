@@ -1,5 +1,6 @@
-import { ContentSource } from '@prisma/client';
+import { ActivityType, ContentSource } from '@prisma/client';
 import { prisma } from '../../config/prisma';
+import { awardReward } from '../gamification/gamification.service';
 
 interface GetAllFilters {
     page?: number;
@@ -76,3 +77,10 @@ export const remove = (id: string) =>
         where: { id },
         data: { isActive: false },
     });
+
+export const completeContent = async (userId: string, id: string) => {
+    const content = await getById(id);
+    if (!content) throw new Error('Content not found');
+    const reward = await awardReward(userId, ActivityType.EDUCATION_CONTENT, id, { title: content.title });
+    return { content, reward };
+};

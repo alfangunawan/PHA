@@ -5,6 +5,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useAuthContext } from '../auth/AuthContext';
+import GamificationSummary from '../components/GamificationSummary';
 
 const PRIMARY = '#8a9ccc';
 
@@ -40,6 +41,8 @@ const activities = [
     { key: 'napas', title: 'Latihan Napas', sub: 'Pernapasan', bg: D.tile1, iconColor: PRIMARY, screen: 'Napas' },
     { key: 'meditasi', title: 'Meditasi', sub: 'Pikiran', bg: D.tile2, iconColor: D.tileIcon2, screen: 'Meditasi' },
     { key: 'edukasi', title: 'Edukasi', sub: 'Artikel', bg: D.tile3, iconColor: D.tileIcon3, screen: 'Edukasi' },
+    { key: 'jurnal', title: 'Jurnal', sub: 'Refleksi', bg: '#edf7ef', iconColor: '#7da878', screen: 'JournalList' },
+    { key: 'games', title: 'Games', sub: 'XP & Poin', bg: '#f1eefa', iconColor: '#9387c8', screen: 'GamesHome' },
 ];
 
 function HeaderIllustration() {
@@ -115,6 +118,18 @@ function ActivityIcon({ type, color }: { type: string; color: string }) {
             <Path d="M5 17.5h14" stroke={color} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
         </Svg>
     );
+    if (type === 'jurnal') return (
+        <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+            <Path d="M6 4.5h9l3 3v12H6z" stroke={color} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
+            <Path d="M15 4.5v3h3M8.5 11h7M8.5 14h7M8.5 17h4" stroke={color} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
+        </Svg>
+    );
+    if (type === 'games') return (
+        <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+            <Path d="M7 8h10c2 0 3.5 1.8 3.5 4.3v2.2c0 1.4-.9 2.5-2.1 2.5-.8 0-1.4-.4-1.9-1.1L15.5 14h-7l-1 1.9C7 16.6 6.4 17 5.6 17c-1.2 0-2.1-1.1-2.1-2.5v-2.2C3.5 9.8 5 8 7 8z" stroke={color} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
+            <Path d="M8 11v3M6.5 12.5h3M15.5 11.8h.01M17.5 13.5h.01" stroke={color} strokeWidth={1.7} strokeLinecap="round" />
+        </Svg>
+    );
     return (
         <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
             <Path d="M12 6.5V19" stroke={color} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
@@ -143,7 +158,7 @@ function ChevronIcon() {
 
 export default function HomeScreen() {
     const navigation = useNavigation<any>();
-    const { user, isAdmin } = useAuthContext();
+    const { user, canManageGamification, canManageMindfulness } = useAuthContext();
     const [selectedMood, setSelectedMood] = useState<string>('baik');
     const insets = useSafeAreaInsets();
 
@@ -168,12 +183,12 @@ export default function HomeScreen() {
                             <TouchableOpacity onPress={() => navigation.navigate('Profil')} style={styles.avatar}>
                                 <PersonIcon />
                             </TouchableOpacity>
-                            {isAdmin && (
+                            {(canManageMindfulness || canManageGamification) && (
                                 <TouchableOpacity
-                                    onPress={() => navigation.navigate('AdminDashboard')}
+                                    onPress={() => navigation.navigate(canManageMindfulness ? 'AdminDashboard' : 'GamificationRules')}
                                     style={styles.adminBadge}
                                 >
-                                    <Text style={styles.adminBadgeText}>Admin Panel</Text>
+                                    <Text style={styles.adminBadgeText}>{canManageMindfulness ? 'Admin Mindfulness' : 'Admin Gamifikasi'}</Text>
                                 </TouchableOpacity>
                             )}
                         </View>
@@ -197,6 +212,8 @@ export default function HomeScreen() {
                         })}
                     </View>
                 </View>
+
+                <GamificationSummary />
 
                 {/* Aktivitas */}
                 <View>
@@ -275,8 +292,8 @@ const styles = StyleSheet.create({
     moodLabelActive: { color: D.moodSelected, fontWeight: '600' },
 
     sectionTitle: { fontFamily: 'Lora_400Regular', fontSize: 18, color: D.textMid, marginBottom: 13 },
-    activityGrid: { flexDirection: 'row', gap: 12 },
-    activityTile: { flex: 1, borderRadius: 20, padding: 15, paddingHorizontal: 13, gap: 14, minHeight: 128 },
+    activityGrid: { flexDirection: 'row', gap: 12, flexWrap: 'wrap' },
+    activityTile: { width: '30.8%', borderRadius: 20, padding: 15, paddingHorizontal: 13, gap: 14, minHeight: 128 },
     activityIconWrap: { width: 42, height: 42, borderRadius: 13, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center' },
     activityTitle: { fontSize: 13.5, fontWeight: '600', color: '#3a4150', lineHeight: 17 },
     activitySub: { fontSize: 11.5, color: '#9197b2', marginTop: 4 },

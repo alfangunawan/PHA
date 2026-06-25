@@ -46,6 +46,13 @@ import ContentFormScreen from './src/screens/admin/ContentFormScreen';
 import AudioFormScreen from './src/screens/admin/AudioFormScreen';
 import BreathingFormScreen from './src/screens/admin/BreathingFormScreen';
 import MeditationFormScreen from './src/screens/admin/MeditationFormScreen';
+import GamificationRulesScreen from './src/screens/admin/GamificationRulesScreen';
+import JournalListScreen from './src/screens/journal/JournalListScreen';
+import JournalEditorScreen from './src/screens/journal/JournalEditorScreen';
+import JournalDetailScreen from './src/screens/journal/JournalDetailScreen';
+import GamesHomeScreen from './src/screens/games/GamesHomeScreen';
+import PositiveWordPuzzleScreen from './src/screens/games/PositiveWordPuzzleScreen';
+import TetrisGameScreen from './src/screens/games/TetrisGameScreen';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -157,8 +164,18 @@ function MainTabs() {
     );
 }
 
+function AccessDeniedScreen() {
+    const { colors } = useTheme();
+    return (
+        <View style={[styles.center, { backgroundColor: colors.bgPrimary, padding: 24 }]}>
+            <Ionicons name="lock-closed-outline" size={34} color={colors.mediumGray} />
+            <Text style={{ color: colors.darkGray, marginTop: 12, textAlign: 'center', fontWeight: '700' }}>Akses tidak tersedia untuk role akun ini.</Text>
+        </View>
+    );
+}
+
 function RootNavigator() {
-    const { isAuthenticated, isLoading } = useAuthContext();
+    const { isAuthenticated, isLoading, canManageGamification, canManageMindfulness } = useAuthContext();
     const { colors } = useTheme();
 
     if (isLoading) {
@@ -204,11 +221,18 @@ function RootNavigator() {
                         component={MeditationPlayerScreen}
                         options={{ gestureEnabled: false }}
                     />
-                    <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ headerShown: true, title: 'Admin', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
-                    <Stack.Screen name="ContentForm" component={ContentFormScreen} options={{ headerShown: true, title: 'Konten', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
-                    <Stack.Screen name="AudioForm" component={AudioFormScreen} options={{ headerShown: true, title: 'Audio', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
-                    <Stack.Screen name="BreathingForm" component={BreathingFormScreen} options={{ headerShown: true, title: 'Teknik Napas', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
-                    <Stack.Screen name="MeditationForm" component={MeditationFormScreen} options={{ headerShown: true, title: 'Sesi Meditasi', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
+                    <Stack.Screen name="AdminDashboard" component={canManageMindfulness ? AdminDashboardScreen : AccessDeniedScreen} options={{ headerShown: true, title: 'Admin Mindfulness', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
+                    <Stack.Screen name="ContentForm" component={canManageMindfulness ? ContentFormScreen : AccessDeniedScreen} options={{ headerShown: true, title: 'Konten', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
+                    <Stack.Screen name="AudioForm" component={canManageMindfulness ? AudioFormScreen : AccessDeniedScreen} options={{ headerShown: true, title: 'Audio', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
+                    <Stack.Screen name="BreathingForm" component={canManageMindfulness ? BreathingFormScreen : AccessDeniedScreen} options={{ headerShown: true, title: 'Teknik Napas', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
+                    <Stack.Screen name="MeditationForm" component={canManageMindfulness ? MeditationFormScreen : AccessDeniedScreen} options={{ headerShown: true, title: 'Sesi Meditasi', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
+                    <Stack.Screen name="GamificationRules" component={canManageGamification ? GamificationRulesScreen : AccessDeniedScreen} options={{ headerShown: true, title: 'Gamifikasi', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
+                    <Stack.Screen name="JournalList" component={JournalListScreen} options={{ headerShown: true, title: 'Jurnal', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
+                    <Stack.Screen name="JournalEditor" component={JournalEditorScreen} options={{ headerShown: true, title: 'Tulis Jurnal', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
+                    <Stack.Screen name="JournalDetail" component={JournalDetailScreen} options={{ headerShown: true, title: 'Detail Jurnal', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
+                    <Stack.Screen name="GamesHome" component={GamesHomeScreen} options={{ headerShown: true, title: 'Games', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
+                    <Stack.Screen name="PositiveWordPuzzle" component={PositiveWordPuzzleScreen} options={{ headerShown: true, title: 'Word Puzzle', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
+                    <Stack.Screen name="TetrisGame" component={TetrisGameScreen} options={{ gestureEnabled: false }} />
                 </Stack.Navigator>
             ) : (
                 <AuthStack.Navigator screenOptions={{ headerShown: false }}>

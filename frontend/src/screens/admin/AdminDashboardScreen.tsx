@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuthContext } from '../../auth/AuthContext';
 import { educationAPI, audioAPI, breathingAPI, meditationAPI } from '../../api';
 import AnimatedView from '../../components/AnimatedView';
 import { LoadingState, EmptyState } from '../../components/LoadingState';
@@ -14,8 +16,8 @@ const SOURCE_DOTS: Record<string, string> = {
     other: '#60A5FA',
 };
 
-const CATEGORY_EMOJIS: Record<string, string> = {
-    sleep: '🌙', focus: '🎯', anxiety: '💚', morning: '🌅', general: '🌿',
+const CATEGORY_ICONS: Record<string, string> = {
+    sleep: 'moon-outline', focus: 'scan-circle-outline', anxiety: 'heart-outline', morning: 'sunny-outline', general: 'leaf-outline',
 };
 
 function formatDuration(seconds: number): string {
@@ -27,6 +29,7 @@ function formatDuration(seconds: number): string {
 
 export default function AdminDashboardScreen({ navigation }: any) {
     const { colors } = useTheme();
+    const { canManageMindfulness } = useAuthContext();
     const [tab, setTab] = useState<Tab>('education');
     const [eduContents, setEduContents] = useState<any[]>([]);
     const [audios, setAudios] = useState<any[]>([]);
@@ -54,7 +57,9 @@ export default function AdminDashboardScreen({ navigation }: any) {
         }
     };
 
-    useEffect(() => { fetchData(); }, []);
+    useEffect(() => {
+        if (canManageMindfulness) fetchData();
+    }, [canManageMindfulness]);
 
     const confirmDelete = (title: string, onConfirm: () => void) => {
         Alert.alert(`Hapus "${title}"`, 'Tindakan ini tidak bisa dibatalkan.', [
@@ -76,9 +81,11 @@ export default function AdminDashboardScreen({ navigation }: any) {
         try { await meditationAPI.deleteSession(item.id); fetchData(); } catch { }
     });
 
-    const TABS: { key: Tab; label: string; emoji: string }[] = [
-        { key: 'education', label: 'Edukasi', emoji: '📚' },
-        { key: 'audio', label: 'Audio', emoji: '🎵' },
+    const TABS: { key: Tab; label: string; icon: string }[] = [
+        { key: 'education', label: 'Edukasi', icon: 'book-outline' },
+        { key: 'breathing', label: 'Napas', icon: 'leaf-outline' },
+        { key: 'meditation', label: 'Meditasi', icon: 'planet-outline' },
+        { key: 'audio', label: 'Audio', icon: 'musical-notes-outline' },
     ];
 
     const renderAddButton = () => {
@@ -128,10 +135,10 @@ export default function AdminDashboardScreen({ navigation }: any) {
                 </Text>
                 <View style={styles.actions}>
                     <TouchableOpacity onPress={() => navigation.navigate('ContentForm', { content: item })} style={[styles.actionBtn, { backgroundColor: colors.softBlue + '22' }]}>
-                        <Text style={[styles.actionText, { color: colors.softBlue, fontFamily: Typography.bodyMedium }]}>✏️ Edit</Text>
+                        <Ionicons name="pencil-outline" size={15} color={colors.softBlue} /><Text style={[styles.actionText, { color: colors.softBlue, fontFamily: Typography.bodyMedium }]}>Edit</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => deleteEdu(item)} style={[styles.actionBtn, { backgroundColor: colors.error + '22' }]}>
-                        <Text style={[styles.actionText, { color: colors.error, fontFamily: Typography.bodyMedium }]}>🗑️ Hapus</Text>
+                        <Ionicons name="trash-outline" size={15} color={colors.error} /><Text style={[styles.actionText, { color: colors.error, fontFamily: Typography.bodyMedium }]}>Hapus</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -166,10 +173,10 @@ export default function AdminDashboardScreen({ navigation }: any) {
                 </View>
                 <View style={styles.actions}>
                     <TouchableOpacity onPress={() => navigation.navigate('BreathingForm', { technique: item })} style={[styles.actionBtn, { backgroundColor: colors.softBlue + '22' }]}>
-                        <Text style={[styles.actionText, { color: colors.softBlue, fontFamily: Typography.bodyMedium }]}>✏️ Edit</Text>
+                        <Ionicons name="pencil-outline" size={15} color={colors.softBlue} /><Text style={[styles.actionText, { color: colors.softBlue, fontFamily: Typography.bodyMedium }]}>Edit</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => deleteTechnique(item)} style={[styles.actionBtn, { backgroundColor: colors.error + '22' }]}>
-                        <Text style={[styles.actionText, { color: colors.error, fontFamily: Typography.bodyMedium }]}>🗑️ Hapus</Text>
+                        <Ionicons name="trash-outline" size={15} color={colors.error} /><Text style={[styles.actionText, { color: colors.error, fontFamily: Typography.bodyMedium }]}>Hapus</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -180,7 +187,7 @@ export default function AdminDashboardScreen({ navigation }: any) {
         <AnimatedView delay={index * 40}>
             <View style={[styles.card, { backgroundColor: colors.bgCard, borderLeftWidth: 4, borderLeftColor: item.colorTheme || colors.lavender }]}>
                 <View style={styles.cardHeader}>
-                    <Text style={styles.categoryEmoji}>{CATEGORY_EMOJIS[item.category] || '🧘'}</Text>
+                    <Ionicons name={(CATEGORY_ICONS[item.category] || 'planet-outline') as any} size={20} color={colors.lavenderDark} />
                     <Text style={[styles.cardTitle, { color: colors.charcoal, fontFamily: Typography.heading, flex: 1 }]} numberOfLines={1}>
                         {item.title}
                     </Text>
@@ -198,16 +205,16 @@ export default function AdminDashboardScreen({ navigation }: any) {
                     ))}
                     {item.audioUrl && (
                         <View style={[styles.durationPill, { backgroundColor: colors.sageGreen + '22' }]}>
-                            <Text style={[styles.durationPillText, { color: colors.sageGreenDark, fontFamily: Typography.bodyMedium }]}>🎵 Audio</Text>
+                            <Ionicons name="musical-notes-outline" size={13} color={colors.sageGreenDark} /><Text style={[styles.durationPillText, { color: colors.sageGreenDark, fontFamily: Typography.bodyMedium }]}>Audio</Text>
                         </View>
                     )}
                 </View>
                 <View style={styles.actions}>
                     <TouchableOpacity onPress={() => navigation.navigate('MeditationForm', { session: item })} style={[styles.actionBtn, { backgroundColor: colors.softBlue + '22' }]}>
-                        <Text style={[styles.actionText, { color: colors.softBlue, fontFamily: Typography.bodyMedium }]}>✏️ Edit</Text>
+                        <Ionicons name="pencil-outline" size={15} color={colors.softBlue} /><Text style={[styles.actionText, { color: colors.softBlue, fontFamily: Typography.bodyMedium }]}>Edit</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => deleteMeditation(item)} style={[styles.actionBtn, { backgroundColor: colors.error + '22' }]}>
-                        <Text style={[styles.actionText, { color: colors.error, fontFamily: Typography.bodyMedium }]}>🗑️ Hapus</Text>
+                        <Ionicons name="trash-outline" size={15} color={colors.error} /><Text style={[styles.actionText, { color: colors.error, fontFamily: Typography.bodyMedium }]}>Hapus</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -218,8 +225,9 @@ export default function AdminDashboardScreen({ navigation }: any) {
         <AnimatedView delay={index * 40}>
             <View style={[styles.card, { backgroundColor: colors.bgCard }]}>
                 <View style={styles.cardHeader}>
+                    <Ionicons name="musical-notes-outline" size={18} color={colors.lavenderDark} />
                     <Text style={[styles.cardTitle, { color: colors.charcoal, fontFamily: Typography.heading, flex: 1 }]}>
-                        🎵 {item.title}
+                        {item.title}
                     </Text>
                     {item.category ? (
                         <View style={[styles.badge, { backgroundColor: colors.lavender + '33' }]}>
@@ -228,13 +236,14 @@ export default function AdminDashboardScreen({ navigation }: any) {
                     ) : null}
                 </View>
                 {item.duration ? (
-                    <Text style={[styles.cardUrl, { color: colors.mediumGray, fontFamily: Typography.body }]}>
-                        ⏱ {formatDuration(item.duration)}
-                    </Text>
+                    <View style={styles.metaRow}>
+                        <Ionicons name="time-outline" size={14} color={colors.mediumGray} />
+                        <Text style={[styles.cardUrl, { color: colors.mediumGray, fontFamily: Typography.body }]}>{formatDuration(item.duration)}</Text>
+                    </View>
                 ) : null}
                 <View style={styles.actions}>
                     <TouchableOpacity onPress={() => deleteAudio(item)} style={[styles.actionBtn, { backgroundColor: colors.error + '22' }]}>
-                        <Text style={[styles.actionText, { color: colors.error, fontFamily: Typography.bodyMedium }]}>🗑️ Hapus</Text>
+                        <Ionicons name="trash-outline" size={15} color={colors.error} /><Text style={[styles.actionText, { color: colors.error, fontFamily: Typography.bodyMedium }]}>Hapus</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -261,6 +270,16 @@ export default function AdminDashboardScreen({ navigation }: any) {
         );
     };
 
+    if (!canManageMindfulness) {
+        return (
+            <SafeAreaView style={[styles.safe, styles.denied, { backgroundColor: colors.bgPrimary }]}>
+                <Ionicons name="lock-closed-outline" size={34} color={colors.mediumGray} />
+                <Text style={[styles.title, { color: colors.charcoal, textAlign: 'center', fontFamily: Typography.headingBold }]}>Akses Admin Mindfulness</Text>
+                <Text style={[styles.sub, { textAlign: 'center' }]}>Akun ini tidak memiliki izin untuk mengelola konten mindfulness.</Text>
+            </SafeAreaView>
+        );
+    }
+
     return (
         <SafeAreaView style={[styles.safe, { backgroundColor: colors.bgPrimary }]}>
             <View style={styles.header}>
@@ -277,8 +296,9 @@ export default function AdminDashboardScreen({ navigation }: any) {
                                 { backgroundColor: tab === t.key ? colors.softBlue : colors.lightGray },
                             ]}
                         >
-                            <Text style={styles.tabEmoji}>{t.emoji}</Text>
+                            <Ionicons name={t.icon as any} size={15} color={tab === t.key ? colors.white : colors.darkGray} />
                             <Text style={[styles.tabText, { color: tab === t.key ? colors.white : colors.darkGray, fontFamily: Typography.bodyMedium }]}>
+
                                 {t.label}
                             </Text>
                         </TouchableOpacity>
@@ -295,8 +315,10 @@ export default function AdminDashboardScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
     safe: { flex: 1 },
+    denied: { alignItems: 'center', justifyContent: 'center', padding: Spacing.lg, gap: Spacing.sm },
     header: { padding: Spacing.lg, paddingBottom: Spacing.sm },
     title: { fontSize: Typography.sizes['2xl'], marginBottom: Spacing.md },
+    sub: { color: '#6B6360', lineHeight: 20 },
     tabs: { flexDirection: 'row', gap: Spacing.xs, marginBottom: Spacing.sm, flexWrap: 'wrap' },
     tabBtn: {
         flexDirection: 'row',
@@ -308,7 +330,6 @@ const styles = StyleSheet.create({
         borderRadius: BorderRadius.md,
         justifyContent: 'center',
     },
-    tabEmoji: { fontSize: 14 },
     tabText: { fontSize: Typography.sizes.xs },
     addBtn: {
         paddingVertical: Spacing.sm,
@@ -317,6 +338,8 @@ const styles = StyleSheet.create({
         marginTop: Spacing.xs,
     },
     addBtnText: { fontSize: Typography.sizes.base },
+    gamificationBtn: { paddingVertical: Spacing.sm, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: Spacing.xs, marginTop: Spacing.sm },
+    gamificationBtnText: { fontSize: Typography.sizes.sm },
     list: { padding: Spacing.md, gap: Spacing.sm },
     card: {
         borderRadius: BorderRadius.lg,
@@ -338,8 +361,9 @@ const styles = StyleSheet.create({
     badgeText: { fontSize: Typography.sizes.xs },
     cardTitle: { fontSize: Typography.sizes.base, marginBottom: 4 },
     cardUrl: { fontSize: Typography.sizes.xs, marginBottom: Spacing.sm },
+    metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: Spacing.sm },
     actions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xs },
-    actionBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderRadius: BorderRadius.sm },
+    actionBtn: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderRadius: BorderRadius.sm, flexDirection: 'row', alignItems: 'center', gap: 4 },
     actionText: { fontSize: Typography.sizes.sm },
     // Breathing
     phaseRow: { flexDirection: 'row', gap: Spacing.xs, marginBottom: Spacing.sm, flexWrap: 'wrap' },
@@ -348,6 +372,6 @@ const styles = StyleSheet.create({
     phasePillLabel: { fontSize: Typography.sizes.xs },
     // Meditation
     durationsRow: { flexDirection: 'row', gap: Spacing.xs, marginBottom: Spacing.sm, flexWrap: 'wrap' },
-    durationPill: { paddingHorizontal: Spacing.sm, paddingVertical: 3, borderRadius: BorderRadius.sm },
+    durationPill: { paddingHorizontal: Spacing.sm, paddingVertical: 3, borderRadius: BorderRadius.sm, flexDirection: 'row', alignItems: 'center', gap: 4 },
     durationPillText: { fontSize: Typography.sizes.xs },
 });

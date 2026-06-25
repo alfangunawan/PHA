@@ -7,6 +7,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "nodemon src/server.ts",
+    "test": "vitest run src",
     "test:auth-middleware": "ts-node tests/authMiddleware.test.ts"
   },
   "prisma": {

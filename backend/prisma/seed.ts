@@ -1,4 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { ActivityType, PrismaClient, Role } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -16,6 +17,76 @@ async function seedMissing<T extends Record<string, any>>(
 }
 
 async function main() {
+    const gamificationAdminEmail = process.env.GAMIFICATION_ADMIN_EMAIL || 'gamifikasi@pha.local';
+    const gamificationAdminPassword = process.env.GAMIFICATION_ADMIN_PASSWORD || 'gamifikasi123';
+    const gamificationAdminHash = await bcrypt.hash(gamificationAdminPassword, 10);
+    const mindfulnessAdminEmail = process.env.MINDFULNESS_ADMIN_EMAIL || 'mindfulness@pha.local';
+    const mindfulnessAdminPassword = process.env.MINDFULNESS_ADMIN_PASSWORD || 'mindfulness123';
+    const mindfulnessAdminHash = await bcrypt.hash(mindfulnessAdminPassword, 10);
+
+    await prisma.user.upsert({
+        where: { email: gamificationAdminEmail },
+        update: {
+            passwordHash: gamificationAdminHash,
+            role: Role.GAMIFICATION_ADMIN,
+            profile: {
+                upsert: {
+                    update: { displayName: 'Admin Gamifikasi' },
+                    create: { displayName: 'Admin Gamifikasi', language: 'id' },
+                },
+            },
+        },
+        create: {
+            email: gamificationAdminEmail,
+            passwordHash: gamificationAdminHash,
+            role: Role.GAMIFICATION_ADMIN,
+            profile: { create: { displayName: 'Admin Gamifikasi', language: 'id' } },
+        },
+    });
+
+    await prisma.user.upsert({
+        where: { email: mindfulnessAdminEmail },
+        update: {
+            passwordHash: mindfulnessAdminHash,
+            role: Role.MINDFULNESS_ADMIN,
+            profile: {
+                upsert: {
+                    update: { displayName: 'Admin Mindfulness' },
+                    create: { displayName: 'Admin Mindfulness', language: 'id' },
+                },
+            },
+        },
+        create: {
+            email: mindfulnessAdminEmail,
+            passwordHash: mindfulnessAdminHash,
+            role: Role.MINDFULNESS_ADMIN,
+            profile: { create: { displayName: 'Admin Mindfulness', language: 'id' } },
+        },
+    });
+
+    await prisma.user.updateMany({
+        where: { role: Role.ADMIN },
+        data: { role: Role.MINDFULNESS_ADMIN },
+    });
+
+    const rewardRules = [
+        { activityType: ActivityType.BREATHING, xp: 10, points: 5 },
+        { activityType: ActivityType.MEDITATION, xp: 15, points: 8 },
+        { activityType: ActivityType.EDUCATION_CONTENT, xp: 8, points: 4 },
+        { activityType: ActivityType.AUDIO_CONTENT, xp: 8, points: 4 },
+        { activityType: ActivityType.JOURNAL_ENTRY, xp: 12, points: 6 },
+        { activityType: ActivityType.WORD_PUZZLE, xp: 10, points: 5 },
+        { activityType: ActivityType.TETRIS, xp: 10, points: 5 },
+    ];
+
+    for (const rule of rewardRules) {
+        await prisma.rewardRule.upsert({
+            where: { activityType: rule.activityType },
+            update: {},
+            create: rule,
+        });
+    }
+
     // Breathing techniques
     const breathingTechniques = [
             {

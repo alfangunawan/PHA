@@ -51,6 +51,9 @@ const breathing_routes_1 = __importDefault(require("./modules/breathing/breathin
 const meditation_routes_1 = __importDefault(require("./modules/meditation/meditation.routes"));
 const education_routes_1 = __importDefault(require("./modules/education/education.routes"));
 const audio_routes_1 = __importDefault(require("./modules/audio/audio.routes"));
+const journal_routes_1 = __importDefault(require("./modules/journal/journal.routes"));
+const gamification_routes_1 = __importDefault(require("./modules/gamification/gamification.routes"));
+const games_routes_1 = __importDefault(require("./modules/games/games.routes"));
 const auth_middleware_1 = require("./middleware/auth.middleware");
 (0, env_1.validateServerEnv)();
 const app = (0, express_1.default)();
@@ -75,6 +78,9 @@ app.use('/api/breathing', breathing_routes_1.default);
 app.use('/api/meditation', meditation_routes_1.default);
 app.use('/api/education-contents', education_routes_1.default);
 app.use('/api/audio-contents', audio_routes_1.default);
+app.use('/api/journals', journal_routes_1.default);
+app.use('/api/gamification', gamification_routes_1.default);
+app.use('/api/games', games_routes_1.default);
 app.get('/health', (req, res) => {
     res.json({
         status: 'ok',

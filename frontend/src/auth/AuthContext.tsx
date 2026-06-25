@@ -12,7 +12,11 @@ interface UserInfo {
 interface AuthContextType {
     isAuthenticated: boolean;
     user: UserInfo | null;
-    isAdmin: boolean;
+    isGamificationAdmin: boolean;
+    isMindfulnessAdmin: boolean;
+    canManageGamification: boolean;
+    canManageMindfulness: boolean;
+    canAccessAdminPanel: boolean;
     isLoading: boolean;
     login: (email: string, pass: string) => Promise<void>;
     register: (email: string, pass: string, name?: string) => Promise<void>;
@@ -69,12 +73,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
     };
 
+    const isGamificationAdmin = user?.role === 'GAMIFICATION_ADMIN';
+    const isMindfulnessAdmin = user?.role === 'MINDFULNESS_ADMIN';
+
     return (
         <AuthContext.Provider
             value={{
                 isAuthenticated,
                 user,
-                isAdmin: user?.role === 'ADMIN',
+                isGamificationAdmin,
+                isMindfulnessAdmin,
+                canManageGamification: isGamificationAdmin,
+                canManageMindfulness: isMindfulnessAdmin,
+                canAccessAdminPanel: isMindfulnessAdmin,
                 isLoading,
                 login,
                 register,
