@@ -9,6 +9,7 @@ import {
     Linking,
     ActivityIndicator,
     StatusBar,
+    RefreshControl,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WebView } from 'react-native-webview';
@@ -33,7 +34,6 @@ interface Content {
 
 const SOURCE_COLORS: Record<string, string> = {
     youtube: '#FF0000',
-    tiktok: '#FFFFFF',
     other: '#60A5FA',
 };
 
@@ -58,8 +58,18 @@ function InAppPlayer({ item, isActive, height }: {
 }) {
     const [ready, setReady] = useState(false);
 
+    // Force hide loader after 3 seconds if onReady doesn't fire (common WebView bug on Android)
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setReady(true);
+        }, 3000);
+        return () => clearTimeout(timer);
+    }, []);
+
     if (item.source === 'youtube') {
         const videoId = getYouTubeVideoId(item.url);
+        const videoHeight = WINDOW_WIDTH * (9 / 16);
+
         if (!videoId) {
             return (
                 <View style={[styles.playerFallback, { height }]}>
@@ -70,23 +80,31 @@ function InAppPlayer({ item, isActive, height }: {
             );
         }
         return (
-            <View style={{ height, width: WINDOW_WIDTH, backgroundColor: '#000' }}>
+            <View style={{ height, width: WINDOW_WIDTH, backgroundColor: '#000', justifyContent: 'center' }}>
                 {!ready && (
-                    <View style={[styles.playerLoading, { height }]}>
+                    <View style={[styles.playerLoading, { position: 'absolute', height: videoHeight, width: WINDOW_WIDTH }]}>
                         <ActivityIndicator size="large" color="#FF4444" />
                     </View>
                 )}
-                <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, zIndex: 0 }}>
+                <View style={{ height: videoHeight, width: WINDOW_WIDTH, opacity: 0.99 }}>
                     <YoutubeIframe
                         videoId={videoId}
-                        height={height}
+                        height={videoHeight}
                         width={WINDOW_WIDTH}
-                        play={isActive}
+                        play={isActive && ready}
                         onReady={() => setReady(true)}
+                        onError={() => setReady(true)}
+                        forceAndroidAutoplay={true}
+                        webViewProps={{
+                            androidLayerType: 'hardware',
+                            renderToHardwareTextureAndroid: true,
+                            mediaPlaybackRequiresUserAction: false,
+                        }}
                         initialPlayerParams={{
-                            controls: false,
-                            loop: true,
+                            controls: true,
+                            loop: false,
                             rel: false,
+                            modestbranding: true,
                         }}
                     />
                 </View>
@@ -94,17 +112,7 @@ function InAppPlayer({ item, isActive, height }: {
         );
     }
 
-    if (item.source === 'tiktok') {
-        return (
-            <WebView
-                source={{ uri: item.url }}
-                style={{ height, width: WINDOW_WIDTH, backgroundColor: '#000' }}
-                allowsInlineMediaPlayback
-                mediaPlaybackRequiresUserAction={false}
-                javaScriptEnabled
-            />
-        );
-    }
+
 
     return (
         <View style={[styles.playerFallback, { height }]}>
@@ -163,6 +171,7 @@ function FeedCard({ item, index, total, isActive }: {
 export default function EducationFeedScreen() {
     const [contents, setContents] = useState<Content[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState('');
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -180,10 +189,17 @@ export default function EducationFeedScreen() {
         } finally {
             setLoading(false);
             setLoadingMore(false);
+            setRefreshing(false);
         }
     }, []);
 
     useEffect(() => { fetchContents(1, true); }, []);
+
+    const onRefresh = () => {
+        setRefreshing(true);
+        setPage(1);
+        fetchContents(1, true);
+    };
 
     const loadMore = () => {
         if (loadingMore || page >= totalPages) return;
@@ -223,6 +239,9 @@ export default function EducationFeedScreen() {
                     onEndReachedThreshold={0.3}
                     onViewableItemsChanged={onViewableItemsChanged}
                     viewabilityConfig={viewabilityConfig.current}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
+                    }
                     ListFooterComponent={loadingMore ? (
                         <View style={styles.loadingMore}>
                             <ActivityIndicator color="#fff" />
@@ -330,5 +349,23 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         zIndex: 1,
         backgroundColor: '#000',
+    },
+    playOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        zIndex: 2,
+    },
+    playIcon: {
+        fontSize: 64,
+        color: 'rgba(255,255,255,0.8)',
+        textShadowColor: 'rgba(0,0,0,0.5)',
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 4,
     },
 });
