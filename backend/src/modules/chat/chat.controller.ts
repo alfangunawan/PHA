@@ -123,11 +123,8 @@ export const getLatestGad7ForUser = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
         const callerId = req.user?.userId;
-        const isInternal =
-            !!process.env.INTERNAL_API_KEY &&
-            req.header('X-Internal-Key') === process.env.INTERNAL_API_KEY;
 
-        if (!isInternal && id !== callerId) {
+        if (id !== callerId) {
             return res.status(403).json({ error: 'Forbidden' });
         }
 
