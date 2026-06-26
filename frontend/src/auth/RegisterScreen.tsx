@@ -57,13 +57,13 @@ export default function RegisterScreen() {
         try {
             setLoading(true);
             await register(email, password, name);
-            Alert.alert('Sukses', 'Akun berhasil dibuat! Silakan login.');
-            navigation.goBack();
+            Alert.alert('Pendaftaran Berhasil', 'Selamat bergabung! 🌿');
         } catch (error: any) {
-            const errorMsg = error.response?.data?.details
+            let errorMsg = error.response?.data?.details
                 ? error.response.data.details.map((d: any) => d.message).join('\n')
                 : error.response?.data?.error || error.message;
-            Alert.alert('Registrasi Gagal', errorMsg);
+            if (errorMsg === 'User already exists') errorMsg = 'Email ini sudah terdaftar. Silakan gunakan email lain atau masuk.';
+            Alert.alert('Pendaftaran Gagal', errorMsg);
         } finally {
             setLoading(false);
         }

@@ -46,11 +46,11 @@ const loginUser = (email, password) => __awaiter(void 0, void 0, void 0, functio
         include: { profile: { select: { displayName: true } } },
     });
     if (!user) {
-        throw new Error('Invalid credentials');
+        throw new Error('User not found');
     }
     const isPasswordValid = yield bcrypt_1.default.compare(password, user.passwordHash);
     if (!isPasswordValid) {
-        throw new Error('Invalid credentials');
+        throw new Error('Wrong password');
     }
     const token = jsonwebtoken_1.default.sign({ userId: user.id, email: user.email, role: user.role }, (0, env_1.getJwtSecret)(), {
         expiresIn: '7d',

@@ -5,6 +5,7 @@ const zod_1 = require("zod");
 exports.sendMessageSchema = zod_1.z.object({
     body: zod_1.z.object({
         message: zod_1.z.string().min(1, 'Message is required').max(2000, 'Message too long'),
+        sessionId: zod_1.z.string().min(1).max(128).optional(),
     }),
 });
 // sessionId can be any string — n8n uses user_id as session_id by default,

@@ -22,8 +22,8 @@ const N8N_BASE_URL = 'https://n8n.alstore.space';
  * CBT phase routing, Gemini call, and conversation persistence.
  * The backend does NOT duplicate messages into Prisma — n8n owns the conversations table.
  */
-const sendMessage = (userId, message) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+const sendMessage = (userId, message, sessionId) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
     const webhookUrl = `${N8N_BASE_URL}/webhook/pha-chat`;
     // Fetch display name so n8n uses the real name instead of the UUID
     const profile = yield (0, profile_service_1.getProfile)(userId).catch(() => null);
@@ -32,9 +32,12 @@ const sendMessage = (userId, message) => __awaiter(void 0, void 0, void 0, funct
         console.log(`[n8n] Sending message for user ${userId} (${userName})`);
         const response = yield fetch(webhookUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            // n8n Validasi Input node reads: body.user_id, body.message, body.name
-            body: JSON.stringify({ user_id: userId, message, name: userName }),
+            headers: {
+                'Content-Type': 'application/json',
+                'X-PHA-Key': (_b = process.env.PHA_WEBHOOK_SECRET) !== null && _b !== void 0 ? _b : '',
+            },
+            // n8n Validasi Input node reads: body.user_id, body.message, body.name, body.session_id
+            body: JSON.stringify(Object.assign({ user_id: userId, message, name: userName }, (sessionId ? { session_id: sessionId } : {}))),
         });
         if (!response.ok) {
             const errText = yield response.text();
@@ -44,12 +47,12 @@ const sendMessage = (userId, message) => __awaiter(void 0, void 0, void 0, funct
         console.log(`[n8n] Response action: ${raw === null || raw === void 0 ? void 0 : raw.action}`);
         // n8n always returns: { status, action, data: { message, cbt_phase, is_crisis, gad7? } }
         return {
-            action: (_b = raw === null || raw === void 0 ? void 0 : raw.action) !== null && _b !== void 0 ? _b : 'chat_response',
+            action: (_c = raw === null || raw === void 0 ? void 0 : raw.action) !== null && _c !== void 0 ? _c : 'chat_response',
             data: {
-                message: (_d = (_c = raw === null || raw === void 0 ? void 0 : raw.data) === null || _c === void 0 ? void 0 : _c.message) !== null && _d !== void 0 ? _d : 'Maaf, tidak ada respons.',
-                cbt_phase: (_f = (_e = raw === null || raw === void 0 ? void 0 : raw.data) === null || _e === void 0 ? void 0 : _e.cbt_phase) !== null && _f !== void 0 ? _f : null,
-                is_crisis: (_h = (_g = raw === null || raw === void 0 ? void 0 : raw.data) === null || _g === void 0 ? void 0 : _g.is_crisis) !== null && _h !== void 0 ? _h : false,
-                gad7: (_k = (_j = raw === null || raw === void 0 ? void 0 : raw.data) === null || _j === void 0 ? void 0 : _j.gad7) !== null && _k !== void 0 ? _k : null,
+                message: (_e = (_d = raw === null || raw === void 0 ? void 0 : raw.data) === null || _d === void 0 ? void 0 : _d.message) !== null && _e !== void 0 ? _e : 'Maaf, tidak ada respons.',
+                cbt_phase: (_g = (_f = raw === null || raw === void 0 ? void 0 : raw.data) === null || _f === void 0 ? void 0 : _f.cbt_phase) !== null && _g !== void 0 ? _g : null,
+                is_crisis: (_j = (_h = raw === null || raw === void 0 ? void 0 : raw.data) === null || _h === void 0 ? void 0 : _h.is_crisis) !== null && _j !== void 0 ? _j : false,
+                gad7: (_l = (_k = raw === null || raw === void 0 ? void 0 : raw.data) === null || _k === void 0 ? void 0 : _k.gad7) !== null && _l !== void 0 ? _l : null,
             },
         };
     }
@@ -72,8 +75,8 @@ exports.sendMessage = sendMessage;
  * Since n8n doesn't support streaming, we call the full webhook
  * then emit the response word-by-word to simulate streaming.
  */
-const streamMessage = (userId, message, onChunk) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield (0, exports.sendMessage)(userId, message);
+const streamMessage = (userId, message, sessionId, onChunk) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield (0, exports.sendMessage)(userId, message, sessionId);
     const fullText = result.data.message;
     // Simulate streaming: emit word by word with small delay
     const words = fullText.split(' ');
@@ -198,11 +201,14 @@ exports.createNewSession = createNewSession;
  * n8n saves the result to the gad7_results table.
  */
 const submitGad7 = (userId, _sessionId, answers) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e, _f, _g;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     const webhookUrl = `${N8N_BASE_URL}/webhook/pha-gad7-submit`;
     const response = yield fetch(webhookUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'X-PHA-Key': (_a = process.env.PHA_WEBHOOK_SECRET) !== null && _a !== void 0 ? _a : '',
+        },
         // n8n Hitung Skor GAD-7 reads: body.user_id and body.answers
         body: JSON.stringify({ user_id: userId, answers }),
     });
@@ -212,11 +218,11 @@ const submitGad7 = (userId, _sessionId, answers) => __awaiter(void 0, void 0, vo
     }
     const data = yield response.json();
     return {
-        action: (_a = data === null || data === void 0 ? void 0 : data.action) !== null && _a !== void 0 ? _a : 'gad7_saved',
+        action: (_b = data === null || data === void 0 ? void 0 : data.action) !== null && _b !== void 0 ? _b : 'gad7_saved',
         data: {
-            score: (_c = (_b = data === null || data === void 0 ? void 0 : data.data) === null || _b === void 0 ? void 0 : _b.score) !== null && _c !== void 0 ? _c : 0,
-            severity: (_e = (_d = data === null || data === void 0 ? void 0 : data.data) === null || _d === void 0 ? void 0 : _d.severity) !== null && _e !== void 0 ? _e : 'unknown',
-            message: (_g = (_f = data === null || data === void 0 ? void 0 : data.data) === null || _f === void 0 ? void 0 : _f.message) !== null && _g !== void 0 ? _g : 'Terima kasih sudah menjawab.',
+            score: (_d = (_c = data === null || data === void 0 ? void 0 : data.data) === null || _c === void 0 ? void 0 : _c.score) !== null && _d !== void 0 ? _d : 0,
+            severity: (_f = (_e = data === null || data === void 0 ? void 0 : data.data) === null || _e === void 0 ? void 0 : _e.severity) !== null && _f !== void 0 ? _f : 'unknown',
+            message: (_h = (_g = data === null || data === void 0 ? void 0 : data.data) === null || _g === void 0 ? void 0 : _g.message) !== null && _h !== void 0 ? _h : 'Terima kasih sudah menjawab.',
         },
     };
 });
