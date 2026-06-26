@@ -6,8 +6,10 @@ import * as AudioController from './audio.controller';
 
 const router = Router();
 
-router.get('/', authenticateToken, requireRole('ADMIN'), AudioController.getAll);
-router.post('/', authenticateToken, requireRole('ADMIN'), upload.single('audio'), AudioController.create);
-router.delete('/:id', authenticateToken, requireRole('ADMIN'), AudioController.remove);
+router.get('/available', authenticateToken, AudioController.getAll);
+router.post('/:id/complete', authenticateToken, AudioController.complete);
+router.get('/', authenticateToken, requireRole('MINDFULNESS_ADMIN', 'ADMIN'), AudioController.getAll);
+router.post('/', authenticateToken, requireRole('MINDFULNESS_ADMIN', 'ADMIN'), upload.single('audio'), AudioController.create);
+router.delete('/:id', authenticateToken, requireRole('MINDFULNESS_ADMIN', 'ADMIN'), AudioController.remove);
 
 export default router;

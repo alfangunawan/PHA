@@ -43,7 +43,7 @@ interface N8nGad7Response {
  * CBT phase routing, Gemini call, and conversation persistence.
  * The backend does NOT duplicate messages into Prisma — n8n owns the conversations table.
  */
-export const sendMessage = async (userId: string, message: string): Promise<N8nChatResponse> => {
+export const sendMessage = async (userId: string, message: string, sessionId?: string): Promise<N8nChatResponse> => {
     const webhookUrl = `${N8N_BASE_URL}/webhook/pha-chat`;
 
     // Fetch display name so n8n uses the real name instead of the UUID
@@ -54,9 +54,17 @@ export const sendMessage = async (userId: string, message: string): Promise<N8nC
         console.log(`[n8n] Sending message for user ${userId} (${userName})`);
         const response = await fetch(webhookUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            // n8n Validasi Input node reads: body.user_id, body.message, body.name
-            body: JSON.stringify({ user_id: userId, message, name: userName }),
+            headers: {
+                'Content-Type': 'application/json',
+                'X-PHA-Key': process.env.PHA_WEBHOOK_SECRET ?? '',
+            },
+            // n8n Validasi Input node reads: body.user_id, body.message, body.name, body.session_id
+            body: JSON.stringify({
+                user_id: userId,
+                message,
+                name: userName,
+                ...(sessionId ? { session_id: sessionId } : {}),
+            }),
         });
 
         if (!response.ok) {
@@ -99,9 +107,10 @@ export const sendMessage = async (userId: string, message: string): Promise<N8nC
 export const streamMessage = async (
     userId: string,
     message: string,
+    sessionId: string | undefined,
     onChunk: (text: string) => void,
 ): Promise<N8nChatResponse> => {
-    const result = await sendMessage(userId, message);
+    const result = await sendMessage(userId, message, sessionId);
     const fullText = result.data.message;
 
     // Simulate streaming: emit word by word with small delay
@@ -191,6 +200,29 @@ export const getSessionMessages = async (userId: string, sessionId: string) => {
 };
 
 /**
+ * Returns the latest GAD-7 screening result for a user from pha_db.
+ */
+export const getLatestGad7ForUser = async (userId: string) => {
+    const gad7Result = (prisma as any).gad7Result as {
+        findFirst: (args: {
+            where: { userId: string };
+            orderBy: { takenAt: 'desc' };
+            select: { score: true; severity: true; takenAt: true };
+        }) => Promise<{ score: number; severity: string; takenAt: Date } | null>;
+    };
+
+    return gad7Result.findFirst({
+        where: { userId },
+        orderBy: { takenAt: 'desc' },
+        select: {
+            score: true,
+            severity: true,
+            takenAt: true,
+        },
+    });
+};
+
+/**
  * Creates a new session token. Since n8n manages sessions implicitly
  * (session_id = user_id by default, or provided by client), we just
  * return a new UUID the frontend can use as session_id in future messages.
@@ -217,7 +249,10 @@ export const submitGad7 = async (
 
     const response = await fetch(webhookUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'X-PHA-Key': process.env.PHA_WEBHOOK_SECRET ?? '',
+        },
         // n8n Hitung Skor GAD-7 reads: body.user_id and body.answers
         body: JSON.stringify({ user_id: userId, answers }),
     });

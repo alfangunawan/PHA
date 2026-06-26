@@ -16,8 +16,8 @@ exports.loginUser = exports.registerUser = void 0;
 const prisma_1 = require("../../config/prisma");
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const env_1 = require("../../config/env");
 const SALT_ROUNDS = 10;
-const JWT_SECRET = process.env.JWT_SECRET || 'changeme_in_production';
 const registerUser = (email, password, name) => __awaiter(void 0, void 0, void 0, function* () {
     const existingUser = yield prisma_1.prisma.user.findUnique({
         where: { email },
@@ -52,7 +52,7 @@ const loginUser = (email, password) => __awaiter(void 0, void 0, void 0, functio
     if (!isPasswordValid) {
         throw new Error('Invalid credentials');
     }
-    const token = jsonwebtoken_1.default.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, {
+    const token = jsonwebtoken_1.default.sign({ userId: user.id, email: user.email, role: user.role }, (0, env_1.getJwtSecret)(), {
         expiresIn: '7d',
     });
     return { token, user };

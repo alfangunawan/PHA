@@ -4,49 +4,53 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Path, Rect } from 'react-native-svg';
 import { breathingAPI } from '../../api';
 import { LoadingState, EmptyState, ErrorState } from '../../components/LoadingState';
 import AnimatedView from '../../components/AnimatedView';
-import { Typography, Spacing, BorderRadius } from '../../theme';
+import { Spacing } from '../../theme';
 
-// === Palet warna sesuai beranda ===
-const P = '#8a9ccc';
-const D = {
-    bg:        '#fcfcfe',
+// === Palet Fun Blue (#1A59A1) ===
+const C = {
+    funBlue:   '#1A59A1',
+    funBlueDk: '#14457D',
+    bg:        '#ffffff',
     card:      '#ffffff',
-    cardBorder:'#ecedf6',
-    gradStart: '#eef2fb',
-    gradEnd:   '#dce4f6',
-    textDark:  '#353b4a',
-    textMid:   '#3b4150',
-    textSub:   '#717a96',
-    textMuted: '#949bae',
-    blue:      '#8a9ccc',
-    blueLight: '#eef2fb',
-    purple:    '#9387c8',
-    purpleLight:'#f1eefa',
-    green:     '#7bab97',
-    greenLight:'#edf5f1',
-    peach:     '#c09475',
-    peachLight:'#fdf0e8',
+    cardBorder:'#e3ebf6',
+    textDark:  '#243a5c',
+    textSub:   '#7689a6',
+    textMuted: '#8aa0c0',
+    iconBg:    '#eaf1fa',
 };
 
-const ICON_MAP: Record<string, string> = {
-    moon:  '🌙', square: '⬛', wind:  '🌬️', heart: '❤️',
-    star:  '⭐', sun:    '☀️', leaf:  '🌿', wave:  '🌊',
-    fire:  '🔥', cloud:  '☁️',
-};
-
-const resolveIcon = (icon?: string) =>
-    icon ? (ICON_MAP[icon.toLowerCase()] ?? '🌬️') : '🌬️';
-
-// Warna fase yang harmonis dengan palet beranda
+// Empat fase dalam gradasi biru (Tarik → Tahan → Hembus → Jeda)
 const PHASE_COLORS = {
-    inhale: { bg: D.blueLight,   text: D.blue,   label: 'Tarik' },
-    hold:   { bg: D.purpleLight, text: D.purple, label: 'Tahan' },
-    exhale: { bg: D.greenLight,  text: D.green,  label: 'Hembus' },
-    hold2:  { bg: D.peachLight,  text: D.peach,  label: 'Jeda' },
+    inhale: { bg: '#eaf1fa', text: '#1A59A1', label: 'Tarik' },
+    hold:   { bg: '#e3edfa', text: '#2f6fb8', label: 'Tahan' },
+    exhale: { bg: '#e9f0fb', text: '#3b7ec4', label: 'Hembus' },
+    hold2:  { bg: '#eef3fb', text: '#5a8bcb', label: 'Jeda' },
 };
+
+// Ikon garis monokrom biru — dipetakan dari field `icon` teknik
+const ICON_PATHS: Record<string, React.ReactNode> = {
+    moon:   <Path d="M20 14.5A8 8 0 0 1 9.5 4 7 7 0 1 0 20 14.5z" />,
+    square: <Rect x="5" y="5" width="14" height="14" rx="3.5" />,
+    wind:   <><Path d="M2 8h11a3 3 0 1 0-3-3" /><Path d="M2 12h15a3 3 0 1 1-3 3" /><Path d="M2 16h9" /></>,
+    wave:   <><Path d="M3 12c3-4.5 6-4.5 9 0s6 4.5 9 0" /><Path d="M3 17c3-4.5 6-4.5 9 0s6 4.5 9 0" /></>,
+    heart:  <Path d="M12 19.5C12 19.5 4 14.6 4 9.3 4 6.7 6 5 8 5c1.6 0 2.9 1 3.5 2.3l.5 1 .5-1C13.1 6 14.4 5 16 5c2 0 4 1.7 4 4.3 0 5.3-8 10.2-8 10.2z" />,
+    leaf:   <><Path d="M5 19C5 11 11 5 19 5C19 13 13 19 5 19Z" /><Path d="M5 19C8 15 12 12 16 10.5" /></>,
+    star:   <Path d="M12 3l2.6 5.6 6 .8-4.4 4.2 1.1 6L12 16.8 6.7 19.6l1.1-6L3.4 9.4l6-.8z" />,
+    sun:    <><Path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z" /><Path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.4 1.4M17.6 17.6 19 19M19 5l-1.4 1.4M6.4 17.6 5 19" /></>,
+    cloud:  <Path d="M7 17h9a4 4 0 0 0 .5-7.97A5.5 5.5 0 0 0 6 9.5 3.5 3.5 0 0 0 7 17z" />,
+    fire:   <Path d="M12 3c0 3-4 4-4 8a4 4 0 0 0 8 0c0-2-1-3-1-3 0 2-1.5 2.5-1.5 2.5C13.5 8 12 6 12 3z" />,
+};
+
+const TechniqueIcon = ({ icon, color }: { icon?: string; color: string }) => (
+    <Svg width={23} height={23} viewBox="0 0 24 24" fill="none" stroke={color}
+        strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+        {ICON_PATHS[(icon || '').toLowerCase()] ?? ICON_PATHS.wave}
+    </Svg>
+);
 
 interface Technique {
     id: string;
@@ -88,28 +92,46 @@ export default function BreathingListScreen({ navigation }: any) {
     if (error) return <ErrorState message={error} />;
 
     return (
-        <SafeAreaView style={styles.safe}>
-            {/* Header gradient seperti beranda */}
+        <SafeAreaView style={styles.safe} edges={['top']}>
+            {/* Header full-bleed Fun Blue dengan gelombang dekoratif */}
             <LinearGradient
-                colors={[D.gradStart, D.gradEnd]}
+                colors={[C.funBlue, C.funBlueDk]}
                 start={{ x: 0.1, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.headerCard}
+                end={{ x: 0.9, y: 1 }}
+                style={styles.header}
             >
-                <Text style={styles.headerEmoji}>🫁</Text>
-                <View>
-                    <Text style={styles.headerTitle}>Latihan Pernapasan</Text>
-                    <Text style={styles.headerSub}>Pilih teknik yang kamu suka 🌬️</Text>
+                <View style={styles.headerWaves} pointerEvents="none">
+                    <Svg width={170} height={120} viewBox="0 0 160 120" fill="none"
+                        strokeWidth={2} strokeLinecap="round">
+                        <Path d="M8 44 q24 -22 48 0 t48 0 t48 0" stroke="#7ba0d6" />
+                        <Path d="M8 60 q24 -20 48 0 t48 0 t48 0" stroke="#5d86c6" />
+                        <Path d="M8 76 q24 -18 48 0 t48 0 t48 0" stroke="#7ba0d6" />
+                    </Svg>
+                </View>
+                <View style={styles.headerRow}>
+                    <View style={styles.headerIcon}>
+                        <Svg width={25} height={25} viewBox="0 0 24 24" fill="none" stroke="#fff"
+                            strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+                            <Path d="M2 8h11a3 3 0 1 0-3-3" />
+                            <Path d="M2 12h15a3 3 0 1 1-3 3" />
+                            <Path d="M2 16h9" />
+                        </Svg>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                        <Text style={styles.headerTitle}>Latihan Pernapasan</Text>
+                        <Text style={styles.headerSub}>Pilih teknik yang kamu suka</Text>
+                    </View>
                 </View>
             </LinearGradient>
 
             <FlatList
                 data={techniques}
                 keyExtractor={item => item.id}
+                style={styles.sheet}
                 contentContainerStyle={styles.list}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P} />
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.funBlue} />
                 }
                 ListEmptyComponent={<EmptyState message="Belum ada teknik tersedia." />}
                 renderItem={({ item, index }) => {
@@ -127,38 +149,31 @@ export default function BreathingListScreen({ navigation }: any) {
                                 onPress={() => navigation.navigate('BreathingExercise', { technique: item })}
                                 activeOpacity={0.85}
                             >
-                                {/* Accent strip warna teknik */}
-                                <View style={[styles.accentBar, { backgroundColor: item.colorTheme || P }]} />
-
-                                <View style={styles.cardInner}>
-                                    {/* Icon + nama */}
-                                    <View style={styles.cardTop}>
-                                        <View style={[styles.iconBox, { backgroundColor: (item.colorTheme || P) + '20' }]}>
-                                            <Text style={styles.iconText}>{resolveIcon(item.icon)}</Text>
-                                        </View>
-                                        <View style={styles.cardMeta}>
-                                            <Text style={styles.cardName}>{item.name}</Text>
-                                            {item.description ? (
-                                                <Text style={styles.cardDesc} numberOfLines={2}>
-                                                    {item.description}
-                                                </Text>
-                                            ) : null}
-                                        </View>
-                                        {/* Siklus badge */}
-                                        <View style={[styles.cycleBadge, { backgroundColor: D.blueLight }]}>
-                                            <Text style={styles.cycleNum}>{item.cycles}x</Text>
-                                            <Text style={styles.cycleLbl}>siklus</Text>
-                                        </View>
+                                <View style={styles.cardTop}>
+                                    <View style={styles.iconBox}>
+                                        <TechniqueIcon icon={item.icon} color={C.funBlue} />
                                     </View>
-
-                                    {/* Phase badges */}
-                                    <View style={styles.phasesRow}>
-                                        {phases.map(p => (
-                                            <View key={p.label} style={[styles.phasePill, { backgroundColor: p.bg }]}>
-                                                <Text style={[styles.phaseVal, { color: p.text }]}>{p.val}s</Text>
-                                                <Text style={[styles.phaseLbl, { color: p.text + 'bb' }]}>{p.label}</Text>
+                                    <View style={styles.cardMeta}>
+                                        <View style={styles.nameRow}>
+                                            <Text style={styles.cardName} numberOfLines={1}>{item.name}</Text>
+                                            <View style={styles.cycleBadge}>
+                                                <Text style={styles.cycleTxt}>{item.cycles}×</Text>
                                             </View>
-                                        ))}
+                                        </View>
+                                        {item.description ? (
+                                            <Text style={styles.cardDesc} numberOfLines={2}>
+                                                {item.description}
+                                            </Text>
+                                        ) : null}
+
+                                        <View style={styles.phasesRow}>
+                                            {phases.map(p => (
+                                                <View key={p.label} style={[styles.phasePill, { backgroundColor: p.bg }]}>
+                                                    <Text style={[styles.phaseVal, { color: p.text }]}>{p.val}s</Text>
+                                                    <Text style={styles.phaseLbl}>{p.label}</Text>
+                                                </View>
+                                            ))}
+                                        </View>
                                     </View>
                                 </View>
                             </TouchableOpacity>
@@ -171,122 +186,96 @@ export default function BreathingListScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-    safe: { flex: 1, backgroundColor: D.bg },
+    safe: { flex: 1, backgroundColor: C.funBlue },
 
     // Header
-    headerCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: Spacing.md,
-        borderRadius: 24,
-        margin: Spacing.lg,
-        marginBottom: Spacing.sm,
-        padding: Spacing.lg,
-        paddingVertical: 18,
+    header: {
+        paddingHorizontal: Spacing.lg,
+        paddingTop: 20,
+        paddingBottom: 40,
+        overflow: 'hidden',
     },
-    headerEmoji: { fontSize: 38 },
+    headerWaves: { position: 'absolute', right: -6, top: 18, opacity: 0.4 },
+    headerRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+    headerIcon: {
+        width: 48, height: 48, borderRadius: 15,
+        backgroundColor: 'rgba(255,255,255,0.16)',
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)',
+        alignItems: 'center', justifyContent: 'center',
+    },
     headerTitle: {
         fontFamily: 'Lora_600SemiBold',
-        fontSize: 20,
-        color: D.textDark,
+        fontSize: 22,
+        color: '#ffffff',
         letterSpacing: -0.2,
     },
-    headerSub: {
-        fontSize: 13,
-        color: D.textSub,
-        marginTop: 3,
-    },
+    headerSub: { fontSize: 13.5, color: '#cfddf2', marginTop: 4 },
 
-    // List
+    // White sheet overlapping header
+    sheet: {
+        flex: 1,
+        backgroundColor: C.bg,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        marginTop: -18,
+    },
     list: {
         paddingHorizontal: Spacing.lg,
+        paddingTop: 20,
         paddingBottom: Spacing.xl,
-        paddingTop: Spacing.xs,
-        gap: Spacing.sm,
+        gap: 14,
     },
 
     // Card
     card: {
-        backgroundColor: D.card,
-        borderRadius: 20,
+        backgroundColor: C.card,
+        borderRadius: 22,
         borderWidth: 1,
-        borderColor: D.cardBorder,
-        flexDirection: 'row',
-        overflow: 'hidden',
-        shadowColor: P,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.07,
-        shadowRadius: 8,
+        borderColor: C.cardBorder,
+        padding: 17,
+        shadowColor: C.funBlue,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.10,
+        shadowRadius: 16,
         elevation: 2,
     },
-    accentBar: { width: 4, borderRadius: 2 },
-    cardInner: { flex: 1, padding: Spacing.md, gap: Spacing.sm },
-
-    cardTop: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: Spacing.sm,
-    },
+    cardTop: { flexDirection: 'row', gap: 14 },
     iconBox: {
-        width: 46,
-        height: 46,
-        borderRadius: 14,
-        justifyContent: 'center',
-        alignItems: 'center',
-        flexShrink: 0,
+        width: 46, height: 46, borderRadius: 14,
+        backgroundColor: C.iconBg,
+        justifyContent: 'center', alignItems: 'center',
     },
-    iconText: { fontSize: 22 },
-    cardMeta: { flex: 1 },
+    cardMeta: { flex: 1, minWidth: 0 },
+    nameRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
     cardName: {
-        fontFamily: 'Poppins_600SemiBold',
-        fontSize: 15,
-        color: D.textDark,
-        lineHeight: 20,
-    },
-    cardDesc: {
-        fontFamily: 'Inter_400Regular',
-        fontSize: 12,
-        color: D.textSub,
-        marginTop: 2,
-        lineHeight: 16,
-    },
-
-    // Cycle badge
-    cycleBadge: {
-        borderRadius: 10,
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        alignItems: 'center',
-        flexShrink: 0,
-    },
-    cycleNum: {
+        flex: 1,
         fontFamily: 'Poppins_700Bold',
         fontSize: 16,
-        color: P,
-        lineHeight: 19,
+        color: C.textDark,
     },
-    cycleLbl: {
+    cycleBadge: {
+        backgroundColor: C.iconBg,
+        borderRadius: 20,
+        paddingHorizontal: 9,
+        paddingVertical: 3,
+    },
+    cycleTxt: { fontFamily: 'Inter_600SemiBold', fontSize: 11, color: C.funBlue },
+    cardDesc: {
         fontFamily: 'Inter_400Regular',
-        fontSize: 10,
-        color: D.textMuted,
+        fontSize: 13,
+        color: C.textSub,
+        marginTop: 5,
+        lineHeight: 18,
     },
 
     // Phases
-    phasesRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+    phasesRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
     phasePill: {
-        borderRadius: 8,
-        paddingHorizontal: 10,
-        paddingVertical: 4,
+        flex: 1,
+        borderRadius: 12,
+        paddingVertical: 6,
         alignItems: 'center',
-        flexDirection: 'row',
-        gap: 4,
     },
-    phaseVal: {
-        fontFamily: 'Poppins_600SemiBold',
-        fontSize: 13,
-    },
-    phaseLbl: {
-        fontFamily: 'Inter_400Regular',
-        fontSize: 11,
-    },
+    phaseVal: { fontFamily: 'Poppins_700Bold', fontSize: 13.5 },
+    phaseLbl: { fontFamily: 'Inter_400Regular', fontSize: 10, color: C.textSub, marginTop: 1 },
 });

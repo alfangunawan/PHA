@@ -3,6 +3,8 @@ import {
     View, Text, StyleSheet, Dimensions, TouchableOpacity, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Path, Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import Animated, {
     useSharedValue, useAnimatedStyle, withTiming, withRepeat, withSequence,
     cancelAnimation, Easing, interpolateColor,
@@ -10,28 +12,43 @@ import Animated, {
 import { Audio } from 'expo-av';
 import AnimatedView from '../../components/AnimatedView';
 import { breathingAPI } from '../../api';
-import { useTheme } from '../../context/ThemeContext';
-import { Typography, Spacing } from '../../theme';
+import { Spacing } from '../../theme';
 import config from '../../config';
 
 const { width: SCREEN_W } = Dimensions.get('window');
-const CIRCLE_SIZE = SCREEN_W * 0.62;
+const RING = Math.min(SCREEN_W - 70, 300);          // outer decorative ring
+const CIRCLE_SIZE = RING * 0.58;                      // max breathing circle
 const MIN_SIZE = CIRCLE_SIZE * 0.55;
 
-const PHASE_COLORS = ['#A8C5DA', '#C9B8E8', '#B2C9AD', '#F5CBA7'];
+// === Palet Fun Blue (#1A59A1) ===
+const C = {
+    funBlue:   '#1A59A1',
+    funBlueDk: '#14457D',
+    bg:        '#ffffff',
+    textDark:  '#243a5c',
+    textSub:   '#7689a6',
+    textMuted: '#8aa0c0',
+    iconBg:    '#eaf1fa',
+    border:    '#e3ebf6',
+    ring:      '#d4def0',
+    ringInner: '#bcd2ee',
+};
+
+// Aksen per fase dalam gradasi biru
+const PHASE_COLORS = ['#1A59A1', '#2f6fb8', '#3b7ec4', '#5a8bcb'];
 
 const CIRCLE_BG = [
-    'rgba(168, 197, 218, 0.21)',
-    'rgba(201, 184, 232, 0.21)',
-    'rgba(178, 201, 173, 0.21)',
-    'rgba(245, 203, 167, 0.21)',
+    'rgba(26, 89, 161, 0.16)',
+    'rgba(47, 111, 184, 0.16)',
+    'rgba(59, 126, 196, 0.16)',
+    'rgba(90, 139, 203, 0.16)',
 ];
 
 const CIRCLE_BORDER = [
-    'rgba(168, 197, 218, 0.50)',
-    'rgba(201, 184, 232, 0.50)',
-    'rgba(178, 201, 173, 0.50)',
-    'rgba(245, 203, 167, 0.50)',
+    'rgba(26, 89, 161, 0.45)',
+    'rgba(47, 111, 184, 0.45)',
+    'rgba(59, 126, 196, 0.45)',
+    'rgba(90, 139, 203, 0.45)',
 ];
 
 type Status = 'ready' | 'running' | 'paused' | 'done';
@@ -46,7 +63,6 @@ interface PhaseStep {
 
 export default function BreathingExerciseScreen({ route, navigation }: any) {
     const { technique } = route.params;
-    const { colors } = useTheme();
 
     const phases: PhaseStep[] = ([
         { key: 'inhale', label: 'Tarik Napas', duration: technique.inhaleDuration, instruction: 'Hirup perlahan...', colorIdx: 0 },
@@ -85,7 +101,7 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
             backgroundColor: bg,
             borderColor: border,
             borderWidth: 2,
-            opacity: 0.35 + progress.value * 0.65,
+            opacity: 0.4 + progress.value * 0.6,
         };
     });
 
@@ -102,7 +118,7 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
 
     const glowStyle = useAnimatedStyle(() => ({
         transform: [{ scale: glowScale.value }],
-        opacity: 0.22,
+        opacity: 0.18,
     }));
 
     useEffect(() => {
@@ -283,132 +299,152 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
 
     const currentPhase = phases[currentPhaseIdx];
     const phaseColor = PHASE_COLORS[phaseColorIdx] ?? PHASE_COLORS[0];
-    const themeColor = technique.colorTheme || PHASE_COLORS[0];
+    const running = status === 'running' || status === 'paused';
 
     return (
-        <View style={[styles.container, { backgroundColor: '#fcfcfe' }]}>
-            <SafeAreaView style={styles.safe}>
-                {/* Header */}
+        <View style={styles.container}>
+            <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+                {/* Top bar */}
                 <View style={styles.header}>
                     <TouchableOpacity
-                        style={styles.headerBtn}
-                        onPress={status === 'running' || status === 'paused' ? confirmStop : () => navigation.goBack()}
+                        style={styles.closeBox}
+                        onPress={running ? confirmStop : () => navigation.goBack()}
                     >
-                        <Text style={[styles.closeBtn, { color: '#717a96' }]}>✕</Text>
+                        <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={C.funBlue}
+                            strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                            <Path d="M6 6l12 12M18 6 6 18" />
+                        </Svg>
                     </TouchableOpacity>
-                    <View style={styles.headerCenter}>
-                        <Text style={[styles.techniqueTitle, { color: '#353b4a' }]} numberOfLines={1}>
-                            {technique.name}
-                        </Text>
-                    </View>
-                    <Text style={[styles.cycleText, { color: '#8a9ccc' }]}>
-                        {cyclesDone}/{technique.cycles} 🔄
-                    </Text>
+                    <Text style={styles.techniqueTitle} numberOfLines={1}>{technique.name}</Text>
+                    <Text style={styles.cycleText}>{cyclesDone}/{technique.cycles} siklus</Text>
                 </View>
 
-                {/* Circle area */}
+                {/* Breathing guide */}
                 <View style={styles.circleContainer}>
-                    <Animated.View style={[styles.glowRing, { borderColor: phaseColor }, glowStyle]} />
-                    <Animated.View style={[styles.breathCircle, circleStyle]} />
-                    <Animated.View style={[styles.innerCircle, innerCircleStyle]} />
+                    <View style={styles.guide}>
+                        {/* Decorative concentric rings */}
+                        <View style={styles.outerRing} />
+                        <View style={styles.roundSquare} />
+                        <Svg width={RING * 0.57} height={RING * 0.57} style={styles.radial}>
+                            <Defs>
+                                <RadialGradient id="glow" cx="50%" cy="50%" r="50%">
+                                    <Stop offset="0%" stopColor="#d2e1f5" stopOpacity={1} />
+                                    <Stop offset="72%" stopColor="#d2e1f5" stopOpacity={0} />
+                                </RadialGradient>
+                            </Defs>
+                            <Circle cx="50%" cy="50%" r="50%" fill="url(#glow)" />
+                        </Svg>
+                        {/* Progress dot at top */}
+                        <View style={styles.dot} />
 
-                    <View style={styles.centerContent}>
-                        {status === 'ready' && (
-                            <AnimatedView style={styles.centeredItems}>
-                                <Text style={styles.readyEmoji}>{technique.icon || '🌬️'}</Text>
-                                <Text style={[styles.readyText, { color: colors.charcoal }]}>Siap memulai?</Text>
-                            </AnimatedView>
-                        )}
+                        {/* Animated breathing circle */}
+                        <Animated.View style={[styles.glowRing, { borderColor: phaseColor }, glowStyle]} />
+                        <Animated.View style={[styles.breathCircle, circleStyle]} />
+                        <Animated.View style={[styles.innerCircle, innerCircleStyle]} />
 
-                        {(status === 'running' || status === 'paused') && (
-                            <View style={styles.centeredItems}>
-                                <Text style={[styles.phaseLabel, { color: phaseColor }]}>
-                                    {currentPhase?.label}
-                                </Text>
-                                <Text style={[styles.phaseCountdown, { color: colors.charcoal }]}>
-                                    {phaseCountdown}
-                                </Text>
-                                <Text style={[styles.phaseInstruction, { color: colors.darkGray }]}>
-                                    {status === 'paused' ? '⏸ Dijeda' : currentPhase?.instruction}
-                                </Text>
-                            </View>
-                        )}
+                        {/* Center content */}
+                        <View style={styles.centerContent}>
+                            {status === 'ready' && (
+                                <AnimatedView style={styles.centeredItems}>
+                                    <Text style={styles.eyebrow}>Bersiap</Text>
+                                    <Text style={styles.bigTitle}>Siap memulai?</Text>
+                                    <Text style={styles.subText}>Tarik napas perlahan, lalu mulai</Text>
+                                </AnimatedView>
+                            )}
 
-                        {status === 'done' && (
-                            <AnimatedView style={styles.centeredItems}>
-                                <Text style={styles.doneEmoji}>✨</Text>
-                                <Text style={[styles.doneText, { color: colors.charcoal }]}>Luar biasa!</Text>
-                            </AnimatedView>
-                        )}
+                            {running && (
+                                <View style={styles.centeredItems}>
+                                    <Text style={[styles.eyebrow, { color: phaseColor }]}>
+                                        {currentPhase?.label}
+                                    </Text>
+                                    <Text style={styles.countdown}>{phaseCountdown}</Text>
+                                    <Text style={styles.subText}>
+                                        {status === 'paused' ? 'Dijeda' : currentPhase?.instruction}
+                                    </Text>
+                                </View>
+                            )}
+
+                            {status === 'done' && (
+                                <AnimatedView style={styles.centeredItems}>
+                                    <Text style={styles.eyebrow}>Selesai</Text>
+                                    <Text style={styles.bigTitle}>Luar biasa!</Text>
+                                    <Text style={styles.subText}>Sesi tersimpan</Text>
+                                </AnimatedView>
+                            )}
+                        </View>
                     </View>
                 </View>
 
                 {/* Stats */}
-                <View style={[styles.statsRow, { borderTopColor: '#ecedf6', backgroundColor: '#ffffff' }]}>
+                <View style={styles.statsRow}>
                     <View style={styles.stat}>
-                        <Text style={[styles.statValue, { color: '#353b4a' }]}>
+                        <Text style={styles.statValue}>
                             {pad(Math.floor(elapsedSeconds / 60))}:{pad(elapsedSeconds % 60)}
                         </Text>
-                        <Text style={[styles.statLabel, { color: '#949bae' }]}>⏱ Durasi</Text>
+                        <Text style={styles.statLabel}>Durasi</Text>
                     </View>
+                    <View style={styles.statDivider} />
                     <View style={styles.stat}>
-                        <Text style={[styles.statValue, { color: '#8a9ccc' }]}>{cyclesDone}</Text>
-                        <Text style={[styles.statLabel, { color: '#949bae' }]}>🔄 Siklus</Text>
+                        <Text style={styles.statValue}>{cyclesDone}</Text>
+                        <Text style={styles.statLabel}>Siklus</Text>
                     </View>
+                    <View style={styles.statDivider} />
                     <View style={styles.stat}>
-                        <Text style={[styles.statValue, { color: '#9387c8' }]}>
-                            {technique.cycles - cyclesDone}
-                        </Text>
-                        <Text style={[styles.statLabel, { color: '#949bae' }]}>🎯 Tersisa</Text>
+                        <Text style={styles.statValue}>{technique.cycles - cyclesDone}</Text>
+                        <Text style={styles.statLabel}>Tersisa</Text>
                     </View>
                 </View>
 
                 {/* Controls */}
                 <View style={styles.controls}>
                     {status === 'ready' && (
-                        <TouchableOpacity
-                            style={[styles.mainBtn, { backgroundColor: themeColor }]}
-                            onPress={startSession}
-                        >
-                            <Text style={styles.mainBtnText}>🌬️ Mulai Sekarang</Text>
+                        <TouchableOpacity activeOpacity={0.9} onPress={startSession}>
+                            <LinearGradient
+                                colors={[C.funBlue, C.funBlueDk]}
+                                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                                style={styles.mainBtn}
+                            >
+                                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#fff"
+                                    strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                                    <Path d="M7 5l11 7-11 7z" />
+                                </Svg>
+                                <Text style={styles.mainBtnText}>Mulai Sekarang</Text>
+                            </LinearGradient>
                         </TouchableOpacity>
                     )}
 
-                    {(status === 'running' || status === 'paused') && (
+                    {running && (
                         <View style={styles.btnRow}>
-                            <TouchableOpacity
-                                style={[styles.stopBtn, { backgroundColor: '#ecedf6' }]}
-                                onPress={confirmStop}
-                            >
-                                <Text style={[styles.stopBtnText, { color: '#717a96' }]}>✕ Hentikan</Text>
+                            <TouchableOpacity style={styles.ghostBtn} onPress={confirmStop}>
+                                <Text style={styles.ghostBtnText}>Hentikan</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[
-                                    styles.mainBtn,
-                                    { backgroundColor: status === 'paused' ? themeColor : '#c09475', flex: 1 },
-                                ]}
-                                onPress={pauseSession}
-                            >
-                                <Text style={styles.mainBtnText}>
-                                    {status === 'paused' ? '▶ Lanjutkan' : '⏸ Jeda'}
-                                </Text>
+                            <TouchableOpacity activeOpacity={0.9} style={{ flex: 1 }} onPress={pauseSession}>
+                                <LinearGradient
+                                    colors={status === 'paused' ? [C.funBlue, C.funBlueDk] : ['#5a8bcb', '#3b7ec4']}
+                                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                                    style={styles.mainBtn}
+                                >
+                                    <Text style={styles.mainBtnText}>
+                                        {status === 'paused' ? 'Lanjutkan' : 'Jeda'}
+                                    </Text>
+                                </LinearGradient>
                             </TouchableOpacity>
                         </View>
                     )}
 
                     {status === 'done' && (
                         <View style={styles.btnRow}>
-                            <TouchableOpacity
-                                style={[styles.stopBtn, { backgroundColor: '#ecedf6' }]}
-                                onPress={() => navigation.goBack()}
-                            >
-                                <Text style={[styles.stopBtnText, { color: '#717a96' }]}>← Kembali</Text>
+                            <TouchableOpacity style={styles.ghostBtn} onPress={() => navigation.goBack()}>
+                                <Text style={styles.ghostBtnText}>Kembali</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.mainBtn, { backgroundColor: themeColor, flex: 1 }]}
-                                onPress={resetSession}
-                            >
-                                <Text style={styles.mainBtnText}>🔄 Ulangi</Text>
+                            <TouchableOpacity activeOpacity={0.9} style={{ flex: 1 }} onPress={resetSession}>
+                                <LinearGradient
+                                    colors={[C.funBlue, C.funBlueDk]}
+                                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                                    style={styles.mainBtn}
+                                >
+                                    <Text style={styles.mainBtnText}>Ulangi</Text>
+                                </LinearGradient>
                             </TouchableOpacity>
                         </View>
                     )}
@@ -419,50 +455,75 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
+    container: { flex: 1, backgroundColor: C.bg },
     safe: { flex: 1 },
+
+    // Top bar
     header: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: Spacing.lg,
-        paddingTop: Spacing.md,
-        paddingBottom: Spacing.sm,
+        justifyContent: 'space-between',
+        paddingHorizontal: 22,
+        height: 54,
     },
-    headerBtn: { padding: 4, minWidth: 32 },
-    headerCenter: { flex: 1, alignItems: 'center' },
-    closeBtn: { fontSize: 20 },
+    closeBox: {
+        width: 38, height: 38, borderRadius: 12,
+        backgroundColor: C.iconBg,
+        alignItems: 'center', justifyContent: 'center',
+    },
     techniqueTitle: {
-        fontFamily: 'Lora_600SemiBold',
-        fontSize: 16,
         flex: 1,
+        fontFamily: 'Lora_600SemiBold',
+        fontSize: 17,
+        color: C.textDark,
         textAlign: 'center',
         marginHorizontal: Spacing.sm,
     },
     cycleText: {
         fontFamily: 'Inter_500Medium',
-        fontSize: Typography.sizes.sm,
+        fontSize: 13,
+        color: C.textSub,
         minWidth: 64,
         textAlign: 'right',
     },
-    circleContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
+
+    // Guide
+    circleContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    guide: {
+        width: RING, height: RING,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    outerRing: {
+        position: 'absolute',
+        width: RING, height: RING,
+        borderRadius: RING / 2,
+        borderWidth: 1, borderColor: C.ring,
+    },
+    roundSquare: {
+        position: 'absolute',
+        width: RING * 0.77, height: RING * 0.77,
+        borderRadius: 40,
+        borderWidth: 2, borderColor: C.ringInner,
+    },
+    radial: { position: 'absolute' },
+    dot: {
+        position: 'absolute',
+        top: RING * 0.115,
+        width: 15, height: 15, borderRadius: 8,
+        backgroundColor: C.funBlue,
+        shadowColor: C.funBlue,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.4, shadowRadius: 6, elevation: 4,
     },
     glowRing: {
         position: 'absolute',
-        width: CIRCLE_SIZE + 60,
-        height: CIRCLE_SIZE + 60,
-        borderRadius: (CIRCLE_SIZE + 60) / 2,
+        width: CIRCLE_SIZE + 50,
+        height: CIRCLE_SIZE + 50,
+        borderRadius: (CIRCLE_SIZE + 50) / 2,
         borderWidth: 2,
     },
-    breathCircle: {
-        position: 'absolute',
-    },
-    innerCircle: {
-        position: 'absolute',
-    },
+    breathCircle: { position: 'absolute' },
+    innerCircle: { position: 'absolute' },
     centerContent: {
         position: 'absolute',
         justifyContent: 'center',
@@ -471,85 +532,93 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.lg,
     },
     centeredItems: { alignItems: 'center' },
-    readyEmoji: { fontSize: 48, marginBottom: 8, textAlign: 'center' },
-    readyText: {
-        fontFamily: Typography.heading,
-        fontSize: Typography.sizes.xl,
-        textAlign: 'center',
-    },
-    phaseLabel: {
-        fontFamily: Typography.headingBold,
-        fontSize: Typography.sizes.md,
+    eyebrow: {
+        fontFamily: 'Inter_600SemiBold',
+        fontSize: 11,
+        letterSpacing: 1.8,
         textTransform: 'uppercase',
-        letterSpacing: 1.5,
-        marginBottom: 4,
-        textAlign: 'center',
+        color: C.textMuted,
     },
-    phaseCountdown: {
-        fontFamily: Typography.headingBold,
-        fontSize: Typography.sizes['4xl'],
-        lineHeight: Typography.sizes['4xl'] + 8,
-        textAlign: 'center',
-    },
-    phaseInstruction: {
-        fontFamily: Typography.body,
-        fontSize: Typography.sizes.base,
+    bigTitle: {
+        fontFamily: 'Lora_600SemiBold',
+        fontSize: 30,
+        color: C.textDark,
+        letterSpacing: -0.3,
         marginTop: 8,
         textAlign: 'center',
     },
-    doneEmoji: { fontSize: 56, textAlign: 'center', marginBottom: 8 },
-    doneText: {
-        fontFamily: Typography.headingBold,
-        fontSize: Typography.sizes.xl,
+    countdown: {
+        fontFamily: 'Lora_600SemiBold',
+        fontSize: 56,
+        lineHeight: 64,
+        color: C.textDark,
+        marginTop: 4,
+    },
+    subText: {
+        fontFamily: 'Inter_400Regular',
+        fontSize: 14,
+        color: C.textSub,
+        marginTop: 8,
         textAlign: 'center',
     },
+
+    // Stats
     statsRow: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
-        paddingHorizontal: Spacing.xl,
-        paddingVertical: Spacing.md,
+        alignItems: 'center',
         borderTopWidth: 1,
+        borderTopColor: C.border,
         marginHorizontal: Spacing.lg,
-        borderRadius: 16,
+        paddingVertical: 20,
     },
-    stat: { alignItems: 'center' },
+    stat: { flex: 1, alignItems: 'center' },
+    statDivider: { width: 1, alignSelf: 'stretch', backgroundColor: C.border },
     statValue: {
-        fontFamily: Typography.headingBold,
-        fontSize: Typography.sizes.xl,
-        letterSpacing: 1,
+        fontFamily: 'Lora_600SemiBold',
+        fontSize: 26,
+        color: C.textDark,
     },
     statLabel: {
-        fontFamily: Typography.body,
-        fontSize: Typography.sizes.xs,
+        fontFamily: 'Inter_600SemiBold',
+        fontSize: 10.5,
+        letterSpacing: 1.2,
         textTransform: 'uppercase',
-        letterSpacing: 0.8,
-        marginTop: 2,
+        color: C.textMuted,
+        marginTop: 4,
     },
-    controls: {
-        padding: Spacing.lg,
-        paddingBottom: Spacing.xl,
-    },
+
+    // Controls
+    controls: { paddingHorizontal: Spacing.lg, paddingTop: 14, paddingBottom: 30 },
     btnRow: { flexDirection: 'row', gap: Spacing.sm },
     mainBtn: {
-        paddingVertical: 16,
-        borderRadius: 50,
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
+        gap: 10,
+        paddingVertical: 18,
+        borderRadius: 18,
+        shadowColor: C.funBlue,
+        shadowOffset: { width: 0, height: 14 },
+        shadowOpacity: 0.4,
+        shadowRadius: 18,
+        elevation: 6,
     },
     mainBtnText: {
-        fontFamily: Typography.heading,
-        fontSize: Typography.sizes.md,
+        fontFamily: 'Inter_600SemiBold',
+        fontSize: 16,
         color: '#FFFFFF',
     },
-    stopBtn: {
-        paddingVertical: 16,
+    ghostBtn: {
+        paddingVertical: 18,
         paddingHorizontal: Spacing.lg,
-        borderRadius: 50,
+        borderRadius: 18,
+        backgroundColor: C.iconBg,
         alignItems: 'center',
         justifyContent: 'center',
     },
-    stopBtnText: {
-        fontFamily: Typography.bodyMedium,
-        fontSize: Typography.sizes.sm,
+    ghostBtnText: {
+        fontFamily: 'Inter_600SemiBold',
+        fontSize: 14,
+        color: C.funBlue,
     },
 });

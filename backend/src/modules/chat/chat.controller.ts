@@ -18,11 +18,11 @@ import * as ChatService from './chat.service';
 export const sendMessage = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user?.userId;
-        const { message } = req.body;
+        const { message, sessionId } = req.body;
 
         if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-        const result = await ChatService.sendMessage(userId, message);
+        const result = await ChatService.sendMessage(userId, message, sessionId);
         res.json(result);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -37,7 +37,7 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
 export const streamMessage = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user?.userId;
-        const { message } = req.body;
+        const { message, sessionId } = req.body;
 
         if (!userId) {
             res.status(401).json({ error: 'Unauthorized' });
@@ -49,7 +49,7 @@ export const streamMessage = async (req: AuthRequest, res: Response) => {
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
 
-        const result = await ChatService.streamMessage(userId, message, (chunk) => {
+        const result = await ChatService.streamMessage(userId, message, sessionId, (chunk) => {
             res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
         });
 
@@ -114,6 +114,30 @@ export const createNewSession = async (req: AuthRequest, res: Response) => {
 
         const session = await ChatService.createNewSession(userId);
         res.json(session);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const getLatestGad7ForUser = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const callerId = req.user?.userId;
+
+        if (id !== callerId) {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+
+        const latest = await ChatService.getLatestGad7ForUser(id);
+        if (!latest) {
+            return res.status(404).json({ error: 'GAD-7 result not found' });
+        }
+
+        res.json({
+            score: latest.score,
+            severity: latest.severity,
+            timestamp: latest.takenAt,
+        });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }

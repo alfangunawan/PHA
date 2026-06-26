@@ -9,7 +9,7 @@ import { useAuthContext } from './AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
-const ACCENT = '#8a9ccc';
+const ACCENT = '#1A59A1';
 const BG = '#ebedf3';
 const TEXT_DARK = '#353b4a';
 const TEXT_MID = '#3b4150';
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
         color: '#8990a4',
         marginTop: 10,
         textAlign: 'center',
-        fontFamily: 'Inter_400Regular',
+        fontFamily: 'HankenGrotesk_400Regular',
     },
     form: { width: '100%' },
     inputWrap: {
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
         flex: 1,
         fontSize: 15,
         color: TEXT_MID,
-        fontFamily: 'Inter_400Regular',
+        fontFamily: 'HankenGrotesk_400Regular',
         height: '100%',
     },
     eyeBtn: { padding: 4 },
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: '600',
         color: ACCENT,
-        fontFamily: 'Inter_500Medium',
+        fontFamily: 'HankenGrotesk_500Medium',
     },
     btn: {
         flexDirection: 'row',
@@ -253,9 +253,9 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         fontWeight: '600',
-        fontFamily: 'Inter_600SemiBold',
+        fontFamily: 'HankenGrotesk_600SemiBold',
     },
     footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
-    footerText: { fontSize: 13.5, color: '#9197aa', fontFamily: 'Inter_400Regular' },
-    footerLink: { fontSize: 13.5, fontWeight: '700', color: ACCENT, fontFamily: 'Inter_600SemiBold' },
+    footerText: { fontSize: 13.5, color: '#9197aa', fontFamily: 'HankenGrotesk_400Regular' },
+    footerLink: { fontSize: 13.5, fontWeight: '700', color: ACCENT, fontFamily: 'HankenGrotesk_700Bold' },
 });

@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 import Animated, {
     useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming,
     Easing, cancelAnimation,
@@ -10,39 +9,17 @@ import Animated, {
 import { Audio } from 'expo-av';
 import { meditationAPI } from '../../api';
 import config from '../../config';
-import { useTheme } from '../../context/ThemeContext';
-import { Typography, Spacing } from '../../theme';
+import { M, getCatTheme, CategoryIcon } from './categories';
 
 const RING_OUTER = 268;
 const RING_MID   = 236;
 const RING_INNER = 208;
 
-interface CategoryTheme {
-    iconBg: string;
-    iconColor: string;
-    badgeBg: string;
-    badgeColor: string;
-    emoji: string;
-}
-
-const CATEGORY_THEMES: Record<string, CategoryTheme> = {
-    sleep:   { iconBg: '#eef2fb', iconColor: '#6477ad', badgeBg: '#eef2fb', badgeColor: '#5868a3', emoji: '🌙' },
-    focus:   { iconBg: '#f3eef6', iconColor: '#a87fae', badgeBg: '#f3eef6', badgeColor: '#8f689a', emoji: '🎯' },
-    anxiety: { iconBg: '#eaf2ec', iconColor: '#6f9e80', badgeBg: '#eaf2ec', badgeColor: '#558168', emoji: '💚' },
-    morning: { iconBg: '#f6efe2', iconColor: '#c2965c', badgeBg: '#f6efe2', badgeColor: '#b58642', emoji: '🌅' },
-    general: { iconBg: '#eaf2ec', iconColor: '#6f9e80', badgeBg: '#eaf2ec', badgeColor: '#558168', emoji: '🌿' },
-};
-
-const DEFAULT_THEME: CategoryTheme = {
-    iconBg: '#eaeef8', iconColor: '#7e8cc4', badgeBg: '#eaeef8', badgeColor: '#7e8cc4', emoji: '🧘',
-};
-
 export default function MeditationPlayerScreen({ route, navigation }: any) {
     const { session } = route.params;
-    const { colors } = useTheme();
-    const catTheme = CATEGORY_THEMES[session.category] || DEFAULT_THEME;
+    const cat = getCatTheme(session.category);
 
-    const durations: number[] = session.durationOptions || [5, 10, 15];
+    const durations: number[] = session.durationOptions?.length ? session.durationOptions : [5, 10, 15];
     const [selectedDuration, setSelectedDuration] = useState(durations[0]);
     const [secondsLeft, setSecondsLeft]   = useState(durations[0] * 60);
     const [playing, setPlaying]           = useState(false);
@@ -142,10 +119,11 @@ export default function MeditationPlayerScreen({ route, navigation }: any) {
     const dotTop   = (RING_OUTER - RING_MID) / 2 - 6.5;
 
     const statusLabel = finished ? 'Selesai' : playing ? 'Berlangsung' : 'Siap';
+    const catLabel = (session.category || 'general').charAt(0).toUpperCase() + (session.category || 'general').slice(1);
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
-            <SafeAreaView style={styles.safe}>
+        <View style={styles.container}>
+            <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', 'bottom']}>
 
                 {/* Top bar */}
                 <TouchableOpacity
@@ -153,25 +131,21 @@ export default function MeditationPlayerScreen({ route, navigation }: any) {
                     onPress={() => { stopTimer(); saveLog(false); navigation.goBack(); }}
                     activeOpacity={0.75}
                 >
-                    <View style={[styles.backBtn, { backgroundColor: colors.lightGray }]}>
-                        <Text style={[styles.backBtnIcon, { color: colors.darkGray }]}>‹</Text>
+                    <View style={styles.backBtn}>
+                        <Svg width={20} height={20} viewBox="0 0 24 24">
+                            <Path d="M15 6l-6 6 6 6" stroke="#5a6173" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                        </Svg>
                     </View>
-                    <Text style={[styles.backLabel, { color: colors.darkGray }]}>Kembali</Text>
+                    <Text style={styles.backLabel}>Kembali</Text>
                 </TouchableOpacity>
 
                 {/* Title block */}
                 <View style={styles.titleBlock}>
-                    <View style={[styles.sessionIconBox, { backgroundColor: catTheme.iconBg }]}>
-                        <Text style={styles.sessionEmoji}>{catTheme.emoji}</Text>
+                    <View style={styles.sessionIconBox}>
+                        <CategoryIcon kind={cat.icon} size={28} color={M.primary} />
                     </View>
-                    <Text style={[styles.sessionTitle, { color: colors.charcoal }]} numberOfLines={2}>
-                        {session.title}
-                    </Text>
-                    <View style={[styles.catBadge, { backgroundColor: catTheme.badgeBg }]}>
-                        <Text style={[styles.catBadgeText, { color: catTheme.badgeColor }]}>
-                            {session.category}
-                        </Text>
-                    </View>
+                    <Text style={styles.sessionTitle} numberOfLines={2}>{session.title}</Text>
+                    <Text style={styles.catLabel}>{catLabel}</Text>
                 </View>
 
                 {/* Timer ring */}
@@ -186,9 +160,7 @@ export default function MeditationPlayerScreen({ route, navigation }: any) {
                                 <Text style={styles.finishedEmoji}>✅</Text>
                             ) : (
                                 <>
-                                    <Text style={[styles.timerText, { color: colors.charcoal }]}>
-                                        {timeStr}
-                                    </Text>
+                                    <Text style={styles.timerText}>{timeStr}</Text>
                                     <Text style={styles.statusLabel}>{statusLabel}</Text>
                                 </>
                             )}
@@ -206,19 +178,9 @@ export default function MeditationPlayerScreen({ route, navigation }: any) {
                                 disabled={playing}
                                 onPress={() => setSelectedDuration(d)}
                                 activeOpacity={0.8}
-                                style={[
-                                    styles.durationChip,
-                                    {
-                                        backgroundColor: isSelected ? '#8a9ccc' : '#f1f2f8',
-                                        borderColor: isSelected ? '#8a9ccc' : '#e7e9f2',
-                                        shadowColor: isSelected ? '#8a9ccc' : 'transparent',
-                                    },
-                                ]}
+                                style={[styles.durationChip, isSelected ? styles.durationChipActive : styles.durationChipIdle]}
                             >
-                                <Text style={[
-                                    styles.durationText,
-                                    { color: isSelected ? '#fff' : '#6a7185', fontWeight: isSelected ? '600' : '500' },
-                                ]}>
+                                <Text style={[styles.durationText, { color: isSelected ? '#fff' : M.textSub, fontWeight: isSelected ? '600' : '500' }]}>
                                     {d} mnt
                                 </Text>
                             </TouchableOpacity>
@@ -229,29 +191,31 @@ export default function MeditationPlayerScreen({ route, navigation }: any) {
                 {/* Controls */}
                 <View style={styles.controls}>
                     {finished ? (
-                        <TouchableOpacity style={styles.primaryBtn} onPress={() => navigation.goBack()}>
-                            <Text style={styles.primaryBtnText}>← Kembali</Text>
+                        <TouchableOpacity style={styles.primaryBtn} onPress={() => navigation.goBack()} activeOpacity={0.85}>
+                            <Text style={styles.primaryBtnText}>Kembali</Text>
                         </TouchableOpacity>
                     ) : playing ? (
                         <View style={styles.btnRow}>
                             <TouchableOpacity
-                                style={[styles.secondaryBtn, { backgroundColor: colors.lightGray }]}
+                                style={styles.secondaryBtn}
                                 onPress={() => { stopTimer(); saveLog(false); }}
+                                activeOpacity={0.85}
                             >
-                                <Text style={[styles.secondaryBtnText, { color: colors.darkGray }]}>
-                                    Hentikan
-                                </Text>
+                                <Text style={styles.secondaryBtnText}>Hentikan</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.primaryBtn, { flex: 1, backgroundColor: '#b0bcdf' }]}
-                                onPress={stopTimer}
-                            >
-                                <Text style={styles.primaryBtnText}>⏸  Jeda</Text>
+                            <TouchableOpacity style={[styles.primaryBtn, { flex: 1 }]} onPress={stopTimer} activeOpacity={0.85}>
+                                <Svg width={20} height={20} viewBox="0 0 24 24" style={styles.btnIcon}>
+                                    <Path d="M8 5v14M16 5v14" stroke="#fff" strokeWidth={1.8} strokeLinecap="round" fill="none" />
+                                </Svg>
+                                <Text style={styles.primaryBtnText}>Jeda</Text>
                             </TouchableOpacity>
                         </View>
                     ) : (
-                        <TouchableOpacity style={styles.primaryBtn} onPress={startTimer}>
-                            <Text style={styles.primaryBtnText}>▶  Mulai</Text>
+                        <TouchableOpacity style={styles.primaryBtn} onPress={startTimer} activeOpacity={0.85}>
+                            <Svg width={20} height={20} viewBox="0 0 24 24" style={styles.btnIcon}>
+                                <Path d="M7 5l11 7-11 7z" stroke="#fff" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                            </Svg>
+                            <Text style={styles.primaryBtnText}>Mulai</Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -262,61 +226,57 @@ export default function MeditationPlayerScreen({ route, navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
+    container: { flex: 1, backgroundColor: M.screenBg },
     safe: { flex: 1 },
 
     backRow: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10,
-        paddingHorizontal: Spacing.lg,
+        paddingHorizontal: 22,
         height: 54,
     },
     backBtn: {
         width: 38,
         height: 38,
         borderRadius: 12,
+        backgroundColor: M.chipBg,
         alignItems: 'center',
         justifyContent: 'center',
     },
-    backBtnIcon: { fontSize: 22, lineHeight: 26 },
     backLabel: {
-        fontFamily: Typography.bodyMedium,
+        fontFamily: 'Inter_500Medium',
         fontSize: 14.5,
+        color: M.textSub,
     },
 
     titleBlock: {
         alignItems: 'center',
         gap: 10,
-        paddingHorizontal: Spacing.lg,
+        paddingHorizontal: 24,
         paddingTop: 14,
     },
     sessionIconBox: {
         width: 58,
         height: 58,
         borderRadius: 20,
+        backgroundColor: M.primaryLight,
         alignItems: 'center',
         justifyContent: 'center',
     },
-    sessionEmoji: { fontSize: 26 },
     sessionTitle: {
-        fontFamily: Typography.heading,
-        fontSize: 26,
+        fontFamily: 'Lora_600SemiBold',
+        fontSize: 27,
+        color: M.textDark,
         letterSpacing: -0.3,
         textAlign: 'center',
         marginTop: 4,
     },
-    catBadge: {
-        paddingHorizontal: 14,
-        paddingVertical: 4,
-        borderRadius: 20,
-    },
-    catBadgeText: {
-        fontFamily: Typography.bodyMedium,
+    catLabel: {
+        fontFamily: 'Inter_600SemiBold',
         fontSize: 13,
-        fontWeight: '600',
+        color: M.primary,
         letterSpacing: 0.5,
-        textTransform: 'capitalize',
     },
 
     ringArea: {
@@ -351,15 +311,15 @@ const styles = StyleSheet.create({
         height: RING_INNER,
         borderRadius: RING_INNER / 2,
         borderWidth: 2,
-        borderColor: '#cdd7ef',
+        borderColor: '#b8cce8',
     },
     ringDot: {
         position: 'absolute',
         width: 13,
         height: 13,
         borderRadius: 6.5,
-        backgroundColor: '#8a9ccc',
-        shadowColor: '#8a9ccc',
+        backgroundColor: M.primary,
+        shadowColor: M.primary,
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.5,
         shadowRadius: 6,
@@ -371,19 +331,19 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     timerText: {
-        fontFamily: Typography.headingBold,
+        fontFamily: 'Lora_600SemiBold',
         fontSize: 52,
         lineHeight: 60,
         letterSpacing: 0.5,
+        color: M.textDark,
         textAlign: 'center',
     },
     statusLabel: {
-        fontFamily: Typography.bodyMedium,
+        fontFamily: 'Inter_600SemiBold',
         fontSize: 11,
         letterSpacing: 2,
         textTransform: 'uppercase',
         color: '#a4aabc',
-        fontWeight: '600',
         marginTop: 12,
     },
     finishedEmoji: { fontSize: 52 },
@@ -392,7 +352,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center',
         gap: 10,
-        paddingHorizontal: Spacing.lg,
+        paddingHorizontal: 24,
         paddingBottom: 6,
     },
     durationChip: {
@@ -400,49 +360,65 @@ const styles = StyleSheet.create({
         paddingVertical: 9,
         borderRadius: 14,
         borderWidth: 1,
+    },
+    durationChipActive: {
+        backgroundColor: M.primary,
+        borderColor: M.primary,
+        shadowColor: M.primary,
         shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
+        shadowOpacity: 0.4,
         shadowRadius: 12,
         elevation: 3,
     },
+    durationChipIdle: {
+        backgroundColor: M.chipBg,
+        borderColor: M.chipBorder,
+    },
     durationText: {
-        fontFamily: Typography.bodyMedium,
+        fontFamily: 'Inter_500Medium',
         fontSize: 13.5,
     },
 
     controls: {
-        paddingHorizontal: Spacing.lg,
+        paddingHorizontal: 24,
         paddingTop: 20,
-        paddingBottom: Spacing.xl,
+        paddingBottom: 30,
     },
-    btnRow: { flexDirection: 'row', gap: Spacing.sm },
+    btnRow: { flexDirection: 'row', gap: 10 },
+    btnIcon: { marginRight: 4 },
     primaryBtn: {
-        backgroundColor: '#8a9ccc',
+        flexDirection: 'row',
+        backgroundColor: M.primary,
         paddingVertical: 18,
         borderRadius: 18,
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: '#8a9ccc',
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.55,
+        gap: 6,
+        shadowColor: M.primary,
+        shadowOffset: { width: 0, height: 14 },
+        shadowOpacity: 0.5,
         shadowRadius: 18,
         elevation: 8,
     },
     primaryBtnText: {
-        fontFamily: Typography.heading,
+        fontFamily: 'Inter_600SemiBold',
         fontSize: 16,
         color: '#ffffff',
         fontWeight: '600',
     },
     secondaryBtn: {
         paddingVertical: 18,
-        paddingHorizontal: Spacing.lg,
+        paddingHorizontal: 24,
         borderRadius: 18,
+        backgroundColor: M.chipBg,
+        borderWidth: 1,
+        borderColor: M.chipBorder,
         alignItems: 'center',
         justifyContent: 'center',
     },
     secondaryBtnText: {
-        fontFamily: Typography.bodyMedium,
+        fontFamily: 'Inter_500Medium',
         fontSize: 14,
+        color: M.textSub,
     },
 });

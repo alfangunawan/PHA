@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const sendMessageSchema = z.object({
     body: z.object({
         message: z.string().min(1, 'Message is required').max(2000, 'Message too long'),
+        sessionId: z.string().min(1).max(128).optional(),
     }),
 });
 
@@ -11,6 +12,12 @@ export const sendMessageSchema = z.object({
 export const getSessionMessagesSchema = z.object({
     params: z.object({
         sessionId: z.string().min(1, 'Session ID is required'),
+    }),
+});
+
+export const getLatestGad7Schema = z.object({
+    params: z.object({
+        id: z.string().min(1, 'User ID is required'),
     }),
 });
 

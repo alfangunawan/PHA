@@ -2,9 +2,9 @@ import { User } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { getJwtSecret } from '../../config/env';
 
 const SALT_ROUNDS = 10;
-const JWT_SECRET = process.env.JWT_SECRET || 'changeme_in_production';
 
 export const registerUser = async (email: string, password: string, name?: string): Promise<User> => {
     const existingUser = await prisma.user.findUnique({
@@ -48,7 +48,7 @@ export const loginUser = async (email: string, password: string): Promise<{ toke
         throw new Error('Invalid credentials');
     }
 
-    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, {
+    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, getJwtSecret(), {
         expiresIn: '7d',
     });
 

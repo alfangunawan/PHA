@@ -2,28 +2,32 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity, FlatList,
     StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
-    Alert, SafeAreaView,
+    Alert, StatusBar,
 } from 'react-native';
-import Svg, { Path, Circle } from 'react-native-svg';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Path } from 'react-native-svg';
 import Markdown from 'react-native-markdown-display';
 import { Ionicons } from '@expo/vector-icons';
 import { ChatMessage, streamMessage, getHistory, createNewSession } from './chatService';
 import Gad7Form from './Gad7Form';
 
-const PRIMARY = '#8a9ccc';
+// Fun Blue palette
+const PRIMARY = '#1A59A1';
+const PRIMARY_DEEP = '#14457D';
 
-const D = {
-    bg: '#fcfcfe',
-    appBarBorder: '#f0f1f6',
-    cardBorder: '#ecedf6',
-    inputBg: '#f3f4f9',
-    textDark: '#3b4150',
-    textSub: '#9197aa',
-    textMuted: '#aab0bf',
-    iconDim: '#5a6173',
-    timePillBg: '#f1f2f8',
-    suggBg: '#f3f4f9',
-    phaAvatarBg: '#eef1f9',
+const FB = {
+    sheetBg: '#ffffff',
+    headerSub: '#cfddf2',
+    statusGreen: '#8fd0a8',
+    tileBg: '#eaf1fa',
+    tileBorder: '#dbe7f6',
+    inputBorder: '#e3ebf6',
+    textDark: '#243a5c',
+    textSub: '#7689a6',
+    textMuted: '#9aa7bd',
+    bubbleText: '#243a5c',
+    typingDim: '#9dbbe4',
 };
 
 const SUGGESTIONS = [
@@ -61,6 +65,7 @@ interface Props {
 }
 
 export default function ChatScreen({ navigation, route }: Props) {
+    const insets = useSafeAreaInsets();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [inputText, setInputText] = useState('');
     const [loading, setLoading] = useState(true);
@@ -212,9 +217,9 @@ export default function ChatScreen({ navigation, route }: Props) {
                 <View style={styles.aiBubbleRow}>
                     <View style={styles.phaAvatar}><PHAChatIcon size={16} /></View>
                     <View style={styles.typingBubble}>
-                        <View style={[styles.dot, { backgroundColor: '#c0c6d5' }]} />
-                        <View style={[styles.dot, { backgroundColor: '#aab0bf' }]} />
-                        <View style={[styles.dot, { backgroundColor: '#c0c6d5' }]} />
+                        <View style={[styles.dot, { backgroundColor: FB.typingDim }]} />
+                        <View style={[styles.dot, { backgroundColor: PRIMARY }]} />
+                        <View style={[styles.dot, { backgroundColor: FB.typingDim }]} />
                     </View>
                 </View>
             );
@@ -242,7 +247,8 @@ export default function ChatScreen({ navigation, route }: Props) {
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.safe}>
+            <SafeAreaView style={styles.safe} edges={['left', 'right']}>
+                <StatusBar barStyle="light-content" />
                 <View style={styles.center}>
                     <ActivityIndicator size="large" color={PRIMARY} />
                 </View>
@@ -251,17 +257,23 @@ export default function ChatScreen({ navigation, route }: Props) {
     }
 
     return (
-        <SafeAreaView style={styles.safe}>
+        <SafeAreaView style={styles.safe} edges={['left', 'right']}>
+            <StatusBar barStyle="light-content" />
 
-            {/* App Bar */}
-            <View style={styles.appBar}>
+            {/* App Bar — full-bleed Fun Blue */}
+            <LinearGradient
+                colors={[PRIMARY, PRIMARY_DEEP]}
+                start={{ x: 0.15, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.appBar, { paddingTop: insets.top + 12 }]}
+            >
                 <TouchableOpacity style={styles.appBarBtn} onPress={() => navigation.goBack()}>
-                    <Ionicons name="chevron-back" size={22} color={D.iconDim} />
+                    <Ionicons name="chevron-back" size={22} color="#ffffff" />
                 </TouchableOpacity>
 
                 <View style={styles.appBarCenter}>
                     <View style={styles.phaAvatarLg}>
-                        <PHAChatIcon color={PRIMARY} size={19} />
+                        <PHAChatIcon color="#ffffff" size={19} />
                     </View>
                     <View>
                         <Text style={styles.phaName}>PHA</Text>
@@ -275,12 +287,12 @@ export default function ChatScreen({ navigation, route }: Props) {
                 </View>
 
                 <TouchableOpacity style={styles.appBarBtn} onPress={handleNewChat}>
-                    <Ionicons name="ellipsis-horizontal" size={22} color={D.iconDim} />
+                    <Ionicons name="ellipsis-horizontal" size={22} color="#ffffff" />
                 </TouchableOpacity>
-            </View>
+            </LinearGradient>
 
             <KeyboardAvoidingView
-                style={{ flex: 1 }}
+                style={styles.sheet}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={0}
             >
@@ -292,7 +304,7 @@ export default function ChatScreen({ navigation, route }: Props) {
                             <Text style={styles.timePillText}>Hari ini, {timeStr}</Text>
                         </View>
                         <View style={styles.suggestionsWrap}>
-                            <Text style={styles.suggestLabel}>Mulai dengan</Text>
+                            <Text style={styles.suggestLabel}>MULAI DENGAN</Text>
                             {SUGGESTIONS.map(s => (
                                 <TouchableOpacity key={s} style={styles.suggChip} onPress={() => handleSend(s)}>
                                     <Text style={styles.suggText}>{s}</Text>
@@ -320,9 +332,9 @@ export default function ChatScreen({ navigation, route }: Props) {
                 )}
 
                 {/* Input Bar */}
-                <View style={styles.inputBar}>
+                <View style={[styles.inputBar, { paddingBottom: Math.max(insets.bottom, 14) + 8 }]}>
                     <TouchableOpacity style={styles.plusBtn}>
-                        <Ionicons name="add" size={24} color={D.textSub} />
+                        <Ionicons name="add" size={24} color={FB.textSub} />
                     </TouchableOpacity>
 
                     <TextInput
@@ -330,7 +342,7 @@ export default function ChatScreen({ navigation, route }: Props) {
                         value={inputText}
                         onChangeText={setInputText}
                         placeholder="Tulis apa yang ingin kamu ceritakan…"
-                        placeholderTextColor={D.textMuted}
+                        placeholderTextColor={FB.textMuted}
                         multiline
                         maxLength={500}
                     />
@@ -353,18 +365,15 @@ export default function ChatScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
-    safe: { flex: 1, backgroundColor: D.bg },
-    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    safe: { flex: 1, backgroundColor: PRIMARY },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: FB.sheetBg },
 
     appBar: {
-        height: 58,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 18,
-        borderBottomWidth: 1,
-        borderBottomColor: D.appBarBorder,
-        backgroundColor: D.bg,
+        paddingBottom: 22,
     },
     appBarBtn: {
         width: 38,
@@ -378,58 +387,70 @@ const styles = StyleSheet.create({
         width: 34,
         height: 34,
         borderRadius: 17,
-        backgroundColor: D.phaAvatarBg,
+        backgroundColor: 'rgba(255,255,255,0.18)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.28)',
         justifyContent: 'center',
         alignItems: 'center',
     },
-    phaName: { fontFamily: 'Lora_500Medium', fontSize: 16, color: D.textDark, lineHeight: 20 },
+    phaName: { fontFamily: 'Lora_500Medium', fontSize: 16, color: '#ffffff', lineHeight: 20 },
     statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 },
-    statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: PRIMARY },
-    statusText: { fontSize: 11, color: D.textSub },
+    statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: FB.statusGreen },
+    statusText: { fontSize: 11, color: FB.headerSub },
+
+    // White sheet overlapping header
+    sheet: {
+        flex: 1,
+        backgroundColor: FB.sheetBg,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        marginTop: -14,
+        overflow: 'hidden',
+    },
 
     // Empty state
-    emptyState: { flex: 1, padding: 24, paddingTop: 24 },
+    emptyState: { flex: 1, padding: 24, paddingTop: 26 },
     greetingText: {
         fontFamily: 'Lora_600SemiBold',
         fontSize: 25,
         lineHeight: 32,
-        color: '#353b4a',
+        color: FB.textDark,
         letterSpacing: -0.2,
     },
     timePill: {
         alignSelf: 'center',
-        backgroundColor: D.timePillBg,
+        backgroundColor: FB.tileBg,
         borderRadius: 20,
         paddingHorizontal: 13,
         paddingVertical: 5,
         marginTop: 18,
     },
-    timePillText: { fontSize: 11.5, color: D.textSub },
+    timePillText: { fontSize: 11.5, color: FB.textSub },
     suggestionsWrap: { marginTop: 'auto' as any, paddingBottom: 8 },
     suggestLabel: {
         fontSize: 12,
-        letterSpacing: 0.4,
-        color: '#a4aabc',
+        letterSpacing: 0.6,
+        color: FB.textSub,
         fontWeight: '600',
         marginBottom: 12,
     },
     suggChip: {
-        backgroundColor: D.suggBg,
+        backgroundColor: FB.tileBg,
         borderWidth: 1,
-        borderColor: D.cardBorder,
+        borderColor: FB.tileBorder,
         borderRadius: 16,
         paddingVertical: 13,
         paddingHorizontal: 16,
         marginBottom: 10,
     },
-    suggText: { fontSize: 14, color: '#525a6b' },
+    suggText: { fontSize: 14, color: FB.textDark },
 
     // Chat list
     chatArea: { flex: 1 },
     listContent: { padding: 20, paddingBottom: 10, flexGrow: 1 },
     timeStampRow: {
         alignSelf: 'center',
-        backgroundColor: D.timePillBg,
+        backgroundColor: FB.tileBg,
         borderRadius: 20,
         paddingHorizontal: 13,
         paddingVertical: 5,
@@ -442,15 +463,15 @@ const styles = StyleSheet.create({
         width: 30,
         height: 30,
         borderRadius: 15,
-        backgroundColor: D.phaAvatarBg,
+        backgroundColor: FB.tileBg,
         justifyContent: 'center',
         alignItems: 'center',
         flexShrink: 0,
     },
     phaBubble: {
-        backgroundColor: '#ffffff',
+        backgroundColor: FB.tileBg,
         borderWidth: 1,
-        borderColor: D.cardBorder,
+        borderColor: FB.tileBorder,
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         borderBottomRightRadius: 20,
@@ -460,9 +481,9 @@ const styles = StyleSheet.create({
         flexShrink: 1,
     },
     typingBubble: {
-        backgroundColor: '#ffffff',
+        backgroundColor: FB.tileBg,
         borderWidth: 1,
-        borderColor: D.cardBorder,
+        borderColor: FB.tileBorder,
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         borderBottomRightRadius: 20,
@@ -494,11 +515,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 12,
         borderTopWidth: 1,
-        borderTopColor: D.cardBorder,
+        borderTopColor: FB.inputBorder,
         paddingHorizontal: 18,
         paddingTop: 13,
-        paddingBottom: Platform.OS === 'ios' ? 26 : 22,
-        backgroundColor: D.bg,
+        backgroundColor: FB.sheetBg,
     },
     plusBtn: {
         width: 38,
@@ -510,14 +530,14 @@ const styles = StyleSheet.create({
     },
     textInput: {
         flex: 1,
-        backgroundColor: D.inputBg,
+        backgroundColor: FB.tileBg,
         borderWidth: 1,
-        borderColor: D.cardBorder,
+        borderColor: FB.tileBorder,
         borderRadius: 24,
         paddingHorizontal: 18,
         paddingVertical: 13,
         fontSize: 14,
-        color: D.textDark,
+        color: FB.textDark,
         maxHeight: 120,
     },
     sendBtn: {
@@ -537,22 +557,22 @@ const styles = StyleSheet.create({
 });
 
 const markdownStyles = StyleSheet.create({
-    body: { fontSize: 14, lineHeight: 21, color: D.textDark },
-    heading1: { fontSize: 18, fontWeight: '700', marginVertical: 8 },
-    heading2: { fontSize: 16, fontWeight: '600', marginVertical: 6 },
+    body: { fontSize: 14, lineHeight: 21, color: FB.bubbleText },
+    heading1: { fontSize: 18, fontWeight: '700', marginVertical: 8, color: FB.textDark },
+    heading2: { fontSize: 16, fontWeight: '600', marginVertical: 6, color: FB.textDark },
     strong: { fontWeight: '600' },
     em: { fontStyle: 'italic' },
     list_item: { marginVertical: 3 },
     bullet_list: { marginBottom: 8 },
     ordered_list: { marginBottom: 8 },
     code_inline: {
-        backgroundColor: '#f1f2f8',
+        backgroundColor: '#dbe7f6',
         fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
         borderRadius: 4,
         paddingHorizontal: 4,
     } as any,
     code_block: {
-        backgroundColor: '#f1f2f8',
+        backgroundColor: '#dbe7f6',
         padding: 10,
         borderRadius: 8,
         fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',

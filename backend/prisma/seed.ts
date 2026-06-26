@@ -1,4 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { ActivityType, PrismaClient, Role } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -16,6 +17,54 @@ async function seedMissing<T extends Record<string, any>>(
 }
 
 async function main() {
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@pha.local';
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const adminHash = await bcrypt.hash(adminPassword, 10);
+
+    await prisma.user.upsert({
+        where: { email: adminEmail },
+        update: {
+            passwordHash: adminHash,
+            role: Role.ADMIN,
+            profile: {
+                upsert: {
+                    update: { displayName: 'Admin' },
+                    create: { displayName: 'Admin', language: 'id' },
+                },
+            },
+        },
+        create: {
+            email: adminEmail,
+            passwordHash: adminHash,
+            role: Role.ADMIN,
+            profile: { create: { displayName: 'Admin', language: 'id' } },
+        },
+    });
+
+    // Consolidate any legacy split-admin accounts to unified ADMIN role
+    await prisma.user.updateMany({
+        where: { role: { in: [Role.GAMIFICATION_ADMIN, Role.MINDFULNESS_ADMIN] } },
+        data: { role: Role.ADMIN },
+    });
+
+    const rewardRules = [
+        { activityType: ActivityType.BREATHING, xp: 10, points: 5 },
+        { activityType: ActivityType.MEDITATION, xp: 15, points: 8 },
+        { activityType: ActivityType.EDUCATION_CONTENT, xp: 8, points: 4 },
+        { activityType: ActivityType.AUDIO_CONTENT, xp: 8, points: 4 },
+        { activityType: ActivityType.JOURNAL_ENTRY, xp: 12, points: 6 },
+        { activityType: ActivityType.WORD_PUZZLE, xp: 10, points: 5 },
+        { activityType: ActivityType.TETRIS, xp: 10, points: 5 },
+    ];
+
+    for (const rule of rewardRules) {
+        await prisma.rewardRule.upsert({
+            where: { activityType: rule.activityType },
+            update: {},
+            create: rule,
+        });
+    }
+
     // Breathing techniques
     const breathingTechniques = [
             {
