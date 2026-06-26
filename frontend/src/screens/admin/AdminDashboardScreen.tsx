@@ -12,7 +12,7 @@ import AnimatedView from '../../components/AnimatedView';
 import { LoadingState } from '../../components/LoadingState';
 import { Typography, Spacing } from '../../theme';
 
-type Tab = 'education' | 'audio' | 'breathing' | 'meditation' | 'gamification';
+type Tab = 'education' | 'audio' | 'gamification';
 
 const BLUE = '#1A59A1';
 const BLUE_DARK = '#14457D';
@@ -43,16 +43,12 @@ const GAMI_ICONS: Record<string, string> = {
 const TABS: { key: Tab; label: string; icon: string }[] = [
     { key: 'education', label: 'Edukasi', icon: 'book-outline' },
     { key: 'audio', label: 'Audio', icon: 'musical-notes-outline' },
-    { key: 'breathing', label: 'Napas', icon: 'leaf-outline' },
-    { key: 'meditation', label: 'Meditasi', icon: 'planet-outline' },
     { key: 'gamification', label: 'Reward', icon: 'ribbon-outline' },
 ];
 
 const TAB_META: Record<Tab, { title: string; sub: string }> = {
     education:    { title: 'Konten Edukasi',     sub: 'Kelola artikel & panduan' },
     audio:        { title: 'Audio Relaksasi',     sub: 'Kelola berkas audio' },
-    breathing:    { title: 'Teknik Pernapasan',   sub: 'Kelola teknik pernapasan' },
-    meditation:   { title: 'Sesi Meditasi',       sub: 'Kelola sesi meditasi' },
     gamification: { title: 'Aturan XP & Poin',   sub: 'Atur reward gamifikasi' },
 };
 
@@ -82,8 +78,6 @@ export default function AdminDashboardScreen({ navigation }: any) {
     const [tab, setTab] = useState<Tab>('education');
     const [eduContents, setEduContents] = useState<any[]>([]);
     const [audios, setAudios] = useState<any[]>([]);
-    const [techniques, setTechniques] = useState<any[]>([]);
-    const [meditationSessions, setMeditationSessions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     const [gamiRules, setGamiRules] = useState<any[]>([]);
@@ -93,16 +87,12 @@ export default function AdminDashboardScreen({ navigation }: any) {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [eduRes, audioRes, breathRes, meditRes] = await Promise.all([
+            const [eduRes, audioRes] = await Promise.all([
                 educationAPI.getContents({ limit: 50 }),
                 audioAPI.getAudios(),
-                breathingAPI.getTechniques(),
-                meditationAPI.getSessions(),
             ]);
             setEduContents(eduRes.contents || []);
             setAudios(audioRes.audios || []);
-            setTechniques(breathRes.techniques || []);
-            setMeditationSessions(meditRes.sessions || []);
         } catch (e) {
             console.warn('Fetch admin data failed', e);
         } finally {
@@ -169,7 +159,6 @@ export default function AdminDashboardScreen({ navigation }: any) {
     const handleAdd = () => {
         const routes: Record<Tab, string> = {
             education: 'ContentForm', audio: 'AudioForm',
-            breathing: 'BreathingForm', meditation: 'MeditationForm',
             gamification: '',
         };
         if (routes[tab]) navigation.navigate(routes[tab]);
@@ -418,8 +407,6 @@ export default function AdminDashboardScreen({ navigation }: any) {
         const dataMap: Record<Exclude<Tab, 'gamification'>, { data: any[]; render: any; empty: string }> = {
             education: { data: eduContents, render: renderEduItem, empty: 'Belum ada konten edukasi.' },
             audio:      { data: audios, render: renderAudioItem, empty: 'Belum ada audio.' },
-            breathing:  { data: techniques, render: renderBreathItem, empty: 'Belum ada teknik pernapasan.' },
-            meditation: { data: meditationSessions, render: renderMeditationItem, empty: 'Belum ada sesi meditasi.' },
         };
         const entry = dataMap[tab as Exclude<Tab, 'gamification'>];
         if (entry.data.length === 0) {
@@ -599,7 +586,7 @@ const styles = StyleSheet.create({
     fabInner: { width: 56, height: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
 
     // Tab bar
-    tabBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingHorizontal: 14 },
+    tabBar: { position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingHorizontal: 14 },
     tabItem: { flex: 1, alignItems: 'center', gap: 4 },
     tabIconWrap: { width: 46, height: 30, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
     tabIconActive: { backgroundColor: 'rgba(255,255,255,0.18)' },

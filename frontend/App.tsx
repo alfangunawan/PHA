@@ -122,9 +122,24 @@ function NavIcon({ name, color, size }: { name: string; color: string; size: num
 
 function CustomTabBar({ state, descriptors, navigation }: any) {
     const insets = useSafeAreaInsets();
+    const currentRouteName = state.routes[state.index].name;
+    const isEdukasi = currentRouteName === 'Edukasi';
 
     return (
-        <View style={[styles.tabBar, { paddingBottom: Math.max(0, insets.bottom) }]}>
+        <View style={[
+            styles.tabBar, 
+            { paddingBottom: Math.max(0, insets.bottom) },
+            isEdukasi && {
+                backgroundColor: 'rgba(30, 30, 30, 0.85)',
+                borderTopColor: 'transparent',
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                elevation: 0,
+                shadowOpacity: 0
+            }
+        ]}>
             {state.routes.map((route: any, index: number) => {
                 const { options } = descriptors[route.key];
                 const focused = state.index === index;
@@ -163,15 +178,15 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
                 // Active tab → pill with icon + label; inactive → icon only
                 if (focused) {
                     return (
-                        <TouchableOpacity key={route.key} {...common} style={styles.tabPill}>
-                            <NavIcon name={route.name} color={NAV.active} size={21} />
-                            <Text style={styles.tabPillLabel}>{label}</Text>
+                        <TouchableOpacity key={route.key} {...common} style={[styles.tabPill, isEdukasi && { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
+                            <NavIcon name={route.name} color={isEdukasi ? '#fff' : NAV.active} size={21} />
+                            <Text style={[styles.tabPillLabel, isEdukasi && { color: '#fff' }]}>{label}</Text>
                         </TouchableOpacity>
                     );
                 }
                 return (
                     <TouchableOpacity key={route.key} {...common} style={styles.tabIconOnly}>
-                        <NavIcon name={route.name} color={NAV.inactive} size={23} />
+                        <NavIcon name={route.name} color={isEdukasi ? 'rgba(255,255,255,0.6)' : NAV.inactive} size={23} />
                     </TouchableOpacity>
                 );
             })}

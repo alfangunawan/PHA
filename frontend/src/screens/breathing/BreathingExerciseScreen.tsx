@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-    View, Text, StyleSheet, Dimensions, TouchableOpacity, Alert,
+    View, Text, StyleSheet, Dimensions, TouchableOpacity, Alert, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -77,6 +77,7 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
     const [cyclesDone, setCyclesDone] = useState(0);
     const [elapsedSeconds, setElapsedSeconds] = useState(0);
     const [phaseColorIdx, setPhaseColorIdx] = useState(0);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
 
     const statusRef = useRef<Status>('ready');
     const phaseTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -253,22 +254,15 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
     };
 
     const confirmStop = () => {
-        Alert.alert(
-            'Hentikan Sesi?',
-            'Kemajuanmu akan tetap tersimpan 🌿',
-            [
-                { text: 'Lanjutkan', style: 'cancel' },
-                {
-                    text: 'Hentikan',
-                    onPress: () => {
-                        if (phaseTimer.current) clearInterval(phaseTimer.current);
-                        if (sessionTimer.current) clearInterval(sessionTimer.current);
-                        saveLog();
-                        navigation.goBack();
-                    },
-                },
-            ],
-        );
+        setShowConfirmModal(true);
+    };
+
+    const handleActualStop = () => {
+        setShowConfirmModal(false);
+        if (phaseTimer.current) clearInterval(phaseTimer.current);
+        if (sessionTimer.current) clearInterval(sessionTimer.current);
+        saveLog();
+        navigation.goBack();
     };
 
     const resetSession = () => {
@@ -450,6 +444,33 @@ export default function BreathingExerciseScreen({ route, navigation }: any) {
                     )}
                 </View>
             </SafeAreaView>
+
+            <Modal
+                visible={showConfirmModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowConfirmModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalIconBox}>
+                            <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={C.funBlue} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                <Path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </Svg>
+                        </View>
+                        <Text style={styles.modalTitle}>Hentikan Sesi?</Text>
+                        <Text style={styles.modalText}>Kemajuanmu akan tetap tersimpan 🌿. Kamu yakin ingin menghentikan sesi ini?</Text>
+                        <View style={styles.modalBtnRow}>
+                            <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowConfirmModal(false)} activeOpacity={0.8}>
+                                <Text style={styles.modalCancelText}>Lanjutkan Sesi</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.modalConfirmBtn} onPress={handleActualStop} activeOpacity={0.8}>
+                                <Text style={styles.modalConfirmText}>Hentikan</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -620,5 +641,65 @@ const styles = StyleSheet.create({
         fontFamily: 'Inter_600SemiBold',
         fontSize: 14,
         color: C.funBlue,
+    },
+
+    // Modal
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(20, 30, 45, 0.65)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+    },
+    modalContent: {
+        backgroundColor: '#fff',
+        width: '100%',
+        borderRadius: 24,
+        padding: 24,
+        alignItems: 'center',
+        shadowColor: '#1A59A1',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.15,
+        shadowRadius: 20,
+        elevation: 10,
+    },
+    modalIconBox: {
+        width: 56, height: 56, borderRadius: 28,
+        backgroundColor: '#eaf1fa',
+        alignItems: 'center', justifyContent: 'center',
+        marginBottom: 16,
+    },
+    modalTitle: {
+        fontFamily: 'Lora_600SemiBold',
+        fontSize: 22, color: C.textDark,
+        marginBottom: 8,
+    },
+    modalText: {
+        fontFamily: 'Inter_400Regular',
+        fontSize: 14.5, color: C.textSub,
+        textAlign: 'center',
+        marginBottom: 24,
+        lineHeight: 22,
+    },
+    modalBtnRow: {
+        flexDirection: 'row',
+        gap: 12, width: '100%',
+    },
+    modalCancelBtn: {
+        flex: 1, paddingVertical: 16, borderRadius: 16,
+        backgroundColor: '#f1f4f9',
+        alignItems: 'center', justifyContent: 'center',
+    },
+    modalCancelText: {
+        fontFamily: 'Inter_600SemiBold', fontSize: 15, color: '#60728c',
+    },
+    modalConfirmBtn: {
+        flex: 1, paddingVertical: 16, borderRadius: 16,
+        backgroundColor: '#ef4444',
+        alignItems: 'center', justifyContent: 'center',
+        shadowColor: '#ef4444', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
+    },
+    modalConfirmText: {
+        fontFamily: 'Inter_600SemiBold', fontSize: 15, color: '#fff',
     },
 });

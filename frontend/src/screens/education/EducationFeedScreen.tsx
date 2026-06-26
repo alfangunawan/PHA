@@ -14,6 +14,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { WebView } from 'react-native-webview';
 import YoutubeIframe from 'react-native-youtube-iframe';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { educationAPI } from '../../api';
 import { LoadingState, ErrorState } from '../../components/LoadingState';
 import { Typography, Spacing, BorderRadius } from '../../theme';
@@ -131,6 +132,9 @@ function FeedCard({ item, index, total, isActive }: {
     isActive: boolean;
 }) {
     const sourceColor = SOURCE_COLORS[item.source] || '#FFFFFF';
+    const [expanded, setExpanded] = useState(false);
+    const insets = useSafeAreaInsets();
+    const paddingBottom = Math.max(insets.bottom + 85, 105);
 
     return (
         <View style={[styles.card, { height: CARD_HEIGHT }]}>
@@ -140,19 +144,23 @@ function FeedCard({ item, index, total, isActive }: {
             <LinearGradient
                 colors={['transparent', 'rgba(0,0,0,0.6)', 'rgba(0,0,0,0.95)']}
                 style={styles.gradient}
-                pointerEvents="none"
+                pointerEvents="box-none"
             >
-                <View style={styles.meta}>
+                <TouchableOpacity 
+                    style={[styles.meta, { paddingBottom }]}
+                    onPress={() => setExpanded(!expanded)}
+                    activeOpacity={0.9}
+                >
                     {item.category ? (
                         <View style={styles.categoryChip}>
                             <Text style={styles.categoryText}>{item.category}</Text>
                         </View>
                     ) : null}
-                    <Text style={styles.videoTitle} numberOfLines={3}>{item.title}</Text>
+                    <Text style={styles.videoTitle} numberOfLines={expanded ? undefined : 2}>{item.title}</Text>
                     {item.description ? (
-                        <Text style={styles.videoDesc} numberOfLines={2}>{item.description}</Text>
+                        <Text style={styles.videoDesc} numberOfLines={expanded ? undefined : 2}>{item.description}</Text>
                     ) : null}
-                </View>
+                </TouchableOpacity>
             </LinearGradient>
 
             {/* Top row: source badge + counter */}
@@ -288,8 +296,8 @@ const styles = StyleSheet.create({
     sourceBadgeText: { fontSize: Typography.sizes.xs, fontFamily: Typography.bodySemiBold },
     counter: { color: 'rgba(255,255,255,0.6)', fontSize: Typography.sizes.xs, fontFamily: Typography.body },
 
-    gradient: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 320, justifyContent: 'flex-end', zIndex: 3 },
-    meta: { padding: Spacing.lg, paddingBottom: 32, gap: Spacing.xs },
+    gradient: { position: 'absolute', bottom: 0, left: 0, right: 0, height: '45%', justifyContent: 'flex-end', zIndex: 3 },
+    meta: { padding: Spacing.lg, gap: Spacing.xs },
     categoryChip: {
         alignSelf: 'flex-start',
         backgroundColor: 'rgba(255,255,255,0.15)',
