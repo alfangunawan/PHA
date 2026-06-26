@@ -152,7 +152,6 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
                 };
 
                 const common = {
-                    key: route.key,
                     accessibilityRole: 'button' as const,
                     accessibilityState: focused ? { selected: true } : {},
                     accessibilityLabel: options.tabBarAccessibilityLabel,
@@ -164,14 +163,14 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
                 // Active tab → pill with icon + label; inactive → icon only
                 if (focused) {
                     return (
-                        <TouchableOpacity {...common} style={styles.tabPill}>
+                        <TouchableOpacity key={route.key} {...common} style={styles.tabPill}>
                             <NavIcon name={route.name} color={NAV.active} size={21} />
                             <Text style={styles.tabPillLabel}>{label}</Text>
                         </TouchableOpacity>
                     );
                 }
                 return (
-                    <TouchableOpacity {...common} style={styles.tabIconOnly}>
+                    <TouchableOpacity key={route.key} {...common} style={styles.tabIconOnly}>
                         <NavIcon name={route.name} color={NAV.inactive} size={23} />
                     </TouchableOpacity>
                 );
