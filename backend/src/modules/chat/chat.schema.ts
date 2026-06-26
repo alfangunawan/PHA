@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const sendMessageSchema = z.object({
     body: z.object({
         message: z.string().min(1, 'Message is required').max(2000, 'Message too long'),
+        sessionId: z.string().min(1).max(128).optional(),
     }),
 });
 

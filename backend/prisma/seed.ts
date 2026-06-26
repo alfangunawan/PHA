@@ -17,56 +17,34 @@ async function seedMissing<T extends Record<string, any>>(
 }
 
 async function main() {
-    const gamificationAdminEmail = process.env.GAMIFICATION_ADMIN_EMAIL || 'gamifikasi@pha.local';
-    const gamificationAdminPassword = process.env.GAMIFICATION_ADMIN_PASSWORD || 'gamifikasi123';
-    const gamificationAdminHash = await bcrypt.hash(gamificationAdminPassword, 10);
-    const mindfulnessAdminEmail = process.env.MINDFULNESS_ADMIN_EMAIL || 'mindfulness@pha.local';
-    const mindfulnessAdminPassword = process.env.MINDFULNESS_ADMIN_PASSWORD || 'mindfulness123';
-    const mindfulnessAdminHash = await bcrypt.hash(mindfulnessAdminPassword, 10);
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@pha.local';
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const adminHash = await bcrypt.hash(adminPassword, 10);
 
     await prisma.user.upsert({
-        where: { email: gamificationAdminEmail },
+        where: { email: adminEmail },
         update: {
-            passwordHash: gamificationAdminHash,
-            role: Role.GAMIFICATION_ADMIN,
+            passwordHash: adminHash,
+            role: Role.ADMIN,
             profile: {
                 upsert: {
-                    update: { displayName: 'Admin Gamifikasi' },
-                    create: { displayName: 'Admin Gamifikasi', language: 'id' },
+                    update: { displayName: 'Admin' },
+                    create: { displayName: 'Admin', language: 'id' },
                 },
             },
         },
         create: {
-            email: gamificationAdminEmail,
-            passwordHash: gamificationAdminHash,
-            role: Role.GAMIFICATION_ADMIN,
-            profile: { create: { displayName: 'Admin Gamifikasi', language: 'id' } },
+            email: adminEmail,
+            passwordHash: adminHash,
+            role: Role.ADMIN,
+            profile: { create: { displayName: 'Admin', language: 'id' } },
         },
     });
 
-    await prisma.user.upsert({
-        where: { email: mindfulnessAdminEmail },
-        update: {
-            passwordHash: mindfulnessAdminHash,
-            role: Role.MINDFULNESS_ADMIN,
-            profile: {
-                upsert: {
-                    update: { displayName: 'Admin Mindfulness' },
-                    create: { displayName: 'Admin Mindfulness', language: 'id' },
-                },
-            },
-        },
-        create: {
-            email: mindfulnessAdminEmail,
-            passwordHash: mindfulnessAdminHash,
-            role: Role.MINDFULNESS_ADMIN,
-            profile: { create: { displayName: 'Admin Mindfulness', language: 'id' } },
-        },
-    });
-
+    // Consolidate any legacy split-admin accounts to unified ADMIN role
     await prisma.user.updateMany({
-        where: { role: Role.ADMIN },
-        data: { role: Role.MINDFULNESS_ADMIN },
+        where: { role: { in: [Role.GAMIFICATION_ADMIN, Role.MINDFULNESS_ADMIN] } },
+        data: { role: Role.ADMIN },
     });
 
     const rewardRules = [

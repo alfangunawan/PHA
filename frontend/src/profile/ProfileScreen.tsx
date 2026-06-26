@@ -47,7 +47,7 @@ interface ActivityStat {
 }
 
 export default function ProfileScreen({ navigation }: any) {
-    const { logout, user, canManageGamification, canManageMindfulness } = useAuthContext();
+    const { logout, user, canAccessAdminPanel } = useAuthContext();
     const { isDark, toggleTheme, colors } = useTheme();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
@@ -382,20 +382,20 @@ export default function ProfileScreen({ navigation }: any) {
                 </View>
 
                 {/* ── Admin ── */}
-                {(canManageMindfulness || canManageGamification) && (
+                {canAccessAdminPanel && (
                     <TouchableOpacity
                         style={[styles.card, styles.adminRow, {
                             backgroundColor: isDark ? colors.bgCard : '#fff9f2',
                             borderColor: isDark ? colors.divider : '#f5e8d5',
                         }]}
-                        onPress={() => navigation.navigate(canManageMindfulness ? 'AdminDashboard' : 'GamificationRules')}
+                        onPress={() => navigation.navigate('AdminDashboard')}
                         activeOpacity={0.85}
                     >
                         <View style={[styles.toggleIcon, { backgroundColor: isDark ? '#2d1f12' : '#fdebd0' }]}>
                             <Ionicons name="shield-checkmark-outline" size={20} color={D.goldenAcc} />
                         </View>
                         <Text style={[styles.toggleLabel, { flex: 1, color: isDark ? colors.charcoal : D.goldenAcc, fontFamily: Typography.bodyMedium }]}>
-                            {canManageMindfulness ? 'Admin Mindfulness' : 'Admin Gamifikasi'}
+                            Admin Dashboard
                         </Text>
                         <Ionicons name="chevron-forward" size={18} color={isDark ? colors.mediumGray : D.goldenAcc} />
                     </TouchableOpacity>

@@ -133,7 +133,7 @@ function CtaCircles() {
 
 export default function HomeScreen() {
     const navigation = useNavigation<any>();
-    const { user, canManageGamification, canManageMindfulness } = useAuthContext();
+    const { user, canAccessAdminPanel } = useAuthContext();
     const insets = useSafeAreaInsets();
 
     return (
@@ -158,12 +158,12 @@ export default function HomeScreen() {
                             <TouchableOpacity onPress={() => navigation.navigate('Profil')} style={styles.avatar}>
                                 <PersonIcon />
                             </TouchableOpacity>
-                            {(canManageMindfulness || canManageGamification) && (
+                            {canAccessAdminPanel && (
                                 <TouchableOpacity
-                                    onPress={() => navigation.navigate(canManageMindfulness ? 'AdminDashboard' : 'GamificationRules')}
+                                    onPress={() => navigation.navigate('AdminDashboard')}
                                     style={styles.adminBadge}
                                 >
-                                    <Text style={styles.adminBadgeText}>{canManageMindfulness ? 'Admin Mindfulness' : 'Admin Gamifikasi'}</Text>
+                                    <Text style={styles.adminBadgeText}>Admin</Text>
                                 </TouchableOpacity>
                             )}
                         </View>

@@ -6,7 +6,7 @@ import * as GamificationController from './gamification.controller';
 import { updateRewardRuleSchema } from './gamification.schema';
 
 const router = Router();
-const canManageGamification = requireRole('GAMIFICATION_ADMIN');
+const canManageGamification = requireRole('GAMIFICATION_ADMIN', 'ADMIN');
 
 router.get('/me', authenticateToken, GamificationController.getMe);
 router.get('/rules', authenticateToken, canManageGamification, GamificationController.getRules);

@@ -208,7 +208,7 @@ function AccessDeniedScreen() {
 }
 
 function RootNavigator() {
-    const { isAuthenticated, isLoading, canManageGamification, canManageMindfulness } = useAuthContext();
+    const { isAuthenticated, isLoading, canAccessAdminPanel } = useAuthContext();
     const { colors } = useTheme();
 
     if (isLoading) {
@@ -259,12 +259,12 @@ function RootNavigator() {
                         component={MeditationPlayerScreen}
                         options={{ gestureEnabled: false }}
                     />
-                    <Stack.Screen name="AdminDashboard" component={canManageMindfulness ? AdminDashboardScreen : AccessDeniedScreen} options={{ headerShown: true, title: 'Admin Mindfulness', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
-                    <Stack.Screen name="ContentForm" component={canManageMindfulness ? ContentFormScreen : AccessDeniedScreen} options={{ headerShown: true, title: 'Konten', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
-                    <Stack.Screen name="AudioForm" component={canManageMindfulness ? AudioFormScreen : AccessDeniedScreen} options={{ headerShown: true, title: 'Audio', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
-                    <Stack.Screen name="BreathingForm" component={canManageMindfulness ? BreathingFormScreen : AccessDeniedScreen} options={{ headerShown: true, title: 'Teknik Napas', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
-                    <Stack.Screen name="MeditationForm" component={canManageMindfulness ? MeditationFormScreen : AccessDeniedScreen} options={{ headerShown: true, title: 'Sesi Meditasi', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
-                    <Stack.Screen name="GamificationRules" component={canManageGamification ? GamificationRulesScreen : AccessDeniedScreen} options={{ headerShown: true, title: 'Gamifikasi', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
+                    <Stack.Screen name="AdminDashboard" component={canAccessAdminPanel ? AdminDashboardScreen : AccessDeniedScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="ContentForm" component={canAccessAdminPanel ? ContentFormScreen : AccessDeniedScreen} options={{ headerShown: true, title: 'Konten', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
+                    <Stack.Screen name="AudioForm" component={canAccessAdminPanel ? AudioFormScreen : AccessDeniedScreen} options={{ headerShown: true, title: 'Audio', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
+                    <Stack.Screen name="BreathingForm" component={canAccessAdminPanel ? BreathingFormScreen : AccessDeniedScreen} options={{ headerShown: true, title: 'Teknik Napas', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
+                    <Stack.Screen name="MeditationForm" component={canAccessAdminPanel ? MeditationFormScreen : AccessDeniedScreen} options={{ headerShown: true, title: 'Sesi Meditasi', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
+                    <Stack.Screen name="GamificationRules" component={canAccessAdminPanel ? GamificationRulesScreen : AccessDeniedScreen} options={{ headerShown: true, title: 'Gamifikasi', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
                     <Stack.Screen name="JournalList" component={JournalListScreen} options={{ headerShown: true, title: 'Jurnal', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
                     <Stack.Screen name="JournalEditor" component={JournalEditorScreen} options={{ headerShown: true, title: 'Tulis Jurnal', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
                     <Stack.Screen name="JournalDetail" component={JournalDetailScreen} options={{ headerShown: true, title: 'Detail Jurnal', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
