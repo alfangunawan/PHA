@@ -8,21 +8,21 @@ interface Props {
 }
 
 export default function ChatGateScreen({ navigation }: Props) {
-    const { gad7LoadingState, gad7Status, refreshGad7Status } = useAuthContext();
+    const { refreshGad7Status } = useAuthContext();
 
-    // Always fetch fresh status on mount — handles stale context from any prior screen
+    // Fetch fresh status, then route off the RETURNED value — never off context
+    // state, which may be stale (e.g. GAD-7 submitted but context not refreshed
+    // after a detour through the breathing tab). refreshGad7Status never throws;
+    // it returns null on error, and resolveChatRoute(null) fails open to 'Chat'.
     useEffect(() => {
-        refreshGad7Status();
+        let cancelled = false;
+        (async () => {
+            const status = await refreshGad7Status();
+            if (cancelled) return;
+            navigation.replace(resolveChatRoute(status));
+        })();
+        return () => { cancelled = true; };
     }, []);
-
-    useEffect(() => {
-        if (gad7LoadingState === 'loading') return;
-        if (gad7LoadingState === 'error') {
-            navigation.replace('Chat'); // fail-open
-            return;
-        }
-        navigation.replace(resolveChatRoute(gad7Status));
-    }, [gad7LoadingState]);
 
     return (
         <View style={styles.center}>

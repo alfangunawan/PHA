@@ -19,7 +19,7 @@ interface AuthContextType {
     isLoading: boolean;
     gad7LoadingState: 'loading' | 'ready' | 'error';
     gad7Status: Gad7Status;
-    refreshGad7Status: () => Promise<void>;
+    refreshGad7Status: () => Promise<Gad7Status>;
     login: (email: string, pass: string) => Promise<void>;
     register: (email: string, pass: string, name?: string) => Promise<void>;
     logout: () => Promise<void>;
@@ -66,15 +66,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    const refreshGad7Status = async () => {
+    const refreshGad7Status = async (): Promise<Gad7Status> => {
         setGad7LoadingState('loading');
         try {
             const status = await apiCheckGad7Status();
             setGad7Status(status);
             setGad7LoadingState('ready');
+            return status;
         } catch {
             setGad7Status(null);
             setGad7LoadingState('error');
+            return null; // callers fail-open: resolveChatRoute(null) === 'Chat'
         }
     };
 
