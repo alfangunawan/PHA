@@ -200,6 +200,29 @@ export const getSessionMessages = async (userId: string, sessionId: string) => {
 };
 
 /**
+ * Checks whether a user needs to retake the GAD-7 assessment.
+ * Returns needsGad7: true if no prior result exists or the last result is ≥ 14 days old.
+ */
+export const checkGad7Status = async (userId: string): Promise<{
+    needsGad7: boolean;
+    lastTakenAt: string | null;
+}> => {
+    const latest = await (prisma as any).gad7Result.findFirst({
+        where: { userId },
+        orderBy: { takenAt: 'desc' },
+        select: { takenAt: true },
+    });
+
+    if (!latest) return { needsGad7: true, lastTakenAt: null };
+
+    const daysSince = (Date.now() - (latest.takenAt as Date).getTime()) / 86_400_000;
+    return {
+        needsGad7: daysSince >= 14,
+        lastTakenAt: (latest.takenAt as Date).toISOString(),
+    };
+};
+
+/**
  * Returns the latest GAD-7 screening result for a user from pha_db.
  */
 export const getLatestGad7ForUser = async (userId: string) => {

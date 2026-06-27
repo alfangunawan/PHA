@@ -162,6 +162,23 @@ export const getLatestGad7ForUser = async (req: AuthRequest, res: Response) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
+ * GET /chat/gad7/status
+ * Returns whether the authenticated user needs to retake the GAD-7 assessment.
+ * Response: { needsGad7: boolean, lastTakenAt: string | null }
+ */
+export const checkGad7Status = async (req: AuthRequest, res: Response) => {
+    try {
+        const userId = req.user?.userId;
+        if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+        const status = await ChatService.checkGad7Status(userId);
+        res.json(status);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+/**
  * POST /chat/gad7/submit
  * Forwards GAD-7 answers to n8n for scoring and persistence.
  * Returns: { action, data: { score, severity, message } }
