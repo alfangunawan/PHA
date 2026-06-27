@@ -1,6 +1,8 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { getToken, getUser, removeToken, removeUser, login as apiLogin, register as apiRegister, saveUser } from './useAuth';
 import { setInvalidSessionHandler } from './sessionEvents';
+import { checkGad7Status as apiCheckGad7Status } from '../chat/chatService';
+import type { Gad7Status } from '../chat/chatGateUtils';
 
 interface UserInfo {
     id: string;
@@ -15,6 +17,9 @@ interface AuthContextType {
     isAdmin: boolean;
     canAccessAdminPanel: boolean;
     isLoading: boolean;
+    gad7LoadingState: 'loading' | 'ready' | 'error';
+    gad7Status: Gad7Status;
+    refreshGad7Status: () => Promise<void>;
     login: (email: string, pass: string) => Promise<void>;
     register: (email: string, pass: string, name?: string) => Promise<void>;
     logout: () => Promise<void>;
@@ -26,16 +31,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [user, setUser] = useState<UserInfo | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [gad7LoadingState, setGad7LoadingState] = useState<'loading' | 'ready' | 'error'>('loading');
+    const [gad7Status, setGad7Status] = useState<Gad7Status>(null);
 
     useEffect(() => {
         checkAuth();
         setInvalidSessionHandler(() => {
             setIsAuthenticated(false);
             setUser(null);
+            setGad7Status(null);
+            setGad7LoadingState('error');
         });
 
         return () => setInvalidSessionHandler(null);
     }, []);
+
+    // Fetch GAD-7 status whenever user becomes authenticated
+    useEffect(() => {
+        if (isAuthenticated) {
+            refreshGad7Status();
+        }
+    }, [isAuthenticated]);
 
     const checkAuth = async () => {
         try {
@@ -47,6 +63,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error(e);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const refreshGad7Status = async () => {
+        setGad7LoadingState('loading');
+        try {
+            const status = await apiCheckGad7Status();
+            setGad7Status(status);
+            setGad7LoadingState('ready');
+        } catch {
+            setGad7Status(null);
+            setGad7LoadingState('error');
         }
     };
 
@@ -69,6 +97,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await removeUser();
         setIsAuthenticated(false);
         setUser(null);
+        setGad7Status(null);
+        setGad7LoadingState('loading');
     };
 
     const isAdmin = user?.role === 'ADMIN';
@@ -81,6 +111,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 isAdmin,
                 canAccessAdminPanel: isAdmin,
                 isLoading,
+                gad7LoadingState,
+                gad7Status,
+                refreshGad7Status,
                 login,
                 register,
                 logout,
