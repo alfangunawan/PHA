@@ -270,7 +270,7 @@ export const createNewSession = async (userId: string) => {
 export const submitGad7 = async (
     userId: string,
     answers: number[],
-): Promise<{ score: number; severity: string }> => {
+): Promise<{ score: number; severity: 'minimal' | 'mild' | 'moderate' | 'severe' }> => {
     // Validate
     if (answers.length !== 7) throw new Error('INVALID_ANSWERS');
     if (answers.some(a => !Number.isInteger(a) || a < 0 || a > 3))
