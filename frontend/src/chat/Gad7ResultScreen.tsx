@@ -32,11 +32,11 @@ export default function Gad7ResultScreen({ navigation, route }: Props) {
     // Android hardware back → go to Chat (give user a way out, not a wall)
     useFocusEffect(useCallback(() => {
         const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-            navigation.replace('Chat');
+            refreshGad7Status().then(() => navigation.replace('Chat'));
             return true;
         });
         return () => sub.remove();
-    }, []));
+    }, [refreshGad7Status]));
 
     const handleStartChat = async () => {
         // Await refresh here (Result → Chat), NOT in submit → Result.
