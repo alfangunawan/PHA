@@ -260,39 +260,46 @@ export const createNewSession = async (userId: string) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Forwards GAD-7 answers to n8n for scoring and persistence.
- * n8n saves the result to the gad7_results table.
+ * Scores and persists a GAD-7 submission directly via Prisma.
+ * Replaces the previous n8n webhook approach.
+ *
+ * Throws:
+ *   - Error('INVALID_ANSWERS') if answers are not exactly 7 integers in 0–3
+ *   - Object.assign(Error('TOO_SOON'), { code: 'TOO_SOON' }) if last result < 13 days ago
  */
 export const submitGad7 = async (
     userId: string,
-    _sessionId: string,
     answers: number[],
-): Promise<N8nGad7Response> => {
-    const webhookUrl = `${N8N_BASE_URL}/webhook/pha-gad7-submit`;
+): Promise<{ score: number; severity: string }> => {
+    // Validate
+    if (answers.length !== 7) throw new Error('INVALID_ANSWERS');
+    if (answers.some(a => !Number.isInteger(a) || a < 0 || a > 3))
+        throw new Error('INVALID_ANSWERS');
 
-    const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-PHA-Key': process.env.PHA_WEBHOOK_SECRET ?? '',
-        },
-        // n8n Hitung Skor GAD-7 reads: body.user_id and body.answers
-        body: JSON.stringify({ user_id: userId, answers }),
+    // Min-gap guard (13 days — 1-day buffer below the 14-day needsGad7 threshold)
+    const latest = await (prisma as any).gad7Result.findFirst({
+        where: { userId },
+        orderBy: { takenAt: 'desc' },
+        select: { takenAt: true },
     });
-
-    if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`n8n GAD-7 webhook failed (${response.status}): ${errText}`);
+    if (latest) {
+        const daysSince = (Date.now() - (latest.takenAt as Date).getTime()) / 86_400_000;
+        if (daysSince < 13) {
+            throw Object.assign(new Error('TOO_SOON'), { code: 'TOO_SOON' });
+        }
     }
 
-    const data = await response.json();
+    // Score
+    const score = answers.reduce((s, a) => s + a, 0);
+    const severity =
+        score <= 4  ? 'minimal' :
+        score <= 9  ? 'mild' :
+        score <= 14 ? 'moderate' :
+        'severe';
 
-    return {
-        action: data?.action ?? 'gad7_saved',
-        data: {
-            score: data?.data?.score ?? 0,
-            severity: data?.data?.severity ?? 'unknown',
-            message: data?.data?.message ?? 'Terima kasih sudah menjawab.',
-        },
-    };
+    await (prisma as any).gad7Result.create({
+        data: { userId, score, severity, answers, takenAt: new Date() },
+    });
+
+    return { score, severity };
 };

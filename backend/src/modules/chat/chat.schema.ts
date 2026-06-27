@@ -23,7 +23,7 @@ export const getLatestGad7Schema = z.object({
 
 export const submitGad7Schema = z.object({
     body: z.object({
-        sessionId: z.string().min(1, 'Session ID is required'),
+        sessionId: z.string().min(1).max(128).optional(), // no longer required post-n8n
         answers: z
             .array(z.number().int().min(0).max(3))
             .length(7, 'GAD-7 requires exactly 7 answers (0–3 each)'),
