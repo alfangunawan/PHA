@@ -166,7 +166,16 @@ export default function ChatScreen({ navigation, route }: Props) {
                         m.id === aiMsgId ? { ...m, message: m.message + chunk } : m
                     ));
                 },
-                () => setSending(false),
+                (final) => {
+                    setSending(false);
+                    if (final?.action === 'chat_with_gad7' && final?.data?.gad7) {
+                        setMessages(prev => prev.map(m =>
+                            m.id === aiMsgId
+                                ? { ...m, action: final.action, gad7Data: final.data }
+                                : m
+                        ));
+                    }
+                },
                 (error) => {
                     console.error('Stream error:', error);
                     setMessages(prev => prev.map(m =>
@@ -194,18 +203,13 @@ export default function ChatScreen({ navigation, route }: Props) {
     const renderItem = ({ item }: { item: ChatMessage }) => {
         const isUser = item.sender === 'user';
 
-        let parsedMessage: any = null;
-        if (!isUser) {
-            try { parsedMessage = JSON.parse(item.message); } catch { }
-        }
-
-        if (parsedMessage?.action === 'show_gad7') {
+        if (!isUser && item.action === 'chat_with_gad7' && item.gad7Data) {
             return (
                 <View style={styles.aiBubbleRow}>
                     <View style={styles.phaAvatar}><PHAChatIcon size={16} /></View>
                     <Gad7Form
-                        data={parsedMessage.data}
-                        sessionId={item.sessionId ?? ''}
+                        data={item.gad7Data}
+                        sessionId={item.sessionId ?? currentSessionId ?? ''}
                         onSubmitted={(aiMsg) => setMessages(prev => [...prev, aiMsg])}
                     />
                 </View>
