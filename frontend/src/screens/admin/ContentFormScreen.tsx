@@ -16,6 +16,7 @@ export default function ContentFormScreen({ route, navigation }: any) {
     const [url, setUrl] = useState(existing?.url || '');
     const [category, setCategory] = useState(existing?.category || '');
     const [thumbnailUrl, setThumbnailUrl] = useState(existing?.thumbnailUrl || '');
+    const [format, setFormat] = useState(existing?.format || 'landscape');
     const [loading, setLoading] = useState(false);
 
     const save = async () => {
@@ -25,7 +26,7 @@ export default function ContentFormScreen({ route, navigation }: any) {
         }
         setLoading(true);
         try {
-            const payload = { title, description, source, url, category, thumbnailUrl: thumbnailUrl || undefined };
+            const payload = { title, description, source, url, category, thumbnailUrl: thumbnailUrl || undefined, format };
             if (existing) await educationAPI.updateContent(existing.id, payload);
             else await educationAPI.createContent(payload);
             navigation.goBack();
@@ -74,6 +75,21 @@ export default function ContentFormScreen({ route, navigation }: any) {
                                 style={[styles.sourceChip, { backgroundColor: source === s ? colors.softBlue : colors.lightGray }]}
                             >
                                 <Text style={[styles.sourceText, { color: source === s ? colors.white : colors.darkGray, fontFamily: Typography.bodyMedium }]}>{s}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </View>
+
+                <View style={styles.field}>
+                    <Text style={[styles.label, { color: colors.darkGray, fontFamily: Typography.bodyMedium }]}>Format *</Text>
+                    <View style={styles.sourceRow}>
+                        {['landscape', 'vertical'].map(f => (
+                            <TouchableOpacity
+                                key={f}
+                                onPress={() => setFormat(f)}
+                                style={[styles.sourceChip, { backgroundColor: format === f ? colors.softBlue : colors.lightGray }]}
+                            >
+                                <Text style={[styles.sourceText, { color: format === f ? colors.white : colors.darkGray, fontFamily: Typography.bodyMedium }]}>{f}</Text>
                             </TouchableOpacity>
                         ))}
                     </View>

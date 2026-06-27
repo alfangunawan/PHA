@@ -28,6 +28,11 @@ enum ContentSource {
   other
 }
 
+enum ContentFormat {
+  landscape
+  vertical
+}
+
 enum AnxietyLevel {
   rendah
   sedang
@@ -212,6 +217,7 @@ model EducationContent {
   thumbnailUrl     String?
   category         String        @default("general")
   tags             Json?
+  format           ContentFormat @default(landscape)
   createdByAdminId String?
   isActive         Boolean       @default(true)
   createdAt        DateTime      @default(now())

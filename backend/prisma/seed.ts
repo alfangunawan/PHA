@@ -301,7 +301,10 @@ async function main() {
             category: 'napas',
             tags: ['napas', 'praktis', 'shorts'],
         },
-    ];
+    ].map(content => ({
+        ...content,
+        format: content.url.includes('shorts') ? ('vertical' as const) : ('landscape' as const)
+    }));
 
     await seedMissing(
         educationContents,

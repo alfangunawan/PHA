@@ -7,14 +7,16 @@ interface GetAllFilters {
     limit?: number;
     category?: string;
     source?: ContentSource;
+    format?: any;
 }
 
-export const getAll = async ({ page = 1, limit = 10, category, source }: GetAllFilters) => {
+export const getAll = async ({ page = 1, limit = 10, category, source, format }: GetAllFilters) => {
     const skip = (page - 1) * limit;
     const where = {
         isActive: true,
         ...(category ? { category } : {}),
         ...(source ? { source } : {}),
+        ...(format ? { format } : {}),
     };
 
     const [contents, total] = await Promise.all([
@@ -53,6 +55,7 @@ export const create = (adminId: string, data: {
     thumbnailUrl?: string;
     category?: string;
     tags?: string[];
+    format?: any;
 }) =>
     prisma.educationContent.create({
         data: { ...data, createdByAdminId: adminId },
@@ -66,6 +69,7 @@ export const update = (id: string, data: {
     thumbnailUrl?: string;
     category?: string;
     tags?: string[];
+    format?: any;
 }) =>
     prisma.educationContent.update({
         where: { id },
