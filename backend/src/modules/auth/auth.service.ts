@@ -39,13 +39,13 @@ export const loginUser = async (email: string, password: string): Promise<{ toke
     });
 
     if (!user) {
-        throw new Error('Invalid credentials');
+        throw new Error('User not found');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
     if (!isPasswordValid) {
-        throw new Error('Invalid credentials');
+        throw new Error('Wrong password');
     }
 
     const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, getJwtSecret(), {

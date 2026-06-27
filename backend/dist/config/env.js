@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getJwtSecret = exports.validateServerEnv = exports.getRequiredEnv = void 0;
-const REQUIRED_SERVER_ENV = ['DATABASE_URL', 'JWT_SECRET', 'GEMINI_API_KEY'];
+const REQUIRED_SERVER_ENV = ['DATABASE_URL', 'JWT_SECRET', 'GEMINI_API_KEY', 'PHA_WEBHOOK_SECRET', 'INTERNAL_API_KEY'];
 const getRequiredEnv = (name) => {
     const value = process.env[name];
     if (!value || value.trim().length === 0) {

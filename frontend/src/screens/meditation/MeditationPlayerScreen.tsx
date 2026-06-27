@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import Animated, {
@@ -24,6 +24,7 @@ export default function MeditationPlayerScreen({ route, navigation }: any) {
     const [secondsLeft, setSecondsLeft]   = useState(durations[0] * 60);
     const [playing, setPlaying]           = useState(false);
     const [finished, setFinished]         = useState(false);
+    const [confirmType, setConfirmType]   = useState<'stop' | 'back' | null>(null);
 
     const soundRef   = useRef<Audio.Sound | null>(null);
     const timerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -35,7 +36,7 @@ export default function MeditationPlayerScreen({ route, navigation }: any) {
         opacity: 0.65,
     }));
 
-    const stopTimer = useCallback(() => {
+    const cancelTimer = useCallback(() => {
         if (timerRef.current) clearInterval(timerRef.current);
         setPlaying(false);
         if (soundRef.current) {
@@ -44,6 +45,20 @@ export default function MeditationPlayerScreen({ route, navigation }: any) {
             soundRef.current = null;
         }
     }, []);
+
+    const pauseTimer = useCallback(() => {
+        if (timerRef.current) clearInterval(timerRef.current);
+        setPlaying(false);
+        if (soundRef.current) {
+            soundRef.current.pauseAsync();
+        }
+    }, []);
+
+    const stopAndReset = useCallback(() => {
+        cancelTimer();
+        setSecondsLeft(selectedDuration * 60);
+        elapsedRef.current = 0;
+    }, [selectedDuration, cancelTimer]);
 
     useEffect(() => {
         glowScale.value = withRepeat(
@@ -55,7 +70,7 @@ export default function MeditationPlayerScreen({ route, navigation }: any) {
         );
         return () => {
             cancelAnimation(glowScale);
-            stopTimer();
+            cancelTimer();
         };
     }, []);
 
@@ -63,11 +78,15 @@ export default function MeditationPlayerScreen({ route, navigation }: any) {
         setSecondsLeft(selectedDuration * 60);
         elapsedRef.current = 0;
         setFinished(false);
-        if (playing) stopTimer();
-    }, [selectedDuration]);
+        cancelTimer();
+    }, [selectedDuration, cancelTimer]);
 
     const loadAndPlayAudio = async () => {
         if (!session.audioUrl) return;
+        if (soundRef.current) {
+            await soundRef.current.playAsync();
+            return;
+        }
         const uri = session.audioUrl.startsWith('http')
             ? session.audioUrl
             : `${config.API_URL}${session.audioUrl}`;
@@ -113,6 +132,23 @@ export default function MeditationPlayerScreen({ route, navigation }: any) {
         }
     };
 
+    const confirmStop = () => {
+        setConfirmType('stop');
+    };
+
+    const confirmBack = () => {
+        setConfirmType('back');
+    };
+
+    const handleConfirmAction = () => {
+        if (confirmType === 'stop') {
+            saveLog(false); stopAndReset();
+        } else if (confirmType === 'back') {
+            cancelTimer(); saveLog(false); navigation.goBack();
+        }
+        setConfirmType(null);
+    };
+
     const minutes  = Math.floor(secondsLeft / 60);
     const secs     = secondsLeft % 60;
     const timeStr  = `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
@@ -128,7 +164,13 @@ export default function MeditationPlayerScreen({ route, navigation }: any) {
                 {/* Top bar */}
                 <TouchableOpacity
                     style={styles.backRow}
-                    onPress={() => { stopTimer(); saveLog(false); navigation.goBack(); }}
+                    onPress={() => {
+                        if (!finished && (playing || elapsedRef.current > 0)) {
+                            confirmBack();
+                        } else {
+                            cancelTimer(); saveLog(false); navigation.goBack();
+                        }
+                    }}
                     activeOpacity={0.75}
                 >
                     <View style={styles.backBtn}>
@@ -198,12 +240,12 @@ export default function MeditationPlayerScreen({ route, navigation }: any) {
                         <View style={styles.btnRow}>
                             <TouchableOpacity
                                 style={styles.secondaryBtn}
-                                onPress={() => { stopTimer(); saveLog(false); }}
+                                onPress={confirmStop}
                                 activeOpacity={0.85}
                             >
                                 <Text style={styles.secondaryBtnText}>Hentikan</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={[styles.primaryBtn, { flex: 1 }]} onPress={stopTimer} activeOpacity={0.85}>
+                            <TouchableOpacity style={[styles.primaryBtn, { flex: 1 }]} onPress={pauseTimer} activeOpacity={0.85}>
                                 <Svg width={20} height={20} viewBox="0 0 24 24" style={styles.btnIcon}>
                                     <Path d="M8 5v14M16 5v14" stroke="#fff" strokeWidth={1.8} strokeLinecap="round" fill="none" />
                                 </Svg>
@@ -215,12 +257,43 @@ export default function MeditationPlayerScreen({ route, navigation }: any) {
                             <Svg width={20} height={20} viewBox="0 0 24 24" style={styles.btnIcon}>
                                 <Path d="M7 5l11 7-11 7z" stroke="#fff" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" fill="none" />
                             </Svg>
-                            <Text style={styles.primaryBtnText}>Mulai</Text>
+                            <Text style={styles.primaryBtnText}>{elapsedRef.current > 0 ? 'Lanjutkan' : 'Mulai'}</Text>
                         </TouchableOpacity>
                     )}
                 </View>
 
             </SafeAreaView>
+
+            <Modal
+                visible={confirmType !== null}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setConfirmType(null)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalIconBox}>
+                            <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={M.primary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                <Path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </Svg>
+                        </View>
+                        <Text style={styles.modalTitle}>{confirmType === 'stop' ? 'Hentikan Sesi?' : 'Keluar Sesi?'}</Text>
+                        <Text style={styles.modalText}>
+                            {confirmType === 'stop' 
+                                ? 'Kamu belum menyelesaikan sesi ini. Yakin ingin berhenti?' 
+                                : 'Sesi meditasi kamu akan dihentikan. Yakin ingin keluar?'}
+                        </Text>
+                        <View style={styles.modalBtnRow}>
+                            <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setConfirmType(null)} activeOpacity={0.8}>
+                                <Text style={styles.modalCancelText}>{confirmType === 'stop' ? 'Lanjutkan Sesi' : 'Batal'}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.modalConfirmBtn} onPress={handleConfirmAction} activeOpacity={0.8}>
+                                <Text style={styles.modalConfirmText}>{confirmType === 'stop' ? 'Berhenti' : 'Keluar'}</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -420,5 +493,65 @@ const styles = StyleSheet.create({
         fontFamily: 'Inter_500Medium',
         fontSize: 14,
         color: M.textSub,
+    },
+
+    // Modal
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(20, 30, 45, 0.65)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+    },
+    modalContent: {
+        backgroundColor: '#fff',
+        width: '100%',
+        borderRadius: 24,
+        padding: 24,
+        alignItems: 'center',
+        shadowColor: M.primary,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.15,
+        shadowRadius: 20,
+        elevation: 10,
+    },
+    modalIconBox: {
+        width: 56, height: 56, borderRadius: 28,
+        backgroundColor: M.primaryLight,
+        alignItems: 'center', justifyContent: 'center',
+        marginBottom: 16,
+    },
+    modalTitle: {
+        fontFamily: 'Lora_600SemiBold',
+        fontSize: 22, color: M.textDark,
+        marginBottom: 8,
+    },
+    modalText: {
+        fontFamily: 'Inter_400Regular',
+        fontSize: 14.5, color: M.textSub,
+        textAlign: 'center',
+        marginBottom: 24,
+        lineHeight: 22,
+    },
+    modalBtnRow: {
+        flexDirection: 'row',
+        gap: 12, width: '100%',
+    },
+    modalCancelBtn: {
+        flex: 1, paddingVertical: 16, borderRadius: 16,
+        backgroundColor: '#f1f4f9',
+        alignItems: 'center', justifyContent: 'center',
+    },
+    modalCancelText: {
+        fontFamily: 'Inter_600SemiBold', fontSize: 15, color: '#60728c',
+    },
+    modalConfirmBtn: {
+        flex: 1, paddingVertical: 16, borderRadius: 16,
+        backgroundColor: '#ef4444',
+        alignItems: 'center', justifyContent: 'center',
+        shadowColor: '#ef4444', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
+    },
+    modalConfirmText: {
+        fontFamily: 'Inter_600SemiBold', fontSize: 15, color: '#fff',
     },
 });

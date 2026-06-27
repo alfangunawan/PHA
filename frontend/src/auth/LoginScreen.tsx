@@ -50,8 +50,12 @@ export default function LoginScreen() {
         try {
             setLoading(true);
             await login(email, password);
+            Alert.alert('Berhasil Masuk', 'Selamat datang kembali! 🌿');
         } catch (error: any) {
-            Alert.alert('Login Gagal', error.response?.data?.error || error.message);
+            let errorMsg = error.response?.data?.error || error.message;
+            if (errorMsg === 'User not found') errorMsg = 'Email ini belum terdaftar. Silakan daftar terlebih dahulu.';
+            else if (errorMsg === 'Wrong password') errorMsg = 'Password yang Anda masukkan salah.';
+            Alert.alert('Login Gagal', errorMsg);
         } finally {
             setLoading(false);
         }

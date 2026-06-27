@@ -60,10 +60,10 @@ const sendMessage = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     var _a;
     try {
         const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userId;
-        const { message } = req.body;
+        const { message, sessionId } = req.body;
         if (!userId)
             return res.status(401).json({ error: 'Unauthorized' });
-        const result = yield ChatService.sendMessage(userId, message);
+        const result = yield ChatService.sendMessage(userId, message, sessionId);
         res.json(result);
     }
     catch (error) {
@@ -80,7 +80,7 @@ const streamMessage = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     var _a;
     try {
         const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userId;
-        const { message } = req.body;
+        const { message, sessionId } = req.body;
         if (!userId) {
             res.status(401).json({ error: 'Unauthorized' });
             return;
@@ -89,7 +89,7 @@ const streamMessage = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
-        const result = yield ChatService.streamMessage(userId, message, (chunk) => {
+        const result = yield ChatService.streamMessage(userId, message, sessionId, (chunk) => {
             res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
         });
         // Final event carries the full structured payload (action, gad7, etc.)
@@ -168,8 +168,13 @@ const createNewSession = (req, res) => __awaiter(void 0, void 0, void 0, functio
 });
 exports.createNewSession = createNewSession;
 const getLatestGad7ForUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         const { id } = req.params;
+        const callerId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userId;
+        if (id !== callerId) {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
         const latest = yield ChatService.getLatestGad7ForUser(id);
         if (!latest) {
             return res.status(404).json({ error: 'GAD-7 result not found' });

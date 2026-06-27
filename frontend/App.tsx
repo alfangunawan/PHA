@@ -48,7 +48,9 @@ import BreathingListScreen from './src/screens/breathing/BreathingListScreen';
 import BreathingExerciseScreen from './src/screens/breathing/BreathingExerciseScreen';
 import MeditationListScreen from './src/screens/meditation/MeditationListScreen';
 import MeditationPlayerScreen from './src/screens/meditation/MeditationPlayerScreen';
-import EducationFeedScreen from './src/screens/education/EducationFeedScreen';
+import EducationHubScreen from './src/screens/education/EducationHubScreen';
+import EducationVerticalReelsScreen from './src/screens/education/EducationVerticalReelsScreen';
+import EducationVideoDetailScreen from './src/screens/education/EducationVideoDetailScreen';
 import AdminDashboardScreen from './src/screens/admin/AdminDashboardScreen';
 import ContentFormScreen from './src/screens/admin/ContentFormScreen';
 import AudioFormScreen from './src/screens/admin/AudioFormScreen';
@@ -141,7 +143,6 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
                         target: route.key,
                         canPreventDefault: true,
                     });
-
                     if (!focused && !event.defaultPrevented) {
                         navigation.navigate(route.name, route.params);
                     }
@@ -189,7 +190,7 @@ function MainTabs() {
             <Tab.Screen name="Beranda" component={HomeScreen} />
             <Tab.Screen name="Napas" component={BreathingListScreen} />
             <Tab.Screen name="Meditasi" component={MeditationListScreen} />
-            <Tab.Screen name="Edukasi" component={EducationFeedScreen} />
+            <Tab.Screen name="Edukasi" component={EducationHubScreen} />
             <Tab.Screen name="Jurnal" component={JournalListScreen} />
             <Tab.Screen name="Games" component={GamesHomeScreen} />
         </Tab.Navigator>
@@ -257,6 +258,16 @@ function RootNavigator() {
                         name="MeditationPlayer"
                         component={MeditationPlayerScreen}
                         options={{ gestureEnabled: false }}
+                    />
+                    <Stack.Screen
+                        name="EducationVerticalReels"
+                        component={EducationVerticalReelsScreen}
+                        options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                        name="EducationVideoDetail"
+                        component={EducationVideoDetailScreen}
+                        options={{ headerShown: false }}
                     />
                     <Stack.Screen name="AdminDashboard" component={canAccessAdminPanel ? AdminDashboardScreen : AccessDeniedScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="ContentForm" component={canAccessAdminPanel ? ContentFormScreen : AccessDeniedScreen} options={{ headerShown: true, title: 'Konten', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />

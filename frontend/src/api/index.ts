@@ -24,7 +24,7 @@ export const meditationAPI = {
 };
 
 export const educationAPI = {
-    getContents: (params?: { page?: number; limit?: number; category?: string; source?: string }) =>
+    getContents: (params?: { page?: number; limit?: number; category?: string; source?: string; format?: string }) =>
         client.get('/api/education-contents', { params }).then(r => r.data),
     getContentById: (id: string) => client.get(`/api/education-contents/${id}`).then(r => r.data),
     createContent: (data: object) => client.post('/api/education-contents', data).then(r => r.data),

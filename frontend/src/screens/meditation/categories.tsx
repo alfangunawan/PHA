@@ -33,11 +33,11 @@ export interface CatTheme {
 
 // Tema per kategori — warna lembut, ikon garis sesuai referensi
 export const CATEGORY_THEMES: Record<string, CatTheme> = {
-    morning: { key: 'morning', label: 'Pagi',  iconBg: '#f6efe2', iconColor: '#c2965c', badgeBg: '#f6efe2', badgeColor: '#b58642', icon: 'morning' },
-    general: { key: 'general', label: 'Umum',  iconBg: '#eaf2ec', iconColor: '#6f9e80', badgeBg: '#eaf2ec', badgeColor: '#558168', icon: 'general' },
-    sleep:   { key: 'sleep',   label: 'Tidur', iconBg: '#eef2fb', iconColor: '#6477ad', badgeBg: '#eef2fb', badgeColor: '#5868a3', icon: 'sleep' },
-    focus:   { key: 'focus',   label: 'Fokus', iconBg: '#f3eef6', iconColor: '#a87fae', badgeBg: '#f3eef6', badgeColor: '#8f689a', icon: 'focus' },
-    anxiety: { key: 'anxiety', label: 'Cemas', iconBg: '#eaf2ec', iconColor: '#6f9e80', badgeBg: '#eaf2ec', badgeColor: '#558168', icon: 'general' },
+    morning: { key: 'morning', label: 'Pagi',  iconBg: '#f6efe2', iconColor: '#8aa0c0', badgeBg: '#f6efe2', badgeColor: '#8aa0c0', icon: 'morning' },
+    general: { key: 'general', label: 'Umum',  iconBg: '#eaf2ec', iconColor: '#8aa0c0', badgeBg: '#eaf2ec', badgeColor: '#8aa0c0', icon: 'general' },
+    sleep:   { key: 'sleep',   label: 'Tidur', iconBg: '#eef2fb', iconColor: '#8aa0c0', badgeBg: '#eef2fb', badgeColor: '#8aa0c0', icon: 'sleep' },
+    focus:   { key: 'focus',   label: 'Fokus', iconBg: '#f3eef6', iconColor: '#8aa0c0', badgeBg: '#f3eef6', badgeColor: '#8aa0c0', icon: 'focus' },
+    anxiety: { key: 'anxiety', label: 'Cemas', iconBg: '#eaf2ec', iconColor: '#8aa0c0', badgeBg: '#eaf2ec', badgeColor: '#8aa0c0', icon: 'general' },
 };
 
 export const DEFAULT_THEME: CatTheme = {

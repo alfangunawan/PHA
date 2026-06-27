@@ -5,12 +5,13 @@ import * as EducationService from './education.service';
 
 export const getAll = async (req: AuthRequest, res: Response) => {
     try {
-        const { page, limit, category, source } = req.query as any;
+        const { page, limit, category, source, format } = req.query as any;
         const result = await EducationService.getAll({
             page: page ? Number(page) : undefined,
             limit: limit ? Number(limit) : undefined,
             category,
             source: source as ContentSource | undefined,
+            format,
         });
         res.json(result);
     } catch (error: any) {

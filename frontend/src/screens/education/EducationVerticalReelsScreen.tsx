@@ -134,7 +134,8 @@ function FeedCard({ item, index, total, isActive }: {
     const sourceColor = SOURCE_COLORS[item.source] || '#FFFFFF';
     const [expanded, setExpanded] = useState(false);
     const insets = useSafeAreaInsets();
-    const paddingBottom = Math.max(insets.bottom + 85, 105);
+    // Reduce bottom padding so text sits closer to the bottom
+    const paddingBottom = Math.max(insets.bottom + 20, 32);
 
     return (
         <View style={[styles.card, { height: CARD_HEIGHT }]}>
@@ -176,15 +177,18 @@ function FeedCard({ item, index, total, isActive }: {
     );
 }
 
-export default function EducationFeedScreen() {
-    const [contents, setContents] = useState<Content[]>([]);
-    const [loading, setLoading] = useState(true);
+export default function EducationVerticalReelsScreen({ route, navigation }: any) {
+    const passedContents = route.params?.contents || [];
+    const passedIndex = route.params?.initialIndex || 0;
+
+    const [contents, setContents] = useState<Content[]>(passedContents);
+    const [loading, setLoading] = useState(passedContents.length === 0);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState('');
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [loadingMore, setLoadingMore] = useState(false);
-    const [activeIndex, setActiveIndex] = useState(0);
+    const [activeIndex, setActiveIndex] = useState(passedIndex);
 
     const fetchContents = useCallback(async (pageNum: number, reset = false) => {
         try {
