@@ -15,12 +15,21 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { WebView } from 'react-native-webview';
 import YoutubeIframe from 'react-native-youtube-iframe';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 import { educationAPI } from '../../api';
 import { LoadingState, ErrorState } from '../../components/LoadingState';
 import { Typography, Spacing, BorderRadius } from '../../theme';
 
 const { height: WINDOW_HEIGHT, width: WINDOW_WIDTH } = Dimensions.get('window');
 const CARD_HEIGHT = WINDOW_HEIGHT;
+
+function BackIcon({ size = 24, color = '#FFFFFF' }: { size?: number; color?: string }) {
+    return (
+        <Svg width={size} height={size} viewBox="0 0 24 24">
+            <Path d="M19 12H5M12 5l-7 7 7 7" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        </Svg>
+    );
+}
 
 interface Content {
     id: string;
@@ -165,7 +174,7 @@ function FeedCard({ item, index, total, isActive }: {
             </LinearGradient>
 
             {/* Top row: source badge + counter */}
-            <View style={styles.topRow} pointerEvents="none">
+            <View style={[styles.topRow, { top: insets.top + 64 }]} pointerEvents="none">
                 <View style={[styles.sourceBadge, { backgroundColor: sourceColor + '25', borderColor: sourceColor + '60' }]}>
                     <Text style={[styles.sourceBadgeText, { color: sourceColor }]}>
                         {item.source.toUpperCase()}
@@ -180,6 +189,7 @@ function FeedCard({ item, index, total, isActive }: {
 export default function EducationVerticalReelsScreen({ route, navigation }: any) {
     const passedContents = route.params?.contents || [];
     const passedIndex = route.params?.initialIndex || 0;
+    const insets = useSafeAreaInsets();
 
     const [contents, setContents] = useState<Content[]>(passedContents);
     const [loading, setLoading] = useState(passedContents.length === 0);
@@ -233,6 +243,15 @@ export default function EducationVerticalReelsScreen({ route, navigation }: any)
         <View style={styles.screen}>
             <StatusBar barStyle="light-content" backgroundColor="#000" translucent />
 
+            {/* Tombol Back Melayang */}
+            <TouchableOpacity 
+                style={[styles.backBtn, { top: insets.top + 12 }]} 
+                onPress={() => navigation.goBack()}
+                activeOpacity={0.8}
+            >
+                <BackIcon />
+            </TouchableOpacity>
+
             {contents.length === 0 ? (
                 <View style={styles.emptyContainer}>
                     <Text style={styles.emptyText}>Tidak ada konten edukasi.</Text>
@@ -275,6 +294,18 @@ export default function EducationVerticalReelsScreen({ route, navigation }: any)
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: '#000' },
+
+    backBtn: {
+        position: 'absolute',
+        left: 16,
+        zIndex: 10,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
 
     card: { width: WINDOW_WIDTH, backgroundColor: '#000', overflow: 'hidden' },
 

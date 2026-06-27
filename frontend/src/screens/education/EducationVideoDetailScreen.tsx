@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Dimensions, Linking } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, FlatList, TouchableOpacity, ActivityIndicator, Dimensions, Linking } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle } from 'react-native-svg';
@@ -63,12 +64,66 @@ function BackIcon({ size = 22, color = '#353b4a' }: { size?: number; color?: str
     );
 }
 
+function ArrowLeftIcon({ size = 20, color = '#353b4a' }) {
+    return (
+        <Svg width={size} height={size} viewBox="0 0 24 24">
+            <Path d="M15 18l-6-6 6-6" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        </Svg>
+    );
+}
+
+function ArrowRightIcon({ size = 20, color = '#353b4a' }) {
+    return (
+        <Svg width={size} height={size} viewBox="0 0 24 24">
+            <Path d="M9 18l6-6-6-6" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        </Svg>
+    );
+}
+
+function PlayIconSmall({ size = 16, color = '#ffffff' }) {
+    return (
+        <Svg width={size} height={size} viewBox="0 0 24 24">
+            <Path d="M8 5v14l11-7z" fill={color} />
+        </Svg>
+    );
+}
+
 export default function EducationVideoDetailScreen({ route, navigation }: any) {
     const { content } = route.params;
     const insets = useSafeAreaInsets();
     const [ready, setReady] = useState(false);
     const [completing, setCompleting] = useState(false);
     const [completed, setCompleted] = useState(false);
+    const [recommended, setRecommended] = useState<Content[]>([]);
+    const [descExpanded, setDescExpanded] = useState(false);
+
+    // Carousel state
+    const [activeIndex, setActiveIndex] = useState(0);
+    const flatListRef = useRef<FlatList>(null);
+    const viewConfigRef = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
+    const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
+        if (viewableItems.length > 0) setActiveIndex(viewableItems[0].index || 0);
+    }).current;
+
+    const scrollToIndex = (index: number) => {
+        if (index >= 0 && index < recommended.length) {
+            flatListRef.current?.scrollToIndex({ index, animated: true });
+        }
+    };
+
+    useEffect(() => {
+        const fetchRecs = async () => {
+            try {
+                // Fetch landscape videos for recommendations
+                const res = await educationAPI.getContents({ page: 1, limit: 10, format: 'landscape' });
+                const recs = (res.contents || []).filter((c: Content) => c.id !== content.id && c.isActive);
+                setRecommended(recs.slice(0, 4)); // Show 4 recommendations
+            } catch (e) {
+                console.log('Failed to fetch recommendations', e);
+            }
+        };
+        fetchRecs();
+    }, [content.id]);
 
     const videoId = getYouTubeVideoId(content.url);
     const videoHeight = WINDOW_WIDTH * (9 / 16);
@@ -150,9 +205,110 @@ export default function EducationVideoDetailScreen({ route, navigation }: any) {
                     </Text>
                 </View>
                 <Text style={styles.infoTitle}>{content.title}</Text>
-                {content.description ? (
-                    <Text style={styles.infoDesc}>{content.description}</Text>
-                ) : null}
+                
+                <TouchableOpacity 
+                    style={styles.expandableBox}
+                    onPress={() => setDescExpanded(!descExpanded)}
+                    activeOpacity={0.9}
+                >
+                    {content.description ? (
+                        <Text style={styles.infoDesc} numberOfLines={descExpanded ? undefined : 2}>
+                            {content.description}
+                        </Text>
+                    ) : null}
+
+                    {/* Source Link shows only when expanded */}
+                    {descExpanded && (
+                        <View style={styles.sourceBox}>
+                            <Text style={styles.sourceLabel}>Tautan Asli Video:</Text>
+                            <TouchableOpacity onPress={() => Linking.openURL(content.url).catch(() => {})}>
+                                <Text style={styles.sourceLink} numberOfLines={1} ellipsizeMode="middle">
+                                    {content.url}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
+                    <Text style={styles.expandText}>
+                        {descExpanded ? 'Sembunyikan' : 'Baca selengkapnya...'}
+                    </Text>
+                </TouchableOpacity>
+
+                {/* Recommendations */}
+                {recommended.length > 0 && (
+                    <View style={styles.recsSection}>
+                        <View style={styles.recsHeader}>
+                            <Text style={styles.recsTitle}>Rekomendasi Lainnya</Text>
+                        </View>
+
+                        <View style={styles.carouselWrapper}>
+                            <FlatList 
+                                ref={flatListRef}
+                                data={recommended}
+                                keyExtractor={item => item.id}
+                                horizontal 
+                                showsHorizontalScrollIndicator={false} 
+                                snapToInterval={162} // 150 card width + 12 gap
+                                decelerationRate="fast"
+                                contentContainerStyle={styles.recsList}
+                                onViewableItemsChanged={onViewableItemsChanged}
+                                viewabilityConfig={viewConfigRef}
+                                renderItem={({ item }) => {
+                                    const thumbId = getYouTubeVideoId(item.url);
+                                    const thumbUrl = thumbId ? `https://img.youtube.com/vi/${thumbId}/mqdefault.jpg` : null;
+                                    return (
+                                        <TouchableOpacity 
+                                            style={styles.recCard}
+                                            activeOpacity={0.7}
+                                            onPress={() => navigation.replace('EducationVideoDetail', { content: item })}
+                                        >
+                                            <View style={styles.recThumbContainer}>
+                                                {thumbUrl ? (
+                                                    <Image source={{ uri: thumbUrl }} style={styles.recThumbImage} contentFit="cover" />
+                                                ) : (
+                                                    <View style={[styles.recThumbImage, { backgroundColor: E.primaryLight, justifyContent: 'center', alignItems: 'center' }]}>
+                                                        <PlayIconSmall color={E.primary} />
+                                                    </View>
+                                                )}
+                                            </View>
+                                            <View style={styles.recInfo}>
+                                                <Text style={styles.recItemTitle} numberOfLines={2}>{item.title}</Text>
+                                            </View>
+                                        </TouchableOpacity>
+                                    );
+                                }}
+                            />
+                            
+                            {/* Floating Side Arrows */}
+                            {activeIndex > 0 && (
+                                <TouchableOpacity 
+                                    style={[styles.arrowBtnAbsolute, styles.arrowBtnLeft]}
+                                    onPress={() => scrollToIndex(activeIndex - 1)}
+                                    activeOpacity={0.8}
+                                >
+                                    <ArrowLeftIcon color={E.textDark} />
+                                </TouchableOpacity>
+                            )}
+                            
+                            {activeIndex < recommended.length - 1 && (
+                                <TouchableOpacity 
+                                    style={[styles.arrowBtnAbsolute, styles.arrowBtnRight]}
+                                    onPress={() => scrollToIndex(activeIndex + 1)}
+                                    activeOpacity={0.8}
+                                >
+                                    <ArrowRightIcon color={E.textDark} />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+
+                        {/* Dots Indicator */}
+                        <View style={styles.dotsContainer}>
+                            {recommended.map((_, i) => (
+                                <View key={i} style={[styles.dot, activeIndex === i && styles.dotActive]} />
+                            ))}
+                        </View>
+                    </View>
+                )}
             </ScrollView>
 
             {/* Footer: Tandai Selesai */}
@@ -264,6 +420,132 @@ const styles = StyleSheet.create({
         fontSize: 14.5,
         color: E.textSub,
         lineHeight: 22,
+    },
+
+    expandableBox: {
+        marginTop: 4,
+        padding: 14,
+        backgroundColor: '#f5f7fa',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#ecedf6',
+    },
+    expandText: {
+        fontFamily: 'Inter_600SemiBold',
+        fontSize: 13,
+        color: E.primary,
+        marginTop: 8,
+    },
+    sourceBox: {
+        marginTop: 12,
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#e0e4ef',
+    },
+    sourceLabel: {
+        fontFamily: 'Inter_600SemiBold',
+        fontSize: 12,
+        color: E.textSub,
+        marginBottom: 4,
+    },
+    sourceLink: {
+        fontFamily: 'Inter_400Regular',
+        fontSize: 13,
+        color: E.primary,
+        textDecorationLine: 'underline',
+    },
+
+    recsSection: {
+        marginTop: 16,
+        paddingTop: 16,
+        borderTopWidth: 1,
+        borderTopColor: '#ecedf6',
+    },
+    recsHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    recsTitle: {
+        fontFamily: 'Inter_600SemiBold',
+        fontSize: 16,
+        color: E.textDark,
+    },
+    carouselWrapper: {
+        position: 'relative',
+        justifyContent: 'center',
+    },
+    arrowBtnAbsolute: {
+        position: 'absolute',
+        top: '50%',
+        marginTop: -16, // half height
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#fff',
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        elevation: 4,
+        zIndex: 10,
+    },
+    arrowBtnLeft: {
+        left: -12,
+    },
+    arrowBtnRight: {
+        right: -12,
+    },
+    recsList: {
+        gap: 12,
+        paddingRight: 24, // space at the end of scroll
+    },
+    recCard: {
+        width: 150,
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#ecedf6',
+        overflow: 'hidden',
+    },
+    recThumbContainer: {
+        width: '100%',
+        height: 84,
+        backgroundColor: E.primaryLight,
+    },
+    recThumbImage: {
+        width: '100%',
+        height: '100%',
+    },
+    recInfo: {
+        padding: 10,
+        justifyContent: 'center',
+    },
+    recItemTitle: {
+        fontFamily: 'Inter_600SemiBold',
+        fontSize: 12,
+        color: E.textDark,
+        lineHeight: 16,
+    },
+    dotsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 16,
+        gap: 6,
+    },
+    dot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#cfddf2',
+    },
+    dotActive: {
+        width: 16,
+        backgroundColor: E.primary,
     },
 
     footer: {
