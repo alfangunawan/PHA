@@ -8,15 +8,19 @@ interface Props {
 }
 
 export default function ChatGateScreen({ navigation }: Props) {
-    const { gad7LoadingState, gad7Status } = useAuthContext();
+    const { gad7LoadingState, gad7Status, refreshGad7Status } = useAuthContext();
+
+    // Always fetch fresh status on mount — handles stale context from any prior screen
+    useEffect(() => {
+        refreshGad7Status();
+    }, []);
 
     useEffect(() => {
-        if (gad7LoadingState === 'loading') return; // wait
+        if (gad7LoadingState === 'loading') return;
         if (gad7LoadingState === 'error') {
             navigation.replace('Chat'); // fail-open
             return;
         }
-        // 'ready' — status is known
         navigation.replace(resolveChatRoute(gad7Status));
     }, [gad7LoadingState]);
 
