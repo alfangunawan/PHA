@@ -76,7 +76,14 @@ export const getHistory = async (req: AuthRequest, res: Response) => {
         if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
         const history = await ChatService.getHistory(userId);
-        res.json(history);
+        const messages = history.map((row: any) => ({
+            id: String(row.id),
+            sessionId: row.session_id,
+            sender: (row.role === 'human' || row.role === 'user') ? 'user' : 'ai',
+            message: row.content ?? '',
+            timestamp: row.created_at,
+        }));
+        res.json(messages);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
@@ -100,7 +107,14 @@ export const getSessionMessages = async (req: AuthRequest, res: Response) => {
         const { sessionId } = req.params;
         if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-        const messages = await ChatService.getSessionMessages(userId, sessionId);
+        const rows = await ChatService.getSessionMessages(userId, sessionId);
+        const messages = rows.map((row: any) => ({
+            id: String(row.id),
+            sessionId: row.session_id,
+            sender: (row.role === 'human' || row.role === 'user') ? 'user' : 'ai',
+            message: row.content ?? '',
+            timestamp: row.created_at,
+        }));
         res.json(messages);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
