@@ -10,7 +10,8 @@ import Svg, { Path } from 'react-native-svg';
 import Markdown from 'react-native-markdown-display';
 import { Ionicons } from '@expo/vector-icons';
 import { ChatMessage, streamMessage, getHistory, createNewSession } from './chatService';
-import Gad7Form from './Gad7Form';
+import { useAuthContext } from '../auth/AuthContext';
+import { resolveChatRoute } from './chatGateUtils';
 
 // Fun Blue palette
 const PRIMARY = '#1A59A1';
@@ -73,6 +74,16 @@ export default function ChatScreen({ navigation, route }: Props) {
     const [currentSessionId, setCurrentSessionId] = useState<string | undefined>(undefined);
     const flatListRef = useRef<FlatList>(null);
     const isAtBottomRef = useRef(true);
+
+    const { gad7LoadingState, gad7Status } = useAuthContext();
+
+    // Safety net: if reached without going through ChatGate
+    useEffect(() => {
+        if (gad7LoadingState !== 'ready') return;
+        if (resolveChatRoute(gad7Status) === 'Gad7Onboarding') {
+            navigation.replace('Gad7Onboarding');
+        }
+    }, [gad7LoadingState]);
 
     useEffect(() => { loadHistory(); }, []);
 
@@ -168,13 +179,6 @@ export default function ChatScreen({ navigation, route }: Props) {
                 },
                 (final) => {
                     setSending(false);
-                    if (final?.action === 'chat_with_gad7' && final?.data?.gad7) {
-                        setMessages(prev => prev.map(m =>
-                            m.id === aiMsgId
-                                ? { ...m, action: final.action, gad7Data: final.data }
-                                : m
-                        ));
-                    }
                 },
                 (error) => {
                     console.error('Stream error:', error);
@@ -202,27 +206,6 @@ export default function ChatScreen({ navigation, route }: Props) {
 
     const renderItem = ({ item }: { item: ChatMessage }) => {
         const isUser = item.sender === 'user';
-
-        if (!isUser && item.action === 'chat_with_gad7' && item.gad7Data) {
-            return (
-                <View style={styles.aiBubbleRow}>
-                    <View style={styles.phaAvatar}><PHAChatIcon size={16} /></View>
-                    <Gad7Form
-                        data={item.gad7Data}
-                        sessionId={item.sessionId ?? currentSessionId ?? ''}
-                        onSubmitted={(rawResponse) => {
-                                const resultMsg: ChatMessage = {
-                                    id: Date.now().toString(),
-                                    sender: 'ai',
-                                    message: rawResponse?.data?.message ?? 'Terima kasih sudah menjawab.',
-                                    timestamp: new Date().toISOString(),
-                                };
-                                setMessages(prev => [...prev, resultMsg]);
-                            }}
-                    />
-                </View>
-            );
-        }
 
         if (!isUser && item.message === '' && sending) {
             return (
