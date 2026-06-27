@@ -188,7 +188,7 @@ export default function HomeScreen() {
                     <GamificationSummary />
 
                     {/* Mulai Cerita — primary action card */}
-                    <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('Chat')}>
+                    <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('ChatGate')}>
                         <LinearGradient
                             colors={[FB.primary, FB.primaryDeep]}
                             start={{ x: 0, y: 0 }}

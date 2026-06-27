@@ -44,6 +44,9 @@ import ChatHistoryScreen from './src/chat/ChatHistoryScreen';
 import HistoryScreen from './src/chat/HistoryScreen';
 import ActivityHistoryScreen from './src/screens/ActivityHistoryScreen';
 
+import ChatGateScreen from './src/chat/ChatGateScreen';
+import Gad7OnboardingScreen from './src/chat/Gad7OnboardingScreen';
+import Gad7ResultScreen from './src/chat/Gad7ResultScreen';
 import BreathingListScreen from './src/screens/breathing/BreathingListScreen';
 import BreathingExerciseScreen from './src/screens/breathing/BreathingExerciseScreen';
 import MeditationListScreen from './src/screens/meditation/MeditationListScreen';
@@ -233,6 +236,21 @@ function RootNavigator() {
                         name="Chat"
                         component={ChatScreen}
                         options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                        name="ChatGate"
+                        component={ChatGateScreen}
+                        options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                        name="Gad7Onboarding"
+                        component={Gad7OnboardingScreen}
+                        options={{ headerShown: false, gestureEnabled: false }}
+                    />
+                    <Stack.Screen
+                        name="Gad7Result"
+                        component={Gad7ResultScreen}
+                        options={{ headerShown: false, gestureEnabled: false }}
                     />
                     <Stack.Screen
                         name="ChatHistory"

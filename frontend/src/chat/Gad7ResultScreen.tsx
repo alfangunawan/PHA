@@ -18,7 +18,7 @@ const HEADLINES: Record<string, string> = {
 
 interface Props {
     navigation: any;
-    route: { params: { severity: string } };
+    route: any;
 }
 
 export default function Gad7ResultScreen({ navigation, route }: Props) {
