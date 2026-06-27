@@ -11,6 +11,9 @@ export interface ChatMessage {
     sender: 'user' | 'ai';
     message: string;
     timestamp: string;
+    // Final-event payload persisted onto the AI message (e.g. GAD-7 form trigger)
+    action?: string;
+    gad7Data?: any;
 }
 
 export interface ChatSession {
@@ -29,7 +32,7 @@ export const streamMessage = async (
     message: string,
     sessionId: string | undefined,
     onChunk: (chunk: string) => void,
-    onComplete: () => void,
+    onComplete: (final: any) => void,
     onError: (err: any) => void
 ) => {
     const token = await getToken();
@@ -63,7 +66,8 @@ export const streamMessage = async (
                     if (data.done) {
                         completed = true;
                         es.close();
-                        onComplete();
+                        // Forward full final payload (action + data.gad7) to caller
+                        onComplete(data);
                     }
                 } catch (e) {
                     console.error('JSON Parse error', e);
