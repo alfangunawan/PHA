@@ -210,7 +210,15 @@ export default function ChatScreen({ navigation, route }: Props) {
                     <Gad7Form
                         data={item.gad7Data}
                         sessionId={item.sessionId ?? currentSessionId ?? ''}
-                        onSubmitted={(aiMsg) => setMessages(prev => [...prev, aiMsg])}
+                        onSubmitted={(rawResponse) => {
+                                const resultMsg: ChatMessage = {
+                                    id: Date.now().toString(),
+                                    sender: 'ai',
+                                    message: rawResponse?.data?.message ?? 'Terima kasih sudah menjawab.',
+                                    timestamp: new Date().toISOString(),
+                                };
+                                setMessages(prev => [...prev, resultMsg]);
+                            }}
                     />
                 </View>
             );

@@ -117,7 +117,7 @@ export const createNewSession = async (): Promise<{ id: string }> => {
     return response.data;
 };
 
-export const submitGad7 = async (sessionId: string, answers: number[]): Promise<ChatMessage> => {
+export const submitGad7 = async (sessionId: string, answers: number[]): Promise<{ action: string; data: { score: number; severity: string; message: string } }> => {
     const response = await client.post('/chat/gad7/submit', { sessionId, answers });
     return response.data;
 };

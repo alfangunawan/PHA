@@ -5,7 +5,7 @@ import { submitGad7 } from './chatService';
 interface Gad7FormProps {
     data: any;
     sessionId: string;
-    onSubmitted: (aiMsg: any) => void;
+    onSubmitted: (rawResponse: { action: string; data: { score: number; severity: string; message: string } }) => void;
 }
 
 export default function Gad7Form({ data, sessionId, onSubmitted }: Gad7FormProps) {
