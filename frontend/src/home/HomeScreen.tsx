@@ -8,7 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuthContext } from '../auth/AuthContext';
 import GamificationSummary from '../components/GamificationSummary';
 
-const MASCOT = require('../../assets/sibiru-mascot.gif');
+const MASCOT = require('../../assets/maskot-main.gif');
 
 const FB = {
     primary: '#1A59A1',
@@ -175,6 +175,7 @@ export default function HomeScreen() {
                                 style={styles.mascotImage}
                                 contentFit="contain"
                                 autoplay
+                                loop={0}
                             />
                         </View>
                     </View>
@@ -316,10 +317,7 @@ const styles = StyleSheet.create({
     mascotImage: {
         width: 112,
         height: 112,
-        shadowColor: 'rgba(10,38,74,1)',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.30,
-        shadowRadius: 12,
+        backgroundColor: 'transparent',
     },
 
     // ── Content sheet ────────────────────────────────────────────────────────
