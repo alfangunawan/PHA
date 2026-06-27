@@ -10,6 +10,7 @@ const FILTERS = [
     { key: 'all',     label: 'Semua' },
     { key: 'sleep',   label: 'Tidur' },
     { key: 'focus',   label: 'Fokus' },
+    { key: 'anxiety', label: 'Cemas' },
     { key: 'morning', label: 'Pagi' },
     { key: 'general', label: 'Umum' },
 ];
@@ -139,9 +140,6 @@ export default function MeditationListScreen({ navigation }: any) {
                         );
                     })}
                 </ScrollView>
-                <View style={styles.favBtn}>
-                    <FilterIcon keyName="fav" size={19} color={M.favColor} />
-                </View>
             </View>
 
             {loading ? (
@@ -237,15 +235,6 @@ const styles = StyleSheet.create({
     chipText: {
         fontFamily: 'Inter_600SemiBold',
         fontSize: 13,
-    },
-    favBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 13,
-        backgroundColor: M.favBg,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginLeft: 9,
     },
 
     list: {
