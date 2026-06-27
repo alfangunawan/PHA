@@ -92,14 +92,16 @@ export default function Gad7OnboardingScreen({ navigation }: Props) {
 
     const goForward = () => {
         if (currentQuestion < 6) {
-            slideToNext(() => setCurrentQuestion(q => q + 1));
+            // Clamp inside the updater: rapid taps during the slide animation
+            // read a stale currentQuestion, so the bound must live here.
+            slideToNext(() => setCurrentQuestion(q => Math.min(6, q + 1)));
         } else {
             handleSubmit();
         }
     };
 
     const goBack = () => {
-        slideToPrev(() => setCurrentQuestion(q => q - 1));
+        slideToPrev(() => setCurrentQuestion(q => Math.max(0, q - 1)));
     };
 
     const handleSubmit = async () => {
