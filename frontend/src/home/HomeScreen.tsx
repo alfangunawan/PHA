@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -7,7 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuthContext } from '../auth/AuthContext';
 import GamificationSummary from '../components/GamificationSummary';
 
-const MASCOT = require('../../assets/sibiru-mascot-wave.png');
+const MASCOT = require('../../assets/sibiru-mascot.gif');
 
 const FB = {
     primary: '#1A59A1',
@@ -172,7 +173,8 @@ export default function HomeScreen() {
                             <Image
                                 source={MASCOT}
                                 style={styles.mascotImage}
-                                resizeMode="contain"
+                                contentFit="contain"
+                                autoplay
                             />
                         </View>
                     </View>
@@ -300,7 +302,7 @@ const styles = StyleSheet.create({
     greeting:    { fontFamily: 'Lora_600SemiBold', fontSize: 29, lineHeight: 32, color: '#ffffff', letterSpacing: -0.1 },
     greetingSub: { fontSize: 14, color: FB.headerSub, marginTop: 9, lineHeight: 20 },
 
-    mascotWrap:  { position: 'relative', width: 104, height: 104, flexShrink: 0 },
+    mascotWrap:  { position: 'relative', width: 112, height: 112, flexShrink: 0 },
     mascotShadow: {
         position: 'absolute',
         bottom: 3,
@@ -311,7 +313,14 @@ const styles = StyleSheet.create({
         borderRadius: 999,
         backgroundColor: 'rgba(8,30,60,0.28)',
     },
-    mascotImage: { width: 104, height: 104 },
+    mascotImage: {
+        width: 112,
+        height: 112,
+        shadowColor: 'rgba(10,38,74,1)',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.30,
+        shadowRadius: 12,
+    },
 
     // ── Content sheet ────────────────────────────────────────────────────────
     content: {
