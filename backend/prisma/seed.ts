@@ -111,6 +111,17 @@ async function main() {
                 colorTheme: '#F5C6A0',
                 icon: 'heart',
             },
+            {
+                name: 'Brief Relief Breathing',
+                description: 'Pertolongan pertama (physiological sigh) untuk meredakan panik seketika dalam < 1 menit.',
+                inhaleDuration: 3,
+                holdDuration: 1,
+                exhaleDuration: 6,
+                holdAfterExhale: 0,
+                cycles: 3,
+                colorTheme: '#F08080', // Soft red/coral for relief
+                icon: 'activity',
+            },
     ];
 
     await seedMissing(
