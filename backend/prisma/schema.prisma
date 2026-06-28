@@ -68,7 +68,6 @@ model User {
   role                  Role                   @default(USER)
   createdAt             DateTime               @default(now())
   profile               UserProfile?
-  sessions              ChatSession[]
   conversations         Conversation[]
   gad7Results           Gad7Result[]
   chatbotStates         ChatbotSessionState[]
@@ -82,6 +81,7 @@ model User {
   gamification          UserGamification?
   rewardEvents          RewardEvent[]
   rewardRulesCreated    RewardRule[]           @relation("RewardRuleAdmin")
+  homeworkItems         HomeworkItem[]
 }
 
 model UserProfile {
@@ -93,23 +93,6 @@ model UserProfile {
   gender      String?
   language    String  @default("id")
   bio         String?
-}
-
-model ChatSession {
-  id        String        @id @default(uuid())
-  userId    String
-  user      User          @relation(fields: [userId], references: [id])
-  startedAt DateTime      @default(now())
-  messages  ChatMessage[]
-}
-
-model ChatMessage {
-  id        String      @id @default(uuid())
-  sessionId String
-  session   ChatSession @relation(fields: [sessionId], references: [id])
-  sender    String
-  message   String
-  timestamp DateTime    @default(now())
 }
 
 model Conversation {
@@ -305,6 +288,24 @@ model RewardRule {
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
   createdByAdmin   User?        @relation("RewardRuleAdmin", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+}
+
+model HomeworkItem {
+  id              BigInt    @id @default(autoincrement())
+  userId          String    @map("user_id")
+  originSessionId String    @map("origin_session_id")
+  problemNum      Int       @default(1) @map("problem_num")
+  content         String
+  type            String    @default("one_off")
+  status          String    @default("assigned")
+  lastReviewedAt  DateTime? @map("last_reviewed_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status], map: "idx_hw_user_status")
+  @@index([originSessionId], map: "idx_hw_origin")
+  @@map("homework_item")
 }
 
 model RewardEvent {
