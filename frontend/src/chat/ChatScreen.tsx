@@ -31,10 +31,10 @@ const FB = {
     typingDim: '#9dbbe4',
 };
 
-const SUGGESTIONS = [
-    'Aku lagi banyak pikiran',
-    'Merasa cemas akhir-akhir ini',
-    'Cuma butuh teman cerita',
+const SUGGESTIONS: { text: string; Icon: React.FC }[] = [
+    { text: 'Aku lagi banyak pikiran', Icon: SuggThinkingIcon },
+    { text: 'Merasa cemas akhir-akhir ini', Icon: SuggAnxiousIcon },
+    { text: 'Cuma butuh teman cerita', Icon: SuggTalkIcon },
 ];
 
 function PHAChatIcon({ color = PRIMARY, size = 19 }: { color?: string; size?: number }) {
@@ -56,6 +56,60 @@ function SendIcon() {
         <Svg width={21} height={21} viewBox="0 0 24 24" fill="none">
             <Path d="M21 3 10.5 13.5" stroke="#fff" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
             <Path d="M21 3 14.5 21l-4-7.5-7.5-4z" stroke="#fff" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+        </Svg>
+    );
+}
+
+function ChevronLeftIcon() {
+    return (
+        <Svg width={21} height={21} viewBox="0 0 24 24" fill="none">
+            <Path d="M15 6l-6 6 6 6" stroke="#fff" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" />
+        </Svg>
+    );
+}
+
+function PencilIcon() {
+    return (
+        <Svg width={19} height={19} viewBox="0 0 24 24" fill="none">
+            <Path d="M12 20h9" stroke="#fff" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+            <Path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" stroke="#fff" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+        </Svg>
+    );
+}
+
+function HistoryIcon() {
+    return (
+        <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+            <Path d="M3 5v6h6" stroke="#fff" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+            <Path d="M3.5 11a9 9 0 1 1 .9 5" stroke="#fff" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+            <Path d="M12 8v4l3 2" stroke="#fff" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+        </Svg>
+    );
+}
+
+function SuggThinkingIcon() {
+    return (
+        <Svg width={17} height={17} viewBox="0 0 24 24" fill="none">
+            <Path d="M12 3a7 7 0 0 0-4 12.7V18h8v-2.3A7 7 0 0 0 12 3z" stroke={PRIMARY} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+            <Path d="M9.5 21h5" stroke={PRIMARY} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+        </Svg>
+    );
+}
+
+function SuggAnxiousIcon() {
+    return (
+        <Svg width={17} height={17} viewBox="0 0 24 24" fill="none">
+            <Path d="M12 21s-7-4.5-9-9a4.5 4.5 0 0 1 8-3 4.5 4.5 0 0 1 8 3c-2 4.5-7 9-7 9z" stroke={PRIMARY} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" opacity={0.5} />
+            <Path d="M3 12h4l2-4 3 7 2-4h5" stroke={PRIMARY} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+        </Svg>
+    );
+}
+
+function SuggTalkIcon() {
+    return (
+        <Svg width={17} height={17} viewBox="0 0 24 24" fill="none">
+            <Path d="M17 8h2a2 2 0 0 1 2 2v9l-3.5-2.5H10a2 2 0 0 1-2-2" stroke={PRIMARY} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+            <Path d="M3 5h11a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H7l-4 3z" stroke={PRIMARY} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
         </Svg>
     );
 }
@@ -263,18 +317,18 @@ export default function ChatScreen({ navigation, route }: Props) {
                 style={[styles.appBar, { paddingTop: insets.top + 12 }]}
             >
                 <TouchableOpacity style={styles.appBarBtn} onPress={() => navigation.goBack()}>
-                    <Ionicons name="chevron-back" size={22} color="#ffffff" />
+                    <ChevronLeftIcon />
                 </TouchableOpacity>
 
                 <View style={styles.appBarCenter}>
                     <View style={styles.phaAvatarLg}>
-                        <PHAChatIcon color="#ffffff" size={19} />
+                        <PHAChatIcon color="#ffffff" size={20} />
                     </View>
-                    <View>
-                        <Text style={styles.phaName}>PHA</Text>
+                    <View style={{ flexShrink: 1 }}>
+                        <Text style={styles.phaName} numberOfLines={1}>SiBiru</Text>
                         <View style={styles.statusRow}>
                             <View style={styles.statusDot} />
-                            <Text style={styles.statusText}>
+                            <Text style={styles.statusText} numberOfLines={1}>
                                 {isTyping ? 'Sedang mengetik…' : 'Pendamping kamu'}
                             </Text>
                         </View>
@@ -282,7 +336,12 @@ export default function ChatScreen({ navigation, route }: Props) {
                 </View>
 
                 <TouchableOpacity style={styles.appBarBtn} onPress={handleNewChat}>
-                    <Ionicons name="ellipsis-horizontal" size={22} color="#ffffff" />
+                    <PencilIcon />
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.riwayatBtn} onPress={() => navigation.navigate('History')}>
+                    <HistoryIcon />
+                    <Text style={styles.riwayatText}>Riwayat</Text>
                 </TouchableOpacity>
             </LinearGradient>
 
@@ -294,15 +353,19 @@ export default function ChatScreen({ navigation, route }: Props) {
                 {messages.length === 0 ? (
                     /* Empty state */
                     <View style={styles.emptyState}>
-                        <Text style={styles.greetingText}>Halo, bagaimana perasaanmu hari ini?</Text>
-                        <View style={styles.timePill}>
-                            <Text style={styles.timePillText}>Hari ini, {timeStr}</Text>
+                        <View style={styles.greetIconBox}>
+                            <PHAChatIcon size={28} />
                         </View>
+                        <Text style={styles.greetingText}>Halo, bagaimana perasaanmu hari ini?</Text>
+                        <Text style={styles.greetingSub}>
+                            Aku di sini untuk mendengarkan, tanpa menghakimi. Ceritakan apa pun yang ada di pikiranmu.
+                        </Text>
                         <View style={styles.suggestionsWrap}>
-                            <Text style={styles.suggestLabel}>MULAI DENGAN</Text>
-                            {SUGGESTIONS.map(s => (
-                                <TouchableOpacity key={s} style={styles.suggChip} onPress={() => handleSend(s)}>
-                                    <Text style={styles.suggText}>{s}</Text>
+                            <Text style={styles.suggestLabel}>Mulai dengan</Text>
+                            {SUGGESTIONS.map(({ text, Icon }) => (
+                                <TouchableOpacity key={text} style={styles.suggChip} onPress={() => handleSend(text)}>
+                                    <Icon />
+                                    <Text style={styles.suggText}>{text}</Text>
                                 </TouchableOpacity>
                             ))}
                         </View>
@@ -366,22 +429,38 @@ const styles = StyleSheet.create({
     appBar: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 18,
-        paddingBottom: 22,
+        gap: 8,
+        paddingHorizontal: 16,
+        paddingBottom: 18,
     },
     appBarBtn: {
-        width: 38,
-        height: 38,
-        borderRadius: 12,
+        width: 40,
+        height: 40,
+        borderRadius: 13,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.12)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.18)',
     },
-    appBarCenter: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    riwayatBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 7,
+        height: 40,
+        paddingLeft: 11,
+        paddingRight: 13,
+        borderRadius: 13,
+        backgroundColor: 'rgba(255,255,255,0.12)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.18)',
+    },
+    riwayatText: { fontSize: 12.5, fontWeight: '600', color: '#ffffff' },
+    appBarCenter: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 11, minWidth: 0 },
     phaAvatarLg: {
-        width: 34,
-        height: 34,
-        borderRadius: 17,
+        width: 38,
+        height: 38,
+        borderRadius: 19,
         backgroundColor: 'rgba(255,255,255,0.18)',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.28)',
@@ -405,12 +484,27 @@ const styles = StyleSheet.create({
 
     // Empty state
     emptyState: { flex: 1, padding: 24, paddingTop: 26 },
+    greetIconBox: {
+        width: 56,
+        height: 56,
+        borderRadius: 18,
+        backgroundColor: FB.tileBg,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 18,
+    },
     greetingText: {
         fontFamily: 'Lora_600SemiBold',
         fontSize: 25,
         lineHeight: 32,
         color: FB.textDark,
         letterSpacing: -0.2,
+    },
+    greetingSub: {
+        fontSize: 13.5,
+        lineHeight: 20,
+        color: FB.textSub,
+        marginTop: 10,
     },
     timePill: {
         alignSelf: 'center',
@@ -430,6 +524,9 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     suggChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 11,
         backgroundColor: FB.tileBg,
         borderWidth: 1,
         borderColor: FB.tileBorder,
@@ -438,7 +535,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         marginBottom: 10,
     },
-    suggText: { fontSize: 14, color: FB.textDark },
+    suggText: { fontSize: 14, color: FB.textDark, flexShrink: 1 },
 
     // Chat list
     chatArea: { flex: 1 },
