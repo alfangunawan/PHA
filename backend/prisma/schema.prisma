@@ -102,11 +102,13 @@ model Conversation {
   role      String
   content   String
   cbtPhase  String?   @default("ventilasi") @map("cbt_phase")
+  flowId    String?   @map("flow_id")
   createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([sessionId], map: "idx_conv_session")
   @@index([userId, createdAt(sort: Desc)], map: "idx_conv_user_created")
+  @@index([flowId], map: "idx_conv_flow")
   @@map("conversations")
 }
 
@@ -133,10 +135,28 @@ model ChatbotSessionState {
   phaseTurnCount         Int      @default(0) @map("phase_turn_count")
   homeworkLog            Json     @default("[]") @map("homework_log")
   sessionComplete        Boolean  @default(false) @map("session_complete")
+  activeFlowId           String?  @map("active_flow_id")
+  sessionStatus          String   @default("active") @map("session_status")
   updatedAt              DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
   user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("chatbot_session_state")
+}
+
+model ChatbotFlowState {
+  flowId         String   @id @map("flow_id")
+  sessionId      String   @map("session_id")
+  userId         String   @map("user_id")
+  problemTopic   String?  @map("problem_topic")
+  flowNum        Int      @map("flow_num")
+  currentPhase   String   @default("ventilasi") @map("current_phase")
+  phaseTurnCount Int      @default(0) @map("phase_turn_count")
+  status         String   @default("active")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@index([sessionId, flowNum], map: "idx_flow_session")
+  @@map("chatbot_flow_state")
 }
 
 model BreathingTechnique {
@@ -299,12 +319,14 @@ model HomeworkItem {
   type            String    @default("one_off")
   status          String    @default("assigned")
   lastReviewedAt  DateTime? @map("last_reviewed_at") @db.Timestamptz(6)
+  originFlowId    String?   @map("origin_flow_id")
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status], map: "idx_hw_user_status")
   @@index([originSessionId], map: "idx_hw_origin")
+  @@index([originFlowId], map: "idx_hw_flow")
   @@map("homework_item")
 }
 
