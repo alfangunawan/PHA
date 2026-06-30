@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
@@ -25,6 +26,7 @@ const FB = {
 const activities = [
     { key: 'napas',    title: 'Latihan Napas', sub: 'Pernapasan', iconBg: '#1A59A1', screen: 'Napas'       },
     { key: 'meditasi', title: 'Meditasi',      sub: 'Pikiran',    iconBg: '#2f6fb8', screen: 'Meditasi'    },
+    { key: 'audio',    title: 'Audio',         sub: 'Relaksasi',  iconBg: '#4478B4', screen: 'AudioList'   },
     { key: 'edukasi',  title: 'Edukasi',       sub: 'Artikel',    iconBg: '#5a8bcb', screen: 'Edukasi'     },
     { key: 'jurnal',   title: 'Jurnal',        sub: 'Refleksi',   iconBg: '#3b7ec4', screen: 'JournalList' },
     { key: 'games',    title: 'Games',         sub: 'XP & Poin',  iconBg: '#234e87', screen: 'GamesHome'   },
@@ -85,6 +87,13 @@ function ActivityIcon({ type }: { type: string }) {
             <Path d="M6 3.5h9l4 4V20a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z" stroke={s} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
             <Path d="M14 3.5V8h4.5" stroke={s} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
             <Path d="M8.5 13h7M8.5 16.5h5"   stroke={s} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
+        </Svg>
+    );
+    if (type === 'audio') return (
+        <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+            <Path d="M3 18v-6a9 9 0 0 1 18 0v6" stroke={s} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
+            <Path d="M21 19a2 2 0 0 1-2 2h-1v-5h3v3z" stroke={s} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
+            <Path d="M3 19a2 2 0 0 0 2 2h1v-5H3v3z" stroke={s} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
         </Svg>
     );
     return (
@@ -205,6 +214,20 @@ export default function HomeScreen() {
                             </View>
                             <ChevronRight color="#fff" size={22} />
                         </LinearGradient>
+                    </TouchableOpacity>
+
+                    {/* Rekomendasi Khusus */}
+                    <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('MindfulnessRecommendation')}>
+                        <View style={styles.recommendationCard}>
+                            <View style={styles.recIconWrap}>
+                                <Ionicons name="sparkles" size={22} color={FB.primary} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.recTitle}>Rekomendasi Khusus</Text>
+                                <Text style={styles.recSub}>Berdasarkan hasil tes kecemasanmu.</Text>
+                            </View>
+                            <ChevronRight color={FB.primary} size={22} />
+                        </View>
                     </TouchableOpacity>
 
                     {/* Aktivitas */}
@@ -353,6 +376,30 @@ const styles = StyleSheet.create({
     },
     ctaTitle: { fontFamily: 'Lora_400Regular', fontSize: 17, color: '#ffffff', lineHeight: 20 },
     ctaSub:   { fontSize: 12.5, color: FB.headerSub, marginTop: 4, lineHeight: 17 },
+
+    recommendationCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 14,
+        borderRadius: 22,
+        padding: 17,
+        backgroundColor: '#eaf1fa',
+        borderWidth: 1,
+        borderColor: '#ccdcf0',
+        shadowColor: FB.primary,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.10,
+        shadowRadius: 10,
+        elevation: 2,
+    },
+    recIconWrap: {
+        width: 48, height: 48, borderRadius: 15,
+        backgroundColor: '#ffffff',
+        justifyContent: 'center', alignItems: 'center',
+        borderWidth: 1, borderColor: '#d6e8f8',
+    },
+    recTitle: { fontFamily: 'Lora_600SemiBold', fontSize: 16, color: FB.textDark, lineHeight: 20 },
+    recSub:   { fontSize: 12.5, color: FB.textSub, marginTop: 4, lineHeight: 17 },
 
     // ── Activity grid ────────────────────────────────────────────────────────
     sectionTitle:  { fontFamily: 'Lora_400Regular', fontSize: 18, color: FB.textDark, marginBottom: 13 },

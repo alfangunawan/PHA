@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getProfile, updateProfile, UserProfile } from './profileService';
 import { useAuthContext } from '../auth/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { breathingAPI, meditationAPI } from '../api';
+import { breathingAPI, meditationAPI, audioAPI, educationAPI } from '../api';
 import { Typography } from '../theme';
 import GamificationSummary from '../components/GamificationSummary';
 
@@ -41,7 +41,7 @@ const D = {
 
 interface ActivityStat {
     name: string;
-    type: 'breath' | 'meditation';
+    type: 'breath' | 'meditation' | 'audio' | 'education';
     cycles?: number;
     durationMin: number;
 }
@@ -59,6 +59,8 @@ export default function ProfileScreen({ navigation }: any) {
     const [bio, setBio] = useState('');
     const [breathTotal, setBreathTotal] = useState(0);
     const [meditationTotal, setMeditationTotal] = useState(0);
+    const [audioTotal, setAudioTotal] = useState(0);
+    const [eduTotal, setEduTotal] = useState(0);
     const [activityStats, setActivityStats] = useState<ActivityStat[]>([]);
 
     useEffect(() => { fetchAll(); }, []);
@@ -77,14 +79,21 @@ export default function ProfileScreen({ navigation }: any) {
             setLoading(false);
         }
         try {
-            const [bRes, mRes] = await Promise.all([
+            const [bRes, mRes, aRes, eRes] = await Promise.all([
                 breathingAPI.getLogs(),
                 meditationAPI.getLogs(),
+                audioAPI.getLogs().catch(() => ({ logs: [] })),
+                educationAPI.getLogs().catch(() => ({ logs: [] })),
             ]);
             const bLogs: any[] = bRes.logs || [];
             const mLogs: any[] = mRes.logs || [];
+            const aLogs: any[] = aRes.logs || [];
+            const eLogs: any[] = eRes.logs || [];
+            
             setBreathTotal(bLogs.length);
             setMeditationTotal(mLogs.length);
+            setAudioTotal(aLogs.length);
+            setEduTotal(eLogs.length);
 
             // aggregate breathing by technique
             const bMap: Record<string, { cycles: number; duration: number }> = {};
@@ -103,6 +112,22 @@ export default function ProfileScreen({ navigation }: any) {
                 mMap[name].duration += log.duration || 0;
             });
 
+            // aggregate audio
+            const aMap: Record<string, { duration: number }> = {};
+            aLogs.forEach((log: any) => {
+                const name = log.audio?.title || 'Audio Menenangkan';
+                if (!aMap[name]) aMap[name] = { duration: 0 };
+                aMap[name].duration += log.duration || 0;
+            });
+
+            // aggregate education
+            const eMap: Record<string, { count: number }> = {};
+            eLogs.forEach((log: any) => {
+                const name = log.content?.title || 'Video Edukasi';
+                if (!eMap[name]) eMap[name] = { count: 0 };
+                eMap[name].count += 1;
+            });
+
             const stats: ActivityStat[] = [
                 ...Object.entries(bMap).map(([name, v]) => ({
                     name,
@@ -114,6 +139,16 @@ export default function ProfileScreen({ navigation }: any) {
                     name,
                     type: 'meditation' as const,
                     durationMin: Math.round(v.duration / 60),
+                })),
+                ...Object.entries(aMap).map(([name, v]) => ({
+                    name,
+                    type: 'audio' as const,
+                    durationMin: Math.round(v.duration / 60),
+                })),
+                ...Object.entries(eMap).map(([name, v]) => ({
+                    name,
+                    type: 'education' as const,
+                    durationMin: v.count, // Using this field for view count since edu has no duration
                 })),
             ];
             setActivityStats(stats);
@@ -200,7 +235,7 @@ export default function ProfileScreen({ navigation }: any) {
                                 {breathTotal}
                             </Text>
                             <Text style={[styles.statLabel, { color: isDark ? colors.mediumGray : D.textMuted, fontFamily: Typography.body }]}>
-                                Sesi Napas
+                                Napas
                             </Text>
                         </View>
                         <View style={[styles.statDivider, { backgroundColor: isDark ? colors.divider : D.cardBorder }]} />
@@ -209,7 +244,25 @@ export default function ProfileScreen({ navigation }: any) {
                                 {meditationTotal}
                             </Text>
                             <Text style={[styles.statLabel, { color: isDark ? colors.mediumGray : D.textMuted, fontFamily: Typography.body }]}>
-                                Sesi Meditasi
+                                Meditasi
+                            </Text>
+                        </View>
+                        <View style={[styles.statDivider, { backgroundColor: isDark ? colors.divider : D.cardBorder }]} />
+                        <View style={styles.statCol}>
+                            <Text style={[styles.statNum, { color: '#5a7ec0', fontFamily: Typography.headingBold }]}>
+                                {audioTotal}
+                            </Text>
+                            <Text style={[styles.statLabel, { color: isDark ? colors.mediumGray : D.textMuted, fontFamily: Typography.body }]}>
+                                Audio
+                            </Text>
+                        </View>
+                        <View style={[styles.statDivider, { backgroundColor: isDark ? colors.divider : D.cardBorder }]} />
+                        <View style={styles.statCol}>
+                            <Text style={[styles.statNum, { color: '#5a9460', fontFamily: Typography.headingBold }]}>
+                                {eduTotal}
+                            </Text>
+                            <Text style={[styles.statLabel, { color: isDark ? colors.mediumGray : D.textMuted, fontFamily: Typography.body }]}>
+                                Edukasi
                             </Text>
                         </View>
                     </View>
@@ -230,13 +283,23 @@ export default function ProfileScreen({ navigation }: any) {
                                         {
                                             backgroundColor: item.type === 'breath'
                                                 ? (isDark ? '#1a2640' : D.breathIconBg)
-                                                : (isDark ? '#2d1f12' : D.goldenLight),
+                                                : item.type === 'meditation'
+                                                    ? (isDark ? '#2d1f12' : D.goldenLight)
+                                                    : item.type === 'audio'
+                                                        ? (isDark ? '#1e2638' : '#eef2fb')
+                                                        : (isDark ? '#1f2a22' : '#eaf2ec'),
                                         },
                                     ]}>
                                         <Ionicons
-                                            name={item.type === 'breath' ? 'leaf-outline' : 'body-outline'}
+                                            name={item.type === 'breath' ? 'leaf-outline'
+                                                : item.type === 'meditation' ? 'body-outline'
+                                                : item.type === 'audio' ? 'musical-notes-outline'
+                                                : 'play-circle-outline'}
                                             size={20}
-                                            color={item.type === 'breath' ? D.primary : D.goldenAcc}
+                                            color={item.type === 'breath' ? D.primary
+                                                : item.type === 'meditation' ? D.goldenAcc
+                                                : item.type === 'audio' ? '#5a7ec0'
+                                                : '#5a9460'}
                                         />
                                     </View>
                                     <Text style={[styles.actName, { color: isDark ? colors.charcoal : D.textMid, fontFamily: Typography.bodyMedium, flex: 1 }]}
@@ -247,7 +310,9 @@ export default function ProfileScreen({ navigation }: any) {
                                     <Text style={[styles.actMeta, { color: isDark ? colors.mediumGray : '#a4aabc', fontFamily: Typography.body }]}>
                                         {item.type === 'breath'
                                             ? `${item.cycles} siklus · ${item.durationMin} mnt`
-                                            : `${item.durationMin} mnt`
+                                            : item.type === 'education'
+                                                ? `${item.durationMin}x tonton`
+                                                : `${item.durationMin} mnt`
                                         }
                                     </Text>
                                 </View>
@@ -348,7 +413,7 @@ export default function ProfileScreen({ navigation }: any) {
 
                     <TouchableOpacity
                         style={[styles.historyBtn, { backgroundColor: isDark ? '#1a2640' : D.primaryLight }]}
-                        onPress={() => navigation.navigate('ActivityHistory')}
+                        onPress={() => navigation.navigate('MindfulnessDashboard')}
                         activeOpacity={0.85}
                     >
                         <Ionicons name="fitness-outline" size={20} color={D.primary} />

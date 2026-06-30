@@ -133,7 +133,10 @@ export default function EducationVideoDetailScreen({ route, navigation }: any) {
         if (completing || completed) return;
         setCompleting(true);
         try {
-            await educationAPI.completeContent(content.id);
+            await Promise.all([
+                educationAPI.completeContent(content.id),
+                educationAPI.saveLog({ contentId: content.id, completed: true })
+            ]);
             setCompleted(true);
             setTimeout(() => navigation.goBack(), 800);
         } catch (e) {
