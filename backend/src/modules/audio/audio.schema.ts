@@ -8,3 +8,11 @@ export const createAudioSchema = z.object({
         description: z.string().optional(),
     }),
 });
+
+export const saveAudioLogSchema = z.object({
+    body: z.object({
+        audioId: z.string().uuid('Invalid audio ID'),
+        duration: z.number().int().min(0, 'Duration must be >= 0'),
+        completed: z.boolean().default(false),
+    }),
+});

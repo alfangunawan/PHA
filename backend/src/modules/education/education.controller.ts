@@ -64,3 +64,21 @@ export const complete = async (req: AuthRequest, res: Response) => {
         res.status(400).json({ error: error.message });
     }
 };
+
+export const saveLog = async (req: AuthRequest, res: Response) => {
+    try {
+        const log = await EducationService.saveLog(req.user!.userId, req.body);
+        res.status(201).json({ log });
+    } catch (error: any) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
+export const getViewHistory = async (req: AuthRequest, res: Response) => {
+    try {
+        const logs = await EducationService.getUserViewHistory(req.user!.userId);
+        res.json({ logs });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};

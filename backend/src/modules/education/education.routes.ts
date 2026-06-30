@@ -12,8 +12,10 @@ import {
 const router = Router();
 
 router.get('/', authenticateToken, validate(getEducationContentsSchema), EducationController.getAll);
+router.get('/logs', authenticateToken, EducationController.getViewHistory);
 router.get('/:id', authenticateToken, EducationController.getOne);
 router.post('/:id/complete', authenticateToken, EducationController.complete);
+router.post('/logs', authenticateToken, EducationController.saveLog);
 router.post('/', authenticateToken, requireRole('MINDFULNESS_ADMIN', 'ADMIN'), validate(createEducationContentSchema), EducationController.create);
 router.put('/:id', authenticateToken, requireRole('MINDFULNESS_ADMIN', 'ADMIN'), validate(updateEducationContentSchema), EducationController.update);
 router.delete('/:id', authenticateToken, requireRole('MINDFULNESS_ADMIN', 'ADMIN'), EducationController.remove);

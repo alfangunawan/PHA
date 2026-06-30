@@ -74,7 +74,9 @@ model User {
   breathingLogs         BreathingLog[]
   meditationLogs        MeditationLog[]
   educationContents     EducationContent[]     @relation("EducationAdmin")
+  educationViewLogs     EducationContentLog[]
   audioContents         AudioContent[]         @relation("AudioAdmin")
+  audioLogs             AudioLog[]
   journalEntries        JournalEntry[]
   positiveWords         PersonalPositiveWord[]
   gameSessions          GameSession[]
@@ -171,6 +173,7 @@ model BreathingTechnique {
   colorTheme      String         @default("#A8C5DA")
   icon            String         @default("wind")
   isActive        Boolean        @default(true)
+  targetSeverity  String?
   createdAt       DateTime       @default(now())
   logs            BreathingLog[]
 }
@@ -196,6 +199,7 @@ model MeditationSession {
   durationOptions Json
   colorTheme      String              @default("#C9B8E8")
   isActive        Boolean             @default(true)
+  targetSeverity  String?
   createdAt       DateTime            @default(now())
   logs            MeditationLog[]
 }
@@ -212,33 +216,62 @@ model MeditationLog {
 }
 
 model EducationContent {
-  id               String        @id @default(uuid())
+  id               String                @id @default(uuid())
   title            String
   description      String?
-  source           ContentSource @default(youtube)
+  source           ContentSource         @default(youtube)
   url              String
   thumbnailUrl     String?
-  category         String        @default("general")
+  category         String                @default("general")
   tags             Json?
-  format           ContentFormat @default(landscape)
+  format           ContentFormat         @default(landscape)
   createdByAdminId String?
-  isActive         Boolean       @default(true)
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  createdByAdmin   User?         @relation("EducationAdmin", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+  isActive         Boolean               @default(true)
+  targetSeverity   String?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  createdByAdmin   User?                 @relation("EducationAdmin", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+  viewLogs         EducationContentLog[]
+}
+
+model EducationContentLog {
+  id        String           @id @default(uuid())
+  userId    String
+  contentId String
+  watchedAt DateTime         @default(now())
+  completed Boolean          @default(false)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   EducationContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([userId, watchedAt(sort: Desc)])
 }
 
 model AudioContent {
-  id               String   @id @default(uuid())
+  id               String     @id @default(uuid())
   title            String
   fileUrl          String
-  category         String   @default("general")
+  category         String     @default("general")
   duration         Int?
   description      String?
   createdByAdminId String?
-  isActive         Boolean  @default(true)
-  createdAt        DateTime @default(now())
-  createdByAdmin   User?    @relation("AudioAdmin", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+  isActive         Boolean    @default(true)
+  targetSeverity   String?
+  createdAt        DateTime   @default(now())
+  createdByAdmin   User?      @relation("AudioAdmin", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+  logs             AudioLog[]
+}
+
+model AudioLog {
+  id          String       @id @default(uuid())
+  userId      String
+  audioId     String
+  duration    Int
+  completed   Boolean      @default(false)
+  completedAt DateTime     @default(now())
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  audio       AudioContent @relation(fields: [audioId], references: [id], onDelete: Cascade)
+
+  @@index([userId, completedAt(sort: Desc)])
 }
 
 model JournalEntry {

@@ -18,6 +18,7 @@ import audioRoutes from './modules/audio/audio.routes';
 import journalRoutes from './modules/journal/journal.routes';
 import gamificationRoutes from './modules/gamification/gamification.routes';
 import gamesRoutes from './modules/games/games.routes';
+import mindfulnessRoutes from './modules/mindfulness/mindfulness.routes';
 import { authenticateToken, AuthRequest } from './middleware/auth.middleware';
 
 validateServerEnv();
@@ -51,6 +52,7 @@ app.use('/api/audio-contents', audioRoutes);
 app.use('/api/journals', journalRoutes);
 app.use('/api/gamification', gamificationRoutes);
 app.use('/api/games', gamesRoutes);
+app.use('/api/mindfulness', mindfulnessRoutes);
 
 app.get('/health', (req, res) => {
     res.json({

@@ -11,6 +11,16 @@ export const getAll = async (_req: AuthRequest, res: Response) => {
     }
 };
 
+export const getOne = async (req: AuthRequest, res: Response) => {
+    try {
+        const audio = await AudioService.getById(req.params.id);
+        if (!audio) return res.status(404).json({ error: 'Audio not found' });
+        res.json({ audio });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 export const create = async (req: AuthRequest, res: Response) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'Audio file required' });
@@ -43,11 +53,25 @@ export const remove = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const complete = async (req: AuthRequest, res: Response) => {
+/**
+ * POST /api/audio-contents/:id/log
+ * Body: { audioId, duration, completed }
+ * Menyimpan log sesi audio. Reward hanya diberikan jika completed === true.
+ */
+export const saveLog = async (req: AuthRequest, res: Response) => {
     try {
-        const result = await AudioService.completeAudio(req.user!.userId, req.params.id);
-        res.json(result);
+        const result = await AudioService.saveLog(req.user!.userId, req.body);
+        res.status(201).json({ log: result });
     } catch (error: any) {
         res.status(400).json({ error: error.message });
+    }
+};
+
+export const getHistory = async (req: AuthRequest, res: Response) => {
+    try {
+        const logs = await AudioService.getUserHistory(req.user!.userId);
+        res.json({ logs });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
     }
 };

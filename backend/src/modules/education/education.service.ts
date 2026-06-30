@@ -88,3 +88,32 @@ export const completeContent = async (userId: string, id: string) => {
     const reward = await awardReward(userId, ActivityType.EDUCATION_CONTENT, id, { title: content.title });
     return { content, reward };
 };
+
+/**
+ * Menyimpan log riwayat tonton video edukasi.
+ * Reward tetap dikelola oleh completeContent (endpoint terpisah) untuk menghindari duplikasi.
+ * Log ini digunakan untuk keperluan dashboard progress (Fitur 3).
+ */
+export const saveLog = async (userId: string, data: {
+    contentId: string;
+    completed?: boolean;
+}) => {
+    const content = await getById(data.contentId);
+    if (!content) throw new Error('Content not found');
+
+    return prisma.educationContentLog.create({
+        data: {
+            userId,
+            contentId: data.contentId,
+            completed: data.completed ?? false,
+        },
+    });
+};
+
+export const getUserViewHistory = (userId: string) =>
+    prisma.educationContentLog.findMany({
+        where: { userId },
+        include: { content: { select: { title: true, category: true, thumbnailUrl: true } } },
+        orderBy: { watchedAt: 'desc' },
+        take: 20,
+    });

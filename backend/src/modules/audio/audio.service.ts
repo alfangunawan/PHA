@@ -14,6 +14,16 @@ export const getAll = () =>
         orderBy: { createdAt: 'desc' },
     });
 
+export const getById = (id: string) =>
+    prisma.audioContent.findFirst({
+        where: { id, isActive: true },
+        include: {
+            createdByAdmin: {
+                select: { profile: { select: { displayName: true } } },
+            },
+        },
+    });
+
 export const create = (adminId: string, data: {
     title: string;
     category?: string;
@@ -41,9 +51,45 @@ export const remove = async (id: string) => {
     return prisma.audioContent.delete({ where: { id } });
 };
 
-export const completeAudio = async (userId: string, id: string) => {
-    const audio = await prisma.audioContent.findFirst({ where: { id, isActive: true } });
+/**
+ * Menyimpan hasil sesi mendengarkan audio.
+ * Reward hanya diberikan jika completed === true (mengikuti pola MeditationLog).
+ * Jika completed === false (audio berhenti di tengah), log tetap ditulis tapi reward tidak diberikan.
+ */
+export const saveLog = async (userId: string, data: {
+    audioId: string;
+    duration: number;
+    completed?: boolean;
+}) => {
+    const audio = await prisma.audioContent.findFirst({ where: { id: data.audioId, isActive: true } });
     if (!audio) throw new Error('Audio not found');
-    const reward = await awardReward(userId, ActivityType.AUDIO_CONTENT, id, { title: audio.title });
-    return { audio, reward };
+
+    const log = await prisma.audioLog.create({
+        data: {
+            userId,
+            audioId: data.audioId,
+            duration: data.duration,
+            completed: data.completed ?? false,
+        },
+    });
+
+    const reward = data.completed
+        ? await awardReward(userId, ActivityType.AUDIO_CONTENT, log.id, {
+            audioId: data.audioId,
+            title: audio.title,
+            duration: data.duration,
+        })
+        : null;
+
+    return { ...log, reward };
 };
+
+export const getUserHistory = (userId: string) =>
+    prisma.audioLog.findMany({
+        where: { userId },
+        include: {
+            audio: { select: { title: true, category: true, duration: true } },
+        },
+        orderBy: { completedAt: 'desc' },
+        take: 20,
+    });
