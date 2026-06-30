@@ -117,7 +117,17 @@ export const createNewSession = async (): Promise<{ id: string }> => {
     return response.data;
 };
 
-export const submitGad7 = async (sessionId: string, answers: number[]): Promise<{ action: string; data: { score: number; severity: string; message: string } }> => {
-    const response = await client.post('/chat/gad7/submit', { sessionId, answers });
+export const checkGad7Status = async (): Promise<{
+    needsGad7: boolean;
+    lastTakenAt: string | null;
+}> => {
+    const response = await client.get('/chat/gad7/status');
+    return response.data;
+};
+
+export const submitGad7 = async (
+    answers: number[],
+): Promise<{ score: number; severity: string }> => {
+    const response = await client.post('/chat/gad7/submit', { answers });
     return response.data;
 };

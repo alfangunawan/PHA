@@ -8,7 +8,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "check:api-client": "node scripts/check-api-client-usage.mjs",
-    "test:auth-error": "rm -rf /tmp/pha-auth-error-test && tsc tests/authError.test.ts --module commonjs --target es2020 --outDir /tmp/pha-auth-error-test --skipLibCheck --esModuleInterop && node /tmp/pha-auth-error-test/tests/authError.test.js"
+    "test:auth-error": "rm -rf /tmp/pha-auth-error-test && tsc tests/authError.test.ts --module commonjs --target es2020 --outDir /tmp/pha-auth-error-test --skipLibCheck --esModuleInterop && node /tmp/pha-auth-error-test/tests/authError.test.js",
+    "test:chat-gate-route": "rm -rf /tmp/pha-chat-gate-test && tsc tests/chatGateRoute.test.ts --module commonjs --target es2020 --outDir /tmp/pha-chat-gate-test --skipLibCheck --esModuleInterop && node /tmp/pha-chat-gate-test/tests/chatGateRoute.test.js"
   },
   "dependencies": {
     "@expo-google-fonts/hanken-grotesk": "^0.4.3",

@@ -68,7 +68,6 @@ model User {
   role                  Role                   @default(USER)
   createdAt             DateTime               @default(now())
   profile               UserProfile?
-  sessions              ChatSession[]
   conversations         Conversation[]
   gad7Results           Gad7Result[]
   chatbotStates         ChatbotSessionState[]
@@ -82,6 +81,7 @@ model User {
   gamification          UserGamification?
   rewardEvents          RewardEvent[]
   rewardRulesCreated    RewardRule[]           @relation("RewardRuleAdmin")
+  homeworkItems         HomeworkItem[]
 }
 
 model UserProfile {
@@ -95,23 +95,6 @@ model UserProfile {
   bio         String?
 }
 
-model ChatSession {
-  id        String        @id @default(uuid())
-  userId    String
-  user      User          @relation(fields: [userId], references: [id])
-  startedAt DateTime      @default(now())
-  messages  ChatMessage[]
-}
-
-model ChatMessage {
-  id        String      @id @default(uuid())
-  sessionId String
-  session   ChatSession @relation(fields: [sessionId], references: [id])
-  sender    String
-  message   String
-  timestamp DateTime    @default(now())
-}
-
 model Conversation {
   id        Int       @id @default(autoincrement())
   userId    String    @map("user_id")
@@ -119,11 +102,13 @@ model Conversation {
   role      String
   content   String
   cbtPhase  String?   @default("ventilasi") @map("cbt_phase")
+  flowId    String?   @map("flow_id")
   createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([sessionId], map: "idx_conv_session")
   @@index([userId, createdAt(sort: Desc)], map: "idx_conv_user_created")
+  @@index([flowId], map: "idx_conv_flow")
   @@map("conversations")
 }
 
@@ -150,10 +135,28 @@ model ChatbotSessionState {
   phaseTurnCount         Int      @default(0) @map("phase_turn_count")
   homeworkLog            Json     @default("[]") @map("homework_log")
   sessionComplete        Boolean  @default(false) @map("session_complete")
+  activeFlowId           String?  @map("active_flow_id")
+  sessionStatus          String   @default("active") @map("session_status")
   updatedAt              DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
   user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("chatbot_session_state")
+}
+
+model ChatbotFlowState {
+  flowId         String   @id @map("flow_id")
+  sessionId      String   @map("session_id")
+  userId         String   @map("user_id")
+  problemTopic   String?  @map("problem_topic")
+  flowNum        Int      @map("flow_num")
+  currentPhase   String   @default("ventilasi") @map("current_phase")
+  phaseTurnCount Int      @default(0) @map("phase_turn_count")
+  status         String   @default("active")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@index([sessionId, flowNum], map: "idx_flow_session")
+  @@map("chatbot_flow_state")
 }
 
 model BreathingTechnique {
@@ -305,6 +308,26 @@ model RewardRule {
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
   createdByAdmin   User?        @relation("RewardRuleAdmin", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+}
+
+model HomeworkItem {
+  id              BigInt    @id @default(autoincrement())
+  userId          String    @map("user_id")
+  originSessionId String    @map("origin_session_id")
+  problemNum      Int       @default(1) @map("problem_num")
+  content         String
+  type            String    @default("one_off")
+  status          String    @default("assigned")
+  lastReviewedAt  DateTime? @map("last_reviewed_at") @db.Timestamptz(6)
+  originFlowId    String?   @map("origin_flow_id")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status], map: "idx_hw_user_status")
+  @@index([originSessionId], map: "idx_hw_origin")
+  @@index([originFlowId], map: "idx_hw_flow")
+  @@map("homework_item")
 }
 
 model RewardEvent {

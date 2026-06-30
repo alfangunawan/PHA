@@ -20,6 +20,9 @@ router.get('/sessions', ChatController.getSessions);
 router.get('/sessions/:sessionId', validate(getSessionMessagesSchema), ChatController.getSessionMessages);
 router.post('/sessions/new', ChatController.createNewSession);
 
+// GAD-7 status check — returns { needsGad7, lastTakenAt }
+router.get('/gad7/status', ChatController.checkGad7Status);
+
 // GAD-7 assessment submission (forwards to n8n pha-gad7-submit webhook)
 router.post('/gad7/submit', validate(submitGad7Schema), ChatController.submitGad7);
 

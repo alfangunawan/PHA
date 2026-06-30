@@ -162,20 +162,43 @@ export const getLatestGad7ForUser = async (req: AuthRequest, res: Response) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
+ * GET /chat/gad7/status
+ * Returns whether the authenticated user needs to retake the GAD-7 assessment.
+ * Response: { needsGad7: boolean, lastTakenAt: string | null }
+ */
+export const checkGad7Status = async (req: AuthRequest, res: Response) => {
+    try {
+        const userId = req.user?.userId;
+        if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+        const status = await ChatService.checkGad7Status(userId);
+        res.json(status);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+/**
  * POST /chat/gad7/submit
- * Forwards GAD-7 answers to n8n for scoring and persistence.
- * Returns: { action, data: { score, severity, message } }
+ * Scores and persists GAD-7 answers directly via Prisma (no n8n).
+ * Returns: { score, severity }
  */
 export const submitGad7 = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user?.userId;
-        const { sessionId, answers } = req.body;
+        const { answers } = req.body; // sessionId ignored after n8n removal
 
         if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-        const result = await ChatService.submitGad7(userId, sessionId, answers);
+        const result = await ChatService.submitGad7(userId, answers);
         res.json(result);
     } catch (error: any) {
+        if (error.code === 'TOO_SOON') {
+            return res.status(409).json({ code: 'TOO_SOON' });
+        }
+        if (error.message === 'INVALID_ANSWERS') {
+            return res.status(400).json({ error: 'INVALID_ANSWERS' });
+        }
         res.status(500).json({ error: error.message });
     }
 };
