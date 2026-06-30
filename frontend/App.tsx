@@ -66,6 +66,10 @@ import JournalDetailScreen from './src/screens/journal/JournalDetailScreen';
 import GamesHomeScreen from './src/screens/games/GamesHomeScreen';
 import PositiveWordPuzzleScreen from './src/screens/games/PositiveWordPuzzleScreen';
 import TetrisGameScreen from './src/screens/games/TetrisGameScreen';
+import AudioListScreen from './src/screens/audio/AudioListScreen';
+import AudioPlayerScreen from './src/screens/audio/AudioPlayerScreen';
+import RecommendationScreen from './src/screens/mindfulness/RecommendationScreen';
+import DashboardScreen from './src/screens/mindfulness/DashboardScreen';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -299,6 +303,10 @@ function RootNavigator() {
                     <Stack.Screen name="GamesHome" component={GamesHomeScreen} options={{ headerShown: true, title: 'Games', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
                     <Stack.Screen name="PositiveWordPuzzle" component={PositiveWordPuzzleScreen} options={{ headerShown: true, title: 'Word Puzzle', headerTintColor: colors.softBlue, headerStyle: { backgroundColor: colors.bgCard } }} />
                     <Stack.Screen name="TetrisGame" component={TetrisGameScreen} options={{ gestureEnabled: false }} />
+                    <Stack.Screen name="AudioList" component={AudioListScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="AudioPlayer" component={AudioPlayerScreen} options={{ headerShown: false, gestureEnabled: false }} />
+                    <Stack.Screen name="MindfulnessRecommendation" component={RecommendationScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="MindfulnessDashboard" component={DashboardScreen} options={{ headerShown: false }} />
                 </Stack.Navigator>
             ) : (
                 <AuthStack.Navigator screenOptions={{ headerShown: false }}>

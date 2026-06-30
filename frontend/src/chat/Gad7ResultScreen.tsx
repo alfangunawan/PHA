@@ -84,6 +84,16 @@ export default function Gad7ResultScreen({ navigation, route }: Props) {
                     </TouchableOpacity>
                 )}
 
+                {/* Universal — Rencana Pemulihan (Tampil untuk semua) */}
+                <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('MindfulnessRecommendation')} activeOpacity={0.85}>
+                    <Text style={styles.cardIcon}>✨</Text>
+                    <View style={styles.cardBody}>
+                        <Text style={styles.cardTitle}>Lihat Rencana Pemulihanmu</Text>
+                        <Text style={styles.cardSub}>Kumpulan aktivitas relaksasi yang disesuaikan khusus untuk kondisi mentalmu saat ini.</Text>
+                    </View>
+                    <Text style={styles.cardArrow}>→</Text>
+                </TouchableOpacity>
+
                 {/* Severe — counseling signpost */}
                 {isSevere && (
                     <View style={styles.card}>

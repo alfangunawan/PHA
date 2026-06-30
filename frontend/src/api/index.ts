@@ -31,15 +31,21 @@ export const educationAPI = {
     updateContent: (id: string, data: object) => client.put(`/api/education-contents/${id}`, data).then(r => r.data),
     deleteContent: (id: string) => client.delete(`/api/education-contents/${id}`).then(r => r.data),
     completeContent: (id: string) => client.post(`/api/education-contents/${id}/complete`).then(r => r.data),
+    saveLog: (data: { contentId: string; completed: boolean }) =>
+        client.post('/api/education-contents/logs', data).then(r => r.data),
+    getLogs: () => client.get('/api/education-contents/logs').then(r => r.data),
 };
 
 export const audioAPI = {
     getAudios: () => client.get('/api/audio-contents').then(r => r.data),
     getAvailableAudios: () => client.get('/api/audio-contents/available').then(r => r.data),
+    getAudioById: (id: string) => client.get(`/api/audio-contents/${id}`).then(r => r.data),
     uploadAudio: (formData: FormData) =>
         client.post('/api/audio-contents', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data),
     deleteAudio: (id: string) => client.delete(`/api/audio-contents/${id}`).then(r => r.data),
-    completeAudio: (id: string) => client.post(`/api/audio-contents/${id}/complete`).then(r => r.data),
+    saveLog: (data: { audioId: string; duration: number; completed: boolean }) =>
+        client.post('/api/audio-contents/logs', data).then(r => r.data),
+    getLogs: () => client.get('/api/audio-contents/logs').then(r => r.data),
 };
 
 export const journalAPI = {
@@ -64,4 +70,9 @@ export const gamesAPI = {
     startTetris: () => client.post('/api/games/tetris/start').then(r => r.data),
     completeTetris: (sessionId: string, data: { score: number; lines: number; level: number; durationSec: number }) =>
         client.post(`/api/games/tetris/${sessionId}/complete`, data).then(r => r.data),
+};
+
+export const mindfulnessAPI = {
+    getRecommendations: () => client.get('/api/mindfulness/recommendations').then(r => r.data),
+    getDashboard: () => client.get('/api/mindfulness/dashboard').then(r => r.data),
 };
