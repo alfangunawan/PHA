@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity, StyleSheet,
-    Alert, ActivityIndicator, ScrollView,
+    Alert, ActivityIndicator, ScrollView, Image,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthContext } from './AuthContext';
 import { useNavigation } from '@react-navigation/native';
@@ -17,21 +16,6 @@ const INPUT_BG = '#ffffff';
 const INPUT_BORDER = '#e8eaf2';
 const ICON_COLOR = '#aeb4c6';
 const PLACEHOLDER = '#aab0c0';
-
-function LogoSvg({ size }: { size: number }) {
-    return (
-        <Svg width={size} height={size} viewBox="0 0 24 24">
-            <Path d="M5 19C5 11 11 5 19 5C19 13 13 19 5 19Z" fill={ACCENT} />
-            <Path
-                d="M6.6 18C9.1 14.2 12.6 11 16 9.2"
-                fill="none"
-                stroke="#ffffff"
-                strokeWidth="1.7"
-                strokeLinecap="round"
-            />
-        </Svg>
-    );
-}
 
 export default function LoginScreen() {
     const [email, setEmail] = useState('');
@@ -74,10 +58,14 @@ export default function LoginScreen() {
 
             <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
                 <View style={styles.logoWrap}>
-                    <View style={styles.logoCircle}>
-                        <LogoSvg size={40} />
+                    <View style={styles.mascotWrap}>
+                        <Image
+                            source={require('../../assets/sibiru-mascot.png')}
+                            style={styles.mascotImg}
+                            resizeMode="contain"
+                        />
                     </View>
-                    <Text style={styles.brand}>PHA</Text>
+                    <Text style={styles.brand}>SiBiru</Text>
                     <Text style={styles.tagline}>Ruang aman untuk berbagi dan refleksi</Text>
                 </View>
 
@@ -169,27 +157,26 @@ const styles = StyleSheet.create({
         paddingVertical: 60,
     },
     logoWrap: { alignItems: 'center', marginBottom: 42 },
-    logoCircle: {
-        width: 88,
-        height: 88,
-        borderRadius: 44,
-        backgroundColor: '#ffffff',
-        justifyContent: 'center',
+    mascotWrap: {
+        width: 152,
+        height: 152,
         alignItems: 'center',
-        shadowColor: '#8a9ccc',
-        shadowOffset: { width: 0, height: 22 },
-        shadowOpacity: 0.55,
-        shadowRadius: 19,
-        elevation: 10,
-        borderWidth: 1,
-        borderColor: '#eef0f7',
+        justifyContent: 'center',
+    },
+    mascotImg: {
+        width: 152,
+        height: 152,
+        shadowColor: '#3a52a0',
+        shadowOffset: { width: 0, height: 18 },
+        shadowOpacity: 0.26,
+        shadowRadius: 22,
     },
     brand: {
         fontFamily: 'Lora_600SemiBold',
         fontSize: 38,
         color: TEXT_DARK,
         letterSpacing: 0.4,
-        marginTop: 20,
+        marginTop: 12,
         lineHeight: 46,
     },
     tagline: {

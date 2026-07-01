@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity, StyleSheet,
-    Alert, ActivityIndicator, ScrollView,
+    Alert, ActivityIndicator, ScrollView, Image,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthContext } from './AuthContext';
 import { useNavigation } from '@react-navigation/native';
@@ -17,21 +16,6 @@ const INPUT_BG = '#ffffff';
 const INPUT_BORDER = '#e8eaf2';
 const ICON_COLOR = '#aeb4c6';
 const PLACEHOLDER = '#aab0c0';
-
-function LogoSvg({ size }: { size: number }) {
-    return (
-        <Svg width={size} height={size} viewBox="0 0 24 24">
-            <Path d="M5 19C5 11 11 5 19 5C19 13 13 19 5 19Z" fill={ACCENT} />
-            <Path
-                d="M6.6 18C9.1 14.2 12.6 11 16 9.2"
-                fill="none"
-                stroke="#ffffff"
-                strokeWidth="1.7"
-                strokeLinecap="round"
-            />
-        </Svg>
-    );
-}
 
 export default function RegisterScreen() {
     const [name, setName] = useState('');
@@ -82,11 +66,15 @@ export default function RegisterScreen() {
 
             <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
                 <View style={styles.header}>
-                    <View style={styles.logoCircle}>
-                        <LogoSvg size={34} />
+                    <View style={styles.mascotWrap}>
+                        <Image
+                            source={require('../../assets/sibiru-mascot.png')}
+                            style={styles.mascotImg}
+                            resizeMode="contain"
+                        />
                     </View>
                     <Text style={styles.title}>Buat Akun Baru</Text>
-                    <Text style={styles.subtitle}>Langkah kecil menuju ruang yang lebih tenang</Text>
+                    <Text style={styles.subtitle}>Bergabung dengan SiBiru, ruang yang lebih tenang</Text>
                 </View>
 
                 <View style={styles.form}>
@@ -208,27 +196,26 @@ const styles = StyleSheet.create({
         paddingVertical: 48,
     },
     header: { alignItems: 'center', marginBottom: 26 },
-    logoCircle: {
-        width: 76,
-        height: 76,
-        borderRadius: 38,
-        backgroundColor: '#ffffff',
-        justifyContent: 'center',
+    mascotWrap: {
+        width: 104,
+        height: 104,
         alignItems: 'center',
-        shadowColor: '#8a9ccc',
-        shadowOffset: { width: 0, height: 22 },
-        shadowOpacity: 0.55,
-        shadowRadius: 19,
-        elevation: 10,
-        borderWidth: 1,
-        borderColor: '#eef0f7',
+        justifyContent: 'center',
+    },
+    mascotImg: {
+        width: 104,
+        height: 104,
+        shadowColor: '#3a52a0',
+        shadowOffset: { width: 0, height: 14 },
+        shadowOpacity: 0.26,
+        shadowRadius: 18,
     },
     title: {
         fontFamily: 'Lora_600SemiBold',
-        fontSize: 27,
+        fontSize: 26,
         color: TEXT_DARK,
         letterSpacing: -0.2,
-        marginTop: 16,
+        marginTop: 12,
         lineHeight: 34,
     },
     subtitle: {
