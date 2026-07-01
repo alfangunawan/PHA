@@ -127,7 +127,11 @@ export const checkGad7Status = async (): Promise<{
 
 export const submitGad7 = async (
     answers: number[],
+    opts?: { retake?: boolean },
 ): Promise<{ score: number; severity: string }> => {
-    const response = await client.post('/chat/gad7/submit', { answers });
+    const response = await client.post('/chat/gad7/submit', {
+        answers,
+        ...(opts?.retake ? { retake: true } : {}),
+    });
     return response.data;
 };

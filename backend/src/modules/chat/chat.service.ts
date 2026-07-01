@@ -266,26 +266,33 @@ export const createNewSession = async (userId: string) => {
  * Throws:
  *   - Error('INVALID_ANSWERS') if answers are not exactly 7 integers in 0–3
  *   - Object.assign(Error('TOO_SOON'), { code: 'TOO_SOON' }) if last result < 13 days ago
+ *
+ * opts.retake (UAT testing only): skips the TOO_SOON cooldown so testers can
+ * retake from the Beranda testing button repeatedly. Still scores + persists.
  */
 export const submitGad7 = async (
     userId: string,
     answers: number[],
+    opts?: { retake?: boolean },
 ): Promise<{ score: number; severity: 'minimal' | 'mild' | 'moderate' | 'severe' }> => {
     // Validate
     if (answers.length !== 7) throw new Error('INVALID_ANSWERS');
     if (answers.some(a => !Number.isInteger(a) || a < 0 || a > 3))
         throw new Error('INVALID_ANSWERS');
 
-    // Min-gap guard (13 days — 1-day buffer below the 14-day needsGad7 threshold)
-    const latest = await (prisma as any).gad7Result.findFirst({
-        where: { userId },
-        orderBy: { takenAt: 'desc' },
-        select: { takenAt: true },
-    });
-    if (latest) {
-        const daysSince = (Date.now() - (latest.takenAt as Date).getTime()) / 86_400_000;
-        if (daysSince < 13) {
-            throw Object.assign(new Error('TOO_SOON'), { code: 'TOO_SOON' });
+    // Min-gap guard (13 days — 1-day buffer below the 14-day needsGad7 threshold).
+    // Bypassed when opts.retake is set (testing-only retake path from Beranda).
+    if (!opts?.retake) {
+        const latest = await (prisma as any).gad7Result.findFirst({
+            where: { userId },
+            orderBy: { takenAt: 'desc' },
+            select: { takenAt: true },
+        });
+        if (latest) {
+            const daysSince = (Date.now() - (latest.takenAt as Date).getTime()) / 86_400_000;
+            if (daysSince < 13) {
+                throw Object.assign(new Error('TOO_SOON'), { code: 'TOO_SOON' });
+            }
         }
     }
 

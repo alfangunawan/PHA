@@ -30,11 +30,13 @@ const GAD7_OPTIONS = [
 
 interface Props {
     navigation: any;
+    route: any;
 }
 
-export default function Gad7OnboardingScreen({ navigation }: Props) {
+export default function Gad7OnboardingScreen({ navigation, route }: Props) {
     const insets = useSafeAreaInsets();
     const { refreshGad7Status } = useAuthContext();
+    const retake: boolean = route?.params?.retake === true;
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [answers, setAnswers] = useState<number[]>(new Array(7).fill(-1));
     const [submitting, setSubmitting] = useState(false);
@@ -108,10 +110,10 @@ export default function Gad7OnboardingScreen({ navigation }: Props) {
         if (submitting) return;
         setSubmitting(true);
         try {
-            const result = await submitGad7(answers);
+            const result = await submitGad7(answers, { retake });
             // Do NOT await refreshGad7Status here — that would hang the submit screen.
             // Refresh happens in Gad7ResultScreen before navigating to Chat.
-            navigation.replace('Gad7Result', { severity: result.severity });
+            navigation.replace('Gad7Result', { severity: result.severity, retake });
         } catch (error: any) {
             if (error?.response?.status === 409 && error?.response?.data?.code === 'TOO_SOON') {
                 // Already submitted recently — refresh and go to chat silently

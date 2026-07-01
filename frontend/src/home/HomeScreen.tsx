@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useAuthContext } from '../auth/AuthContext';
 import GamificationSummary from '../components/GamificationSummary';
+import config from '../config';
 
 const MASCOT = require('../../assets/maskot-main.gif');
 
@@ -207,6 +208,24 @@ export default function HomeScreen() {
                         </LinearGradient>
                     </TouchableOpacity>
 
+                    {/* Testing-only: GAD-7 retake. Hidden when TESTING_MODE is off. */}
+                    {config.TESTING_MODE && (
+                        <View style={styles.testBlock}>
+                            <Text style={styles.testBadge}>🧪 Mode Testing</Text>
+                            <Text style={styles.testNote}>
+                                Tombol ini hanya muncul saat pengujian. Pakai untuk mencoba
+                                kuesioner GAD-7 berkali-kali.
+                            </Text>
+                            <TouchableOpacity
+                                style={styles.testBtn}
+                                activeOpacity={0.85}
+                                onPress={() => navigation.navigate('Gad7Onboarding', { retake: true })}
+                            >
+                                <Text style={styles.testBtnText}>Tes Ulang GAD-7</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
                     {/* Aktivitas */}
                     <View>
                         <Text style={styles.sectionTitle}>Aktivitas</Text>
@@ -353,6 +372,27 @@ const styles = StyleSheet.create({
     },
     ctaTitle: { fontFamily: 'Lora_400Regular', fontSize: 17, color: '#ffffff', lineHeight: 20 },
     ctaSub:   { fontSize: 12.5, color: FB.headerSub, marginTop: 4, lineHeight: 17 },
+
+    // ── Testing-only block ───────────────────────────────────────────────────
+    testBlock: {
+        borderWidth: 1.5,
+        borderColor: '#f0b429',
+        borderStyle: 'dashed',
+        borderRadius: 18,
+        backgroundColor: '#fffaf0',
+        padding: 16,
+        gap: 10,
+    },
+    testBadge: { fontSize: 13, fontWeight: '700', color: '#9a6a00' },
+    testNote:  { fontSize: 12.5, color: '#7a6534', lineHeight: 17 },
+    testBtn: {
+        alignSelf: 'flex-start',
+        backgroundColor: '#f0b429',
+        borderRadius: 12,
+        paddingVertical: 10,
+        paddingHorizontal: 18,
+    },
+    testBtnText: { color: '#5c3d00', fontSize: 14, fontWeight: '700' },
 
     // ── Activity grid ────────────────────────────────────────────────────────
     sectionTitle:  { fontFamily: 'Lora_400Regular', fontSize: 18, color: FB.textDark, marginBottom: 13 },

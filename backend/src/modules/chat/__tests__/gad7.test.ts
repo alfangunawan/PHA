@@ -80,6 +80,24 @@ describe('submitGad7', () => {
         expect(err.code).toBe('TOO_SOON');
     });
 
+    it('bypasses TOO_SOON cooldown when retake flag is set', async () => {
+        const takenAt = new Date(Date.now() - 1 * 86_400_000); // 1 day ago
+        mockFindFirst.mockResolvedValue({ takenAt });
+        mockCreate.mockResolvedValue({});
+        const result = await submitGad7('user-1', validAnswers, { retake: true });
+        expect(result).toEqual({ score: 7, severity: 'mild' });
+        expect(mockCreate).toHaveBeenCalledWith({
+            data: expect.objectContaining({ userId: 'user-1', score: 7, severity: 'mild' }),
+        });
+    });
+
+    it('still enforces TOO_SOON when retake flag is false', async () => {
+        const takenAt = new Date(Date.now() - 1 * 86_400_000);
+        mockFindFirst.mockResolvedValue({ takenAt });
+        const err: any = await submitGad7('user-1', validAnswers, { retake: false }).catch(e => e);
+        expect(err.code).toBe('TOO_SOON');
+    });
+
     it('allows submit if last result is 13 days ago (buffer zone)', async () => {
         const takenAt = new Date(Date.now() - 13 * 86_400_000);
         mockFindFirst.mockResolvedValue({ takenAt });

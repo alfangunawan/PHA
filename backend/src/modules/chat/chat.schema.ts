@@ -27,5 +27,6 @@ export const submitGad7Schema = z.object({
         answers: z
             .array(z.number().int().min(0).max(3))
             .length(7, 'GAD-7 requires exactly 7 answers (0–3 each)'),
+        retake: z.boolean().optional(), // UAT testing-only: bypass TOO_SOON cooldown
     }),
 });

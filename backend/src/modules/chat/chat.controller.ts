@@ -186,11 +186,11 @@ export const checkGad7Status = async (req: AuthRequest, res: Response) => {
 export const submitGad7 = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user?.userId;
-        const { answers } = req.body; // sessionId ignored after n8n removal
+        const { answers, retake } = req.body; // sessionId ignored after n8n removal
 
         if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-        const result = await ChatService.submitGad7(userId, answers);
+        const result = await ChatService.submitGad7(userId, answers, { retake });
         res.json(result);
     } catch (error: any) {
         if (error.code === 'TOO_SOON') {

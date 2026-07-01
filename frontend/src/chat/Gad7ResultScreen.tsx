@@ -25,20 +25,35 @@ export default function Gad7ResultScreen({ navigation, route }: Props) {
     const insets = useSafeAreaInsets();
     const { refreshGad7Status } = useAuthContext();
     const { severity } = route.params;
+    const retake: boolean = route?.params?.retake === true;
     const headline = HEADLINES[severity] ?? HEADLINES.mild;
     const isModerate = severity === 'moderate' || severity === 'severe';
     const isSevere = severity === 'severe';
 
-    // Android hardware back → go to Chat (give user a way out, not a wall)
+    const goHome = () => navigation.navigate('MainTabs', { screen: 'Beranda' });
+
+    // Android hardware back → Beranda on the testing retake path, Chat otherwise
+    // (give user a way out, not a wall).
     useFocusEffect(useCallback(() => {
         const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-            refreshGad7Status().then(() => navigation.replace('Chat'));
+            if (retake) {
+                goHome();
+            } else {
+                refreshGad7Status().then(() => navigation.replace('Chat'));
+            }
             return true;
         });
         return () => sub.remove();
-    }, [refreshGad7Status]));
+    }, [refreshGad7Status, retake]));
 
-    const handleStartChat = async () => {
+    const handlePrimary = async () => {
+        if (retake) {
+            // Testing retake: refresh status so the chatbot gate reflects the new
+            // result, then return to Beranda for another loop.
+            await refreshGad7Status();
+            goHome();
+            return;
+        }
         // Await refresh here (Result → Chat), NOT in submit → Result.
         // This ensures ChatScreen mount guard sees updated status.
         await refreshGad7Status();
@@ -114,8 +129,10 @@ export default function Gad7ResultScreen({ navigation, route }: Props) {
 
             {/* Start Chat — pinned bottom */}
             <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-                <TouchableOpacity style={styles.chatBtn} onPress={handleStartChat} activeOpacity={0.85}>
-                    <Text style={styles.chatBtnText}>Mulai Chat dengan PHA</Text>
+                <TouchableOpacity style={styles.chatBtn} onPress={handlePrimary} activeOpacity={0.85}>
+                    <Text style={styles.chatBtnText}>
+                        {retake ? 'Kembali ke Beranda' : 'Mulai Chat dengan PHA'}
+                    </Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
