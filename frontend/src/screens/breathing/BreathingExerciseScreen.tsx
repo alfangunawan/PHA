@@ -64,8 +64,11 @@ interface PhaseStep {
 export default function BreathingExerciseScreen({ route, navigation }: any) {
     const { technique } = route.params;
 
+    const isDeepBreathing = technique.name.toLowerCase().includes('deep');
+    const inhaleInstruction = isDeepBreathing ? 'Tarik napas ke perut...' : 'Hirup perlahan...';
+
     const phases: PhaseStep[] = ([
-        { key: 'inhale', label: 'Tarik Napas', duration: technique.inhaleDuration, instruction: 'Hirup perlahan...', colorIdx: 0 },
+        { key: 'inhale', label: 'Tarik Napas', duration: technique.inhaleDuration, instruction: inhaleInstruction, colorIdx: 0 },
         { key: 'hold', label: 'Tahan', duration: technique.holdDuration, instruction: 'Tahan napas...', colorIdx: 1 },
         { key: 'exhale', label: 'Hembus', duration: technique.exhaleDuration, instruction: 'Lepaskan perlahan...', colorIdx: 2 },
         { key: 'hold2', label: 'Jeda', duration: technique.holdAfterExhale, instruction: 'Istirahat sejenak...', colorIdx: 3 },
