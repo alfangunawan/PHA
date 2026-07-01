@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity, FlatList,
     StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
-    Alert, StatusBar,
+    Alert, StatusBar, Animated, Easing,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -117,6 +117,41 @@ function SuggTalkIcon() {
 interface Props {
     navigation: any;
     route: any;
+}
+
+// Animated "typing" indicator — three dots bounce + fade in a staggered loop.
+function TypingDots() {
+    const a1 = useRef(new Animated.Value(0)).current;
+    const a2 = useRef(new Animated.Value(0)).current;
+    const a3 = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        const make = (val: Animated.Value, delay: number) =>
+            Animated.loop(
+                Animated.sequence([
+                    Animated.delay(delay),
+                    Animated.timing(val, { toValue: 1, duration: 320, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+                    Animated.timing(val, { toValue: 0, duration: 320, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+                    Animated.delay(320 - delay),
+                ]),
+            );
+        const anims = [make(a1, 0), make(a2, 160), make(a3, 320)];
+        anims.forEach(a => a.start());
+        return () => anims.forEach(a => a.stop());
+    }, []);
+
+    const dotStyle = (val: Animated.Value) => ({
+        transform: [{ translateY: val.interpolate({ inputRange: [0, 1], outputRange: [0, -5] }) }],
+        opacity: val.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] }),
+    });
+
+    return (
+        <View style={styles.typingBubble}>
+            <Animated.View style={[styles.dot, { backgroundColor: FB.typingDim }, dotStyle(a1)]} />
+            <Animated.View style={[styles.dot, { backgroundColor: PRIMARY }, dotStyle(a2)]} />
+            <Animated.View style={[styles.dot, { backgroundColor: FB.typingDim }, dotStyle(a3)]} />
+        </View>
+    );
 }
 
 export default function ChatScreen({ navigation, route }: Props) {
@@ -265,11 +300,7 @@ export default function ChatScreen({ navigation, route }: Props) {
             return (
                 <View style={styles.aiBubbleRow}>
                     <View style={styles.phaAvatar}><PHAChatIcon size={16} /></View>
-                    <View style={styles.typingBubble}>
-                        <View style={[styles.dot, { backgroundColor: FB.typingDim }]} />
-                        <View style={[styles.dot, { backgroundColor: PRIMARY }]} />
-                        <View style={[styles.dot, { backgroundColor: FB.typingDim }]} />
-                    </View>
+                    <TypingDots />
                 </View>
             );
         }
